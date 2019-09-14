@@ -9,7 +9,7 @@ GPU_FLAGS = --device-c  -Xcompiler -fopenmp -O3
 NVCCFLAGS = -O3 -lcurand -std=c++11 -Xcompiler -fopenmp
 #GPU_ARCH = -gencode arch=compute_61,code=sm_61
 
-GPU_FLAGS_DEBUG = --device-c 
+GPU_FLAGS_DEBUG = --device-c -Xcompiler -fopenmp -g
 NVCCFLAGS_DEBUG  = -g -lcurand -std=c++11 -Xcompiler -fopenmp
 
 gpu_objects = BRKGA.o Decoder.o 
