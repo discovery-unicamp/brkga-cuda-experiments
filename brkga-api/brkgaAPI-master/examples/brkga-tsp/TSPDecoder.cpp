@@ -25,4 +25,3 @@ double TSPDecoder::decode(const std::vector< double >& chromosome) const {
 	// 3) Return:
 	return double(fitness);
 }
-

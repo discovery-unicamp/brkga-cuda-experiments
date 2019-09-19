@@ -44,4 +44,3 @@ std::list< unsigned > TSPSolver::getTour() const {
 
 	return tourSequence;
 }
-

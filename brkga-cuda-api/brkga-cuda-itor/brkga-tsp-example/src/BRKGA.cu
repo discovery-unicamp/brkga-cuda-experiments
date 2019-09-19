@@ -263,9 +263,12 @@ void BRKGA::sort_chromosomes_genes(){
 	thrust::device_ptr<float> keys(d_population2);
 	thrust::device_ptr<ChromosomeGeneIdxPair> vals(d_chromosome_gene_idx);
 	//stable sort both d_population2 and d_chromosome_gene_idx by all the genes values
-	thrust::stable_sort_by_key(keys, keys + number_chromosomes*chromosome_size, vals);
+	thrust::stable_sort_by_key(keys, keys + (number_chromosomes)*chromosome_size, vals);
 	//stable sort both d_population2 and d_chromosome_gene_idx by the chromosome index values
-	thrust::stable_sort_by_key(vals, vals + number_chromosomes*chromosome_size, keys);
+	thrust::stable_sort_by_key(vals, vals + (number_chromosomes)*chromosome_size, keys);
+
+
+
 }
 
 
@@ -316,6 +319,7 @@ void BRKGA::evolve(int number_generations){
 
 	using std::domain_error;
 
+	
 	if(decode_type == DEVICE_DECODE){
 		evaluate_chromosomes_device();
 	}else if(decode_type == DEVICE_DECODE_CHROMOSOME_SORTED){
