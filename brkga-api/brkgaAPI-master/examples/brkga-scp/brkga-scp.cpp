@@ -131,16 +131,17 @@ int main(int argc, char* argv[]) {
 		bool run = true;
 		while(run) {
 			// Evolution:
+			cout << "Evolution: " << iteration << endl;
 			algorithm.evolve();
 
 			// Elite-exchange:
 			if(K > 1 && X_INTVL > 0 && iteration > 0 && iteration % X_INTVL == 0) {
 				algorithm.exchangeElite(X_NUMBER);
 
-				if(verbose) {
+				//if(verbose) {
 					cout << "Exchanged " << X_NUMBER << " solutions from each population at iteration "
 							<< iteration << "; best so far: " << algorithm.getBestFitness() << endl;
-				}
+				//}
 			}
 
 			// Update runtime data:
@@ -173,8 +174,8 @@ int main(int argc, char* argv[]) {
 			cerr << "WARNING: Best solution could NOT be verified!" << endl;
 		}
 
-		if(verbose) {
-			cout << "Best fitness: " << bestFitness
+		//if(verbose) {
+			cout << "\nValue of best solution: " << bestFitness
 				<< "\nIterations: " << iteration
 				<< "\nBest solution:";
 
@@ -184,8 +185,8 @@ int main(int argc, char* argv[]) {
 				if(val) { cout << " " << j; ++counter; }
 			}
 			cout << endl;
-		}
-		else { cout << iteration << endl; }
+		//}
+		//else { cout << iteration << endl; }
 	}
 	catch(std::range_error& e) {
 		cerr << "Runtime error: " << e.what() << endl;

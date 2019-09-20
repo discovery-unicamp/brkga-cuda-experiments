@@ -10,7 +10,7 @@
 
 #include "BRKGA.h"
 #include "CommonStructs.h"
-
+#include "SetCoveringDecoder.h"
 
 
 __device__ float device_decode(float *chromosome, int n, void *d_instance_info);

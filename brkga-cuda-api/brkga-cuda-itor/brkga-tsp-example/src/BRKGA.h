@@ -25,12 +25,11 @@
 #include <omp.h>
 
 #define THREADS_PER_BLOCK 256
-#define PSEUDO_SEED 1234U //Change seed!
 
 
 class BRKGA{
 public:
-	BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K, unsigned decode_type, unsigned NUM_THREADS=1);
+	BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K, unsigned decode_type, unsigned NUM_THREADS=1, unsigned RAND_SEED=1234);
 	~BRKGA();
 	void reset_population(void);
 	void evolve(int number_generations=1);

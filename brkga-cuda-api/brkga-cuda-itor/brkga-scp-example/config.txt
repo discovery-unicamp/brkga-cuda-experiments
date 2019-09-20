@@ -3,11 +3,12 @@ elite_proportion 0.1
 mutant_proportion 0.1
 rhoe 0.7
 number_populations 3
-max_generations 200
+max_generations 1000
 iterations_exchange_best 10
 size_best_to_exchange 2 
 reset_iterations 1001
 decode_type 1
+num_threads_omp 1
 
 #Other decode_types
 #define HOST_DECODE 1

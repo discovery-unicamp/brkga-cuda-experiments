@@ -13,7 +13,7 @@
 /***
 Constructor
 ***/
-BRKGA::BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K, unsigned decode_type, unsigned NUM_THREADS){
+BRKGA::BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K, unsigned decode_type, unsigned NUM_THREADS, unsigned RAND_SEED){
 	if(p%THREADS_PER_BLOCK != 0){
 			//round population size to a multiple of THREADS_PER_BLOCK
 		p = ((p/THREADS_PER_BLOCK)+1)*THREADS_PER_BLOCK;
@@ -84,7 +84,7 @@ BRKGA::BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K,
 	// Create pseudo-random number generator 
 	curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
 	// Set seed 
-	curandSetPseudoRandomGeneratorSeed(gen, PSEUDO_SEED);//CHANGE THE SEED
+	curandSetPseudoRandomGeneratorSeed(gen, RAND_SEED);
 	//Initialize population with random alleles with generated random floats on device 
 	reset_population();
 

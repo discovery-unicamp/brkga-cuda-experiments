@@ -6,21 +6,35 @@ import datetime
 import statistics as stat
 import math
 
-results_dir = ['executables-tsp/brkgaAPI-1/',  'executables-tsp/brkgaAPI-4/',
-		  'executables-tsp/brkgaAPI-8/', 'executables-tsp/cuda-device-decode/', 
-		  'executables-tsp/cuda-host-decode1/', 'executables-tsp/cuda-host-decode4/','executables-tsp/cuda-host-decode8/']
-res_dir = 'results-tsp-cities1/'
-results_dir = list(map(lambda x: x+res_dir, results_dir))
-#print(results_dir)
-algs_nick_names = ['brkga-tsp-1','brkga-tsp-4','brkga-tsp-8','cuda-device','cuda-host1','cuda-host4','cuda-host8']	
+SCP = True
+TSP = False
+
+if SCP:
+	executables_dir = ['executables-scp/brkgaAPI-1/',  'executables-scp/brkgaAPI-4/', 'executables-scp/brkgaAPI-8/',
+		  'executables-scp/cuda-host-decode1/', 'executables-scp/cuda-host-decode4/','executables-scp/cuda-host-decode8/']
+	running_results_dir = 'results-scp-testscp/'
+	algs_nick_names = ['brkga-scp-1','brkga-scp-4','brkga-scp-8','cuda-host1','cuda-host4','cuda-host8']
+	csv_dir = 'results/scp/'
+elif TSP:
+	executables_dir = ['executables-tsp/brkgaAPI-1/',  'executables-tsp/brkgaAPI-4/','executables-tsp/brkgaAPI-8/',
+		 'executables-tsp/cuda-device-decode/', 
+		 'executables-tsp/cuda-host-decode1/', 'executables-tsp/cuda-host-decode4/','executables-tsp/cuda-host-decode8/']
+	running_results_dir = 'results-tsp-testtsp/'
+	algs_nick_names = ['brkga-tsp-1','brkga-tsp-4','brkga-tsp-8','cuda-device','cuda-host1','cuda-host4','cuda-host8']	
+	csv_dir = 'results/tsp/'
+
+runnings_dir = list(map(lambda x: x+running_results_dir, executables_dir))
+
+if(not os.path.exists('results')):
+	os.system('mkdir results')
+	os.system('mkdir results/tsp')
+	os.system('mkdir results/scp')
 
 
 def main():
 	d = str(datetime.datetime.now()).replace(' ', '-')
-	if(not os.path.exists('results')):
-		os.system('mkdir results')
-	fout = open('results/results-TSP-'+d+'.csv', 'w')
-	results_files = os.listdir(results_dir[0])
+	fout = open(csv_dir+'results'+d+'.csv', 'w')
+	results_files = os.listdir(runnings_dir[0])
 	results_files.sort(key=getInstanceSize)
 	exp_value = re.compile(r'Value of best solution: *(\d+.\d+)')
 	exp_time = re.compile(r'Time: *(\d+.?\d*)')
@@ -33,11 +47,11 @@ def main():
 	results_files = merge_same_instances(results_files)
 	for inst_group in results_files:
 		fout.write(inst_group[0][:-1]+',\t ')
-		for dirr in results_dir:
+		for dirr in runnings_dir:
 			times = []
 			values = []
 			for inst in inst_group:
-				#print('open file',dirr+inst)
+				print('processing file',dirr+inst)
 				try:
 					f = open(dirr+inst, 'r')
 					s = f.read()
@@ -47,9 +61,9 @@ def main():
 				value = exp_value.findall(s)
 				time = exp_time.findall(s)
 				if value == []:
-					value = math.inf
+					value = [math.inf]
 				if time == []:
-					time = math.inf
+					time = [math.inf]
 				times.append(float(time[0]))
 				values.append(float(value[0]))
 			v_m = "{0:.2f}".format(stat.mean(values))
