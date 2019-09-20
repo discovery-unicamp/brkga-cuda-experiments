@@ -136,14 +136,16 @@ void BRKGA::test_memory_malloc(cudaError_t err, unsigned code, unsigned total_me
 	Notice we assume the type of the info elements to be float.
 ***/
 void BRKGA::setInstanceInfo(void *info, long unsigned num, long unsigned size){
-	long unsigned total_memory = num*size;
-	printf("Extra Memory Used In GPU due to Instance Info %lu bytes(%lu Mbytes)\n", total_memory, total_memory/1000000);
+	if(info != NULL){
+		long unsigned total_memory = num*size;
+		printf("Extra Memory Used In GPU due to Instance Info %lu bytes(%lu Mbytes)\n", total_memory, total_memory/1000000);
 
-	if(decode_type == DEVICE_DECODE || decode_type == DEVICE_DECODE_CHROMOSOME_SORTED){
-		test_memory_malloc(cudaMalloc((void **)&d_instance_info, num*size),8,total_memory);
-		cudaMemcpy(d_instance_info, info, num*size, cudaMemcpyHostToDevice);
+		if(decode_type == DEVICE_DECODE || decode_type == DEVICE_DECODE_CHROMOSOME_SORTED){
+			test_memory_malloc(cudaMalloc((void **)&d_instance_info, num*size),8,total_memory);
+			cudaMemcpy(d_instance_info, info, num*size, cudaMemcpyHostToDevice);
+		}
+		h_instance_info = info;
 	}
-	h_instance_info = info;
 }
 
 
@@ -263,12 +265,9 @@ void BRKGA::sort_chromosomes_genes(){
 	thrust::device_ptr<float> keys(d_population2);
 	thrust::device_ptr<ChromosomeGeneIdxPair> vals(d_chromosome_gene_idx);
 	//stable sort both d_population2 and d_chromosome_gene_idx by all the genes values
-	thrust::stable_sort_by_key(keys, keys + (number_chromosomes)*chromosome_size, vals);
+	thrust::stable_sort_by_key(keys, keys + number_chromosomes*chromosome_size, vals);
 	//stable sort both d_population2 and d_chromosome_gene_idx by the chromosome index values
-	thrust::stable_sort_by_key(vals, vals + (number_chromosomes)*chromosome_size, keys);
-
-
-
+	thrust::stable_sort_by_key(vals, vals + number_chromosomes*chromosome_size, keys);
 }
 
 
@@ -316,10 +315,8 @@ void device_next_population(float *d_population, float *d_population2,
 Main function of the BRKGA algorithm. It evolves K populations for a certain number of generations.
 ***/
 void BRKGA::evolve(int number_generations){
-
 	using std::domain_error;
 
-	
 	if(decode_type == DEVICE_DECODE){
 		evaluate_chromosomes_device();
 	}else if(decode_type == DEVICE_DECODE_CHROMOSOME_SORTED){

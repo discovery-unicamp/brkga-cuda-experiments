@@ -26,6 +26,7 @@ ConfigFile::ConfigFile(){
 	aux = fscanf(f, "%s %u", st, &X_NUMBER);
 	aux = fscanf(f, "%s %u", st, &RESET_AFTER);
 	aux = fscanf(f, "%s %u", st, &decode_type);
+	aux = fscanf(f, "%s %u", st, &MAXT);
 	fclose(f);
 }
 

@@ -13,7 +13,7 @@
 /***
 Constructor
 ***/
-BRKGA::BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K, unsigned decode_type){
+BRKGA::BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K, unsigned decode_type, unsigned NUM_THREADS){
 	if(p%THREADS_PER_BLOCK != 0){
 			//round population size to a multiple of THREADS_PER_BLOCK
 		p = ((p/THREADS_PER_BLOCK)+1)*THREADS_PER_BLOCK;
@@ -32,6 +32,7 @@ BRKGA::BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K,
 	this->mutants_size = (unsigned)(pm*p);
 	this->rhoe = rhoe;
 	this->decode_type = decode_type;
+	this->NUM_THREADS = NUM_THREADS;
 
 	using std::range_error;
 	if(chromosome_size == 0) { throw range_error("Chromosome size equals zero."); }
@@ -314,7 +315,6 @@ void device_next_population(float *d_population, float *d_population2,
 Main function of the BRKGA algorithm. It evolves K populations for a certain number of generations.
 ***/
 void BRKGA::evolve(int number_generations){
-
 	using std::domain_error;
 
 	if(decode_type == DEVICE_DECODE){

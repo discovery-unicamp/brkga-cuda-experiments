@@ -17,6 +17,7 @@
 #include <curand.h>
 #include <curand_kernel.h>
 #include <thrust/sort.h>
+#include <thrust/device_ptr.h>
 
 #include "Decoder.h"
 #include "CommonStructs.h"
@@ -26,11 +27,10 @@
 #define THREADS_PER_BLOCK 256
 #define PSEUDO_SEED 1234U //Change seed!
 
-#define NUM_THREADS 4 //if host_decod is used openmp can be used to decode
 
 class BRKGA{
 public:
-	BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K, unsigned decode_type);
+	BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K, unsigned decode_type, unsigned NUM_THREADS=1);
 	~BRKGA();
 	void reset_population(void);
 	void evolve(int number_generations=1);
@@ -79,6 +79,10 @@ private:
   dim3 dimGrid;
 
   unsigned decode_type;
+
+
+  unsigned NUM_THREADS=8; //if host_decod is used openmp can be used to decode
+
 
   void initialize_population(int p);
 	void global_sort_chromosomes();

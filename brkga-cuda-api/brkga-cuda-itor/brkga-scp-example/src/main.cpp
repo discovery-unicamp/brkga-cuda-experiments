@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
 		<< " rows to be covered with " << decoder.getNColumns() << " columns" << std::endl;
 
 	ConfigFile config;
-	BRKGA alg(decoder.getNColumns(), config.p, config.pe, config.pm, config.rhoe, config.K, config.decode_type);
+	BRKGA alg(decoder.getNColumns(), config.p, config.pe, config.pm, config.rhoe, config.K, config.decode_type, config.MAXT);
 
 	alg.setInstanceInfo(&decoder, 0, 0);
 	

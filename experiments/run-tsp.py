@@ -12,7 +12,7 @@ inst_dir = 'instances/tsp-cities1/'
 results_dir = 'results-tsp-cities1/'
 current_dir = os.getcwd()
 
-NUMBER_RUNS = 5 #number of times to solve each instance
+NUMBER_RUNS = 3 #number of times to solve each instance
 
 
 def main():

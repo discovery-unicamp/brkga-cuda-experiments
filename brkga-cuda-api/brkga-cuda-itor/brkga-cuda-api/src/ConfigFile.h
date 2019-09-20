@@ -41,6 +41,7 @@ public:
 	unsigned RESET_AFTER; //reset all populations after this number of iterations
 
 	unsigned decode_type; //use decoder on GPU or Host, decoder with sorted aleles or no
+	unsigned MAXT; //number of threads to decode with openMP
 
 };
 

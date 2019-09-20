@@ -4,11 +4,13 @@
 #include <stdio.h>
 #include <iostream>
 #include <thrust/sort.h>
+#include <thrust/execution_policy.h>
+#include <thrust/device_ptr.h>
 #include <algorithm>
 
 #include "BRKGA.h"
 #include "CommonStructs.h"
-#include "SetCoveringDecoder.h"
+
 
 
 __device__ float device_decode(float *chromosome, int n, void *d_instance_info);
