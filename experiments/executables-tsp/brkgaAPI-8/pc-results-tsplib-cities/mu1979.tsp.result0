@@ -1,0 +1,197 @@
+Welcome to the BRKGA API sample driver.
+Finding a (heuristic) minimizer for  the TSP.
+Instance file: /home/eduardo/programacao/brkga/brkga-cuda-itor/experiments/instances/tsplib-cities/mu1979.tsp
+Instance read; here's the info:
+	Dimension: 1979
+Running for 100 generations using 8 out of 6 available thread units...
+Evolution: 1
+	1) Improved best solution thus far: 5.41511e+06
+Evolution: 2
+	2) Improved best solution thus far: 5.35927e+06
+Evolution: 3
+Evolution: 4
+	4) Improved best solution thus far: 5.3544e+06
+Evolution: 5
+	5) Improved best solution thus far: 5.35406e+06
+Evolution: 6
+	6) Improved best solution thus far: 5.32085e+06
+Evolution: 7
+	7) Improved best solution thus far: 5.29939e+06
+Evolution: 8
+	8) Improved best solution thus far: 5.27851e+06
+Evolution: 9
+	9) Improved best solution thus far: 5.26365e+06
+Evolution: 10
+	10) Improved best solution thus far: 5.2153e+06
+Evolution: 11
+Evolution: 12
+	12) Improved best solution thus far: 5.18016e+06
+Evolution: 13
+	13) Improved best solution thus far: 5.14248e+06
+Evolution: 14
+	14) Improved best solution thus far: 5.11092e+06
+Evolution: 15
+Evolution: 16
+	16) Improved best solution thus far: 5.08409e+06
+Evolution: 17
+	17) Improved best solution thus far: 5.06523e+06
+Evolution: 18
+	18) Improved best solution thus far: 5.01031e+06
+Evolution: 19
+	19) Improved best solution thus far: 4.99619e+06
+Evolution: 20
+	20) Improved best solution thus far: 4.98862e+06
+Evolution: 21
+	21) Improved best solution thus far: 4.93608e+06
+Evolution: 22
+	22) Improved best solution thus far: 4.89599e+06
+Evolution: 23
+	23) Improved best solution thus far: 4.89229e+06
+Evolution: 24
+	24) Improved best solution thus far: 4.83465e+06
+Evolution: 25
+	25) Improved best solution thus far: 4.8236e+06
+Evolution: 26
+	26) Improved best solution thus far: 4.78047e+06
+Evolution: 27
+Evolution: 28
+	28) Improved best solution thus far: 4.70103e+06
+Evolution: 29
+Evolution: 30
+	30) Improved best solution thus far: 4.6371e+06
+Evolution: 31
+Evolution: 32
+	32) Improved best solution thus far: 4.63239e+06
+Evolution: 33
+	33) Improved best solution thus far: 4.57219e+06
+Evolution: 34
+	34) Improved best solution thus far: 4.53752e+06
+Evolution: 35
+	35) Improved best solution thus far: 4.53657e+06
+Evolution: 36
+	36) Improved best solution thus far: 4.51403e+06
+Evolution: 37
+	37) Improved best solution thus far: 4.46819e+06
+Evolution: 38
+	38) Improved best solution thus far: 4.44402e+06
+Evolution: 39
+	39) Improved best solution thus far: 4.42595e+06
+Evolution: 40
+	40) Improved best solution thus far: 4.40567e+06
+Evolution: 41
+	41) Improved best solution thus far: 4.39353e+06
+Evolution: 42
+	42) Improved best solution thus far: 4.37213e+06
+Evolution: 43
+	43) Improved best solution thus far: 4.34443e+06
+Evolution: 44
+	44) Improved best solution thus far: 4.31634e+06
+Evolution: 45
+	45) Improved best solution thus far: 4.31577e+06
+Evolution: 46
+	46) Improved best solution thus far: 4.27136e+06
+Evolution: 47
+	47) Improved best solution thus far: 4.26514e+06
+Evolution: 48
+Evolution: 49
+	49) Improved best solution thus far: 4.2296e+06
+Evolution: 50
+	50) Improved best solution thus far: 4.21097e+06
+Evolution: 51
+	51) Improved best solution thus far: 4.1982e+06
+Evolution: 52
+	52) Improved best solution thus far: 4.18839e+06
+Evolution: 53
+	53) Improved best solution thus far: 4.17831e+06
+Evolution: 54
+	54) Improved best solution thus far: 4.1687e+06
+Evolution: 55
+	55) Improved best solution thus far: 4.15482e+06
+Evolution: 56
+	56) Improved best solution thus far: 4.14345e+06
+Evolution: 57
+	57) Improved best solution thus far: 4.12588e+06
+Evolution: 58
+	58) Improved best solution thus far: 4.10615e+06
+Evolution: 59
+	59) Improved best solution thus far: 4.09895e+06
+Evolution: 60
+	60) Improved best solution thus far: 4.09262e+06
+Evolution: 61
+	61) Improved best solution thus far: 4.06696e+06
+Evolution: 62
+	62) Improved best solution thus far: 4.06416e+06
+Evolution: 63
+	63) Improved best solution thus far: 4.04933e+06
+Evolution: 64
+	64) Improved best solution thus far: 4.04389e+06
+Evolution: 65
+	65) Improved best solution thus far: 4.03915e+06
+Evolution: 66
+	66) Improved best solution thus far: 4.02289e+06
+Evolution: 67
+	67) Improved best solution thus far: 4.01539e+06
+Evolution: 68
+	68) Improved best solution thus far: 4.00697e+06
+Evolution: 69
+	69) Improved best solution thus far: 3.99693e+06
+Evolution: 70
+	70) Improved best solution thus far: 3.97614e+06
+Evolution: 71
+	71) Improved best solution thus far: 3.97595e+06
+Evolution: 72
+	72) Improved best solution thus far: 3.96941e+06
+Evolution: 73
+	73) Improved best solution thus far: 3.95441e+06
+Evolution: 74
+	74) Improved best solution thus far: 3.94237e+06
+Evolution: 75
+	75) Improved best solution thus far: 3.93622e+06
+Evolution: 76
+	76) Improved best solution thus far: 3.92542e+06
+Evolution: 77
+Evolution: 78
+	78) Improved best solution thus far: 3.91681e+06
+Evolution: 79
+	79) Improved best solution thus far: 3.91388e+06
+Evolution: 80
+	80) Improved best solution thus far: 3.8999e+06
+Evolution: 81
+	81) Improved best solution thus far: 3.89596e+06
+Evolution: 82
+	82) Improved best solution thus far: 3.88786e+06
+Evolution: 83
+	83) Improved best solution thus far: 3.88243e+06
+Evolution: 84
+	84) Improved best solution thus far: 3.87423e+06
+Evolution: 85
+	85) Improved best solution thus far: 3.87274e+06
+Evolution: 86
+	86) Improved best solution thus far: 3.85504e+06
+Evolution: 87
+	87) Improved best solution thus far: 3.85309e+06
+Evolution: 88
+	88) Improved best solution thus far: 3.84632e+06
+Evolution: 89
+	89) Improved best solution thus far: 3.84299e+06
+Evolution: 90
+	90) Improved best solution thus far: 3.83523e+06
+Evolution: 91
+	91) Improved best solution thus far: 3.83051e+06
+Evolution: 92
+	92) Improved best solution thus far: 3.82865e+06
+Evolution: 93
+	93) Improved best solution thus far: 3.81517e+06
+Evolution: 94
+Evolution: 95
+	95) Improved best solution thus far: 3.80503e+06
+Evolution: 96
+	96) Improved best solution thus far: 3.80485e+06
+Evolution: 97
+	97) Improved best solution thus far: 3.79506e+06
+Evolution: 98
+	98) Improved best solution thus far: 3.78844e+06
+Evolution: 99
+	99) Improved best solution thus far: 3.78436e+06
+Value of best solution: 3784357.75
+Total Time: 3.621795177459717

@@ -2,6 +2,8 @@ import os
 import sys
 import time
 
+NUMBER_RUNS = 3 #number of times to solve each instance
+
 SCP = False
 TSP = True
 
@@ -19,12 +21,11 @@ elif TSP:
 		    'executables-tsp/cuda-host-decode1/','executables-tsp/cuda-host-decode4/','executables-tsp/cuda-host-decode8/']
 	algs_names = ['brkga-tsp','brkga-tsp','brkga-tsp','cuda-tsp','cuda-tsp','cuda-tsp','cuda-tsp']
 	algs_nick_names = ['brkga-tsp-1','brkga-tsp-4','brkga-tsp-8','cuda-device','cuda-host1','cuda-host4','cuda-host8']	
-	inst_dir = 'instances/tsp-cities2/'
-	results_dir = 'results-tsp-cities2/'
+	inst_dir = 'instances/tsplib-cities/'
+	results_dir = 'results-tsplib-cities/'
 	brkgaAPIparam  = ''
 
 current_dir = os.getcwd()
-NUMBER_RUNS = 3 #number of times to solve each instance
 
 
 def main():
