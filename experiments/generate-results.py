@@ -6,8 +6,8 @@ import datetime
 import statistics as stat
 import math
 
-SCP = True
-TSP = False
+SCP = False
+TSP = True
 
 if SCP:
 	executables_dir = ['executables-scp/brkgaAPI-1/',  'executables-scp/brkgaAPI-4/', 'executables-scp/brkgaAPI-8/',

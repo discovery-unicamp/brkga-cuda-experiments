@@ -7,7 +7,7 @@ max_generations 1000
 iterations_exchange_best 200
 size_best_to_exchange 2 
 reset_iterations 1001
-decode_type 2
+decode_type 3
 num_threads_omp 8
 
 #Other decode_types
