@@ -12,14 +12,14 @@ TSP = True
 if SCP:
 	executables_dir = ['executables-scp/brkgaAPI-1/',  'executables-scp/brkgaAPI-4/', 'executables-scp/brkgaAPI-8/',
 		  'executables-scp/cuda-host-decode1/', 'executables-scp/cuda-host-decode4/','executables-scp/cuda-host-decode8/']
-	running_results_dir = 'results-scp-testscp/'
+	running_results_dir = 'pc-results-tsplib-cities/'
 	algs_nick_names = ['brkga-scp-1','brkga-scp-4','brkga-scp-8','cuda-host1','cuda-host4','cuda-host8']
 	csv_dir = 'results/scp/'
 elif TSP:
 	executables_dir = ['executables-tsp/brkgaAPI-1/',  'executables-tsp/brkgaAPI-4/','executables-tsp/brkgaAPI-8/',
 		 'executables-tsp/cuda-device-decode/', 
 		 'executables-tsp/cuda-host-decode1/', 'executables-tsp/cuda-host-decode4/','executables-tsp/cuda-host-decode8/']
-	running_results_dir = 'results-tsp-testtsp/'
+	running_results_dir = 'pc-results-tsplib-cities/'
 	algs_nick_names = ['brkga-tsp-1','brkga-tsp-4','brkga-tsp-8','cuda-device','cuda-host1','cuda-host4','cuda-host8']	
 	csv_dir = 'results/tsp/'
 
