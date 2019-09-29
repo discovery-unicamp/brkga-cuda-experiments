@@ -22,7 +22,7 @@ elif TSP:
 	algs_names = ['brkga-tsp','brkga-tsp','brkga-tsp','cuda-tsp','cuda-tsp','cuda-tsp','cuda-tsp']
 	algs_nick_names = ['brkga-tsp-1','brkga-tsp-4','brkga-tsp-8','cuda-device','cuda-host1','cuda-host4','cuda-host8']	
 	inst_dir = 'instances/tsplib-cities/'
-	results_dir = 'results-tsplib-cities/'
+	results_dir = 'pc-results-tsplib-cities/'
 	brkgaAPIparam  = ''
 
 current_dir = os.getcwd()
