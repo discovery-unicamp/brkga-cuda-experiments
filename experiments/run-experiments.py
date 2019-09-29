@@ -16,13 +16,19 @@ if SCP:
 	results_dir = 'results-scp-testscp/'
 	brkgaAPIparam  = ' 1234 0 100 ' #random-seed 0-is max generations 100-is the number of max generations
 elif TSP:
-	algs_dir = ['executables-tsp/brkgaAPI-1/',  'executables-tsp/brkgaAPI-4/', 'executables-tsp/brkgaAPI-8/',
-	     'executables-tsp/cuda-device-decode/',
-		    'executables-tsp/cuda-host-decode1/','executables-tsp/cuda-host-decode4/','executables-tsp/cuda-host-decode8/']
-	algs_names = ['brkga-tsp','brkga-tsp','brkga-tsp','cuda-tsp','cuda-tsp','cuda-tsp','cuda-tsp']
-	algs_nick_names = ['brkga-tsp-1','brkga-tsp-4','brkga-tsp-8','cuda-device','cuda-host1','cuda-host4','cuda-host8']	
-	inst_dir = 'instances/tsplib-cities/'
-	results_dir = 'pc-results-tsplib-cities/'
+	# algs_dir = ['executables-tsp/brkgaAPI-1/',  'executables-tsp/brkgaAPI-4/', 'executables-tsp/brkgaAPI-8/',
+	#      'executables-tsp/cuda-device-decode/',
+	# 	    'executables-tsp/cuda-host-decode1/','executables-tsp/cuda-host-decode4/','executables-tsp/cuda-host-decode8/']
+	# algs_names = ['brkga-tsp','brkga-tsp','brkga-tsp','cuda-tsp','cuda-tsp','cuda-tsp','cuda-tsp']
+	# algs_nick_names = ['brkga-tsp-1','brkga-tsp-4','brkga-tsp-8','cuda-device','cuda-host1','cuda-host4','cuda-host8']	
+
+	algs_dir = ['executables-tsp/brkgaAPI-1/', 'executables-tsp/brkgaAPI-4/', 'executables-tsp/brkgaAPI-8/',
+	     'executables-tsp/cuda-device-decode/','executables-tsp/cuda-host-decode8/']
+	algs_names = ['brkga-tsp','brkga-tsp','brkga-tsp','cuda-tsp','cuda-tsp']
+	algs_nick_names = ['brkga-tsp-1','brkga-tsp-4','brkga-tsp-8','cuda-device','cuda-host8']	
+
+	inst_dir = 'instances/tsplib-vlsi/'
+	results_dir = 'pc-results-tsplib-vlsi/'
 	brkgaAPIparam  = ''
 
 current_dir = os.getcwd()
