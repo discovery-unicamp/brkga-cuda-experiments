@@ -20,7 +20,7 @@ if(not os.path.exists('instances/tsplib-vlsi/')):
 results_files = os.listdir(original_dir)
 total=0
 for file in results_files:
-	if getInstanceSize(file)>=5000 and getInstanceSize(file)<=30000:
+	if getInstanceSize(file)>=3000 and getInstanceSize(file)<=20000:
 		os.system('cp '+original_dir+file+' '+copy_dir+file)
 		total += 1
 print('Copied',total,'instances!')
