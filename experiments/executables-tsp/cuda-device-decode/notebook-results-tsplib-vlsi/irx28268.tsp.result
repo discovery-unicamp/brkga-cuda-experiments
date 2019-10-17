@@ -1,0 +1,6 @@
+Instance file: ../tsplib-vlsi/irx28268.tsp
+Instance read; here's the info:
+	Dimension: 28268
+Total Memory Used In GPU 347372544 bytes(347 Mbytes)
+Extra Memory Used In GPU due to Instance Info 3196319296 bytes(3196 Mbytes)
+Total Time: 3.734679698944092

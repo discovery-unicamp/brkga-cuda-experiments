@@ -1,0 +1,4 @@
+Instance file: /home/eduardo/dudu/Academico/Publicacoes/futuro/ITOR/implementação/experiments/instances/scp-instances/scp61.txt
+./cuda-scp: instance /home/eduardo/dudu/Academico/Publicacoes/futuro/ITOR/implementação/experiments/instances/scp-instances/scp61.txt has 200 rows to be covered with 1000 columns
+Population size rounded from 2000 to 2048
+Total Time: 0.03679347038269043

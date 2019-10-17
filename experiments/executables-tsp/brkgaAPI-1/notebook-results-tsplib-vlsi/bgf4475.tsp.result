@@ -1,0 +1,1893 @@
+Welcome to the BRKGA API sample driver.
+Finding a (heuristic) minimizer for  the TSP.
+Instance file: ../tsplib-vlsi/bgf4475.tsp
+Instance read; here's the info:
+	Dimension: 4475
+Running for 1000 generations using 1 out of 8 available thread units...
+Evolution: 1
+	1) Improved best solution thus far: 1.019e+06
+Evolution: 2
+	2) Improved best solution thus far: 1.0158e+06
+Evolution: 3
+	3) Improved best solution thus far: 1.01458e+06
+Evolution: 4
+Evolution: 5
+	5) Improved best solution thus far: 1.0106e+06
+Evolution: 6
+Evolution: 7
+Evolution: 8
+	8) Improved best solution thus far: 1.0048e+06
+Evolution: 9
+Evolution: 10
+	10) Improved best solution thus far: 1.00206e+06
+Evolution: 11
+	11) Improved best solution thus far: 998530
+Evolution: 12
+	12) Improved best solution thus far: 993161
+Evolution: 13
+	13) Improved best solution thus far: 989274
+Evolution: 14
+	14) Improved best solution thus far: 979845
+Evolution: 15
+Evolution: 16
+	16) Improved best solution thus far: 979534
+Evolution: 17
+	17) Improved best solution thus far: 975089
+Evolution: 18
+	18) Improved best solution thus far: 974234
+Evolution: 19
+	19) Improved best solution thus far: 969839
+Evolution: 20
+	20) Improved best solution thus far: 965177
+Evolution: 21
+	21) Improved best solution thus far: 962456
+Evolution: 22
+	22) Improved best solution thus far: 962357
+Evolution: 23
+	23) Improved best solution thus far: 956875
+Evolution: 24
+	24) Improved best solution thus far: 956378
+Evolution: 25
+	25) Improved best solution thus far: 947781
+Evolution: 26
+Evolution: 27
+	27) Improved best solution thus far: 944745
+Evolution: 28
+	28) Improved best solution thus far: 940646
+Evolution: 29
+	29) Improved best solution thus far: 937434
+Evolution: 30
+	30) Improved best solution thus far: 931763
+Evolution: 31
+Evolution: 32
+	32) Improved best solution thus far: 928570
+Evolution: 33
+	33) Improved best solution thus far: 924476
+Evolution: 34
+	34) Improved best solution thus far: 923977
+Evolution: 35
+Evolution: 36
+	36) Improved best solution thus far: 914166
+Evolution: 37
+Evolution: 38
+	38) Improved best solution thus far: 912600
+Evolution: 39
+	39) Improved best solution thus far: 908541
+Evolution: 40
+	40) Improved best solution thus far: 907652
+Evolution: 41
+	41) Improved best solution thus far: 903656
+Evolution: 42
+	42) Improved best solution thus far: 900398
+Evolution: 43
+	43) Improved best solution thus far: 898314
+Evolution: 44
+	44) Improved best solution thus far: 895931
+Evolution: 45
+	45) Improved best solution thus far: 887926
+Evolution: 46
+Evolution: 47
+	47) Improved best solution thus far: 884084
+Evolution: 48
+Evolution: 49
+	49) Improved best solution thus far: 881731
+Evolution: 50
+	50) Improved best solution thus far: 879942
+Evolution: 51
+Evolution: 52
+	52) Improved best solution thus far: 875523
+Evolution: 53
+	53) Improved best solution thus far: 874796
+Evolution: 54
+	54) Improved best solution thus far: 870802
+Evolution: 55
+	55) Improved best solution thus far: 868459
+Evolution: 56
+	56) Improved best solution thus far: 867647
+Evolution: 57
+	57) Improved best solution thus far: 865128
+Evolution: 58
+	58) Improved best solution thus far: 863593
+Evolution: 59
+	59) Improved best solution thus far: 862052
+Evolution: 60
+	60) Improved best solution thus far: 859707
+Evolution: 61
+	61) Improved best solution thus far: 856987
+Evolution: 62
+	62) Improved best solution thus far: 854073
+Evolution: 63
+	63) Improved best solution thus far: 852896
+Evolution: 64
+Evolution: 65
+	65) Improved best solution thus far: 848205
+Evolution: 66
+	66) Improved best solution thus far: 846950
+Evolution: 67
+	67) Improved best solution thus far: 846051
+Evolution: 68
+	68) Improved best solution thus far: 842903
+Evolution: 69
+	69) Improved best solution thus far: 841497
+Evolution: 70
+	70) Improved best solution thus far: 840071
+Evolution: 71
+	71) Improved best solution thus far: 839489
+Evolution: 72
+	72) Improved best solution thus far: 837835
+Evolution: 73
+	73) Improved best solution thus far: 835180
+Evolution: 74
+	74) Improved best solution thus far: 835110
+Evolution: 75
+	75) Improved best solution thus far: 833084
+Evolution: 76
+	76) Improved best solution thus far: 831332
+Evolution: 77
+	77) Improved best solution thus far: 828743
+Evolution: 78
+	78) Improved best solution thus far: 826992
+Evolution: 79
+	79) Improved best solution thus far: 825840
+Evolution: 80
+	80) Improved best solution thus far: 822894
+Evolution: 81
+Evolution: 82
+	82) Improved best solution thus far: 822455
+Evolution: 83
+	83) Improved best solution thus far: 821177
+Evolution: 84
+	84) Improved best solution thus far: 820143
+Evolution: 85
+	85) Improved best solution thus far: 818694
+Evolution: 86
+	86) Improved best solution thus far: 818152
+Evolution: 87
+	87) Improved best solution thus far: 816333
+Evolution: 88
+	88) Improved best solution thus far: 815383
+Evolution: 89
+	89) Improved best solution thus far: 813340
+Evolution: 90
+Evolution: 91
+	91) Improved best solution thus far: 811940
+Evolution: 92
+	92) Improved best solution thus far: 810665
+Evolution: 93
+Evolution: 94
+	94) Improved best solution thus far: 808801
+Evolution: 95
+	95) Improved best solution thus far: 808482
+Evolution: 96
+	96) Improved best solution thus far: 807292
+Evolution: 97
+	97) Improved best solution thus far: 806806
+Evolution: 98
+	98) Improved best solution thus far: 804544
+Evolution: 99
+Evolution: 100
+	100) Improved best solution thus far: 802828
+Evolution: 101
+	101) Improved best solution thus far: 801861
+Evolution: 102
+Evolution: 103
+	103) Improved best solution thus far: 801114
+Evolution: 104
+	104) Improved best solution thus far: 800340
+Evolution: 105
+	105) Improved best solution thus far: 799915
+Evolution: 106
+	106) Improved best solution thus far: 798916
+Evolution: 107
+	107) Improved best solution thus far: 798179
+Evolution: 108
+	108) Improved best solution thus far: 797117
+Evolution: 109
+	109) Improved best solution thus far: 796563
+Evolution: 110
+	110) Improved best solution thus far: 795889
+Evolution: 111
+	111) Improved best solution thus far: 794804
+Evolution: 112
+	112) Improved best solution thus far: 794352
+Evolution: 113
+	113) Improved best solution thus far: 793799
+Evolution: 114
+	114) Improved best solution thus far: 793478
+Evolution: 115
+	115) Improved best solution thus far: 792810
+Evolution: 116
+	116) Improved best solution thus far: 792402
+Evolution: 117
+	117) Improved best solution thus far: 791678
+Evolution: 118
+	118) Improved best solution thus far: 790713
+Evolution: 119
+Evolution: 120
+	120) Improved best solution thus far: 790160
+Evolution: 121
+	121) Improved best solution thus far: 789443
+Evolution: 122
+	122) Improved best solution thus far: 789176
+Evolution: 123
+	123) Improved best solution thus far: 788436
+Evolution: 124
+	124) Improved best solution thus far: 787550
+Evolution: 125
+	125) Improved best solution thus far: 787088
+Evolution: 126
+	126) Improved best solution thus far: 786271
+Evolution: 127
+	127) Improved best solution thus far: 785853
+Evolution: 128
+	128) Improved best solution thus far: 785329
+Evolution: 129
+	129) Improved best solution thus far: 784692
+Evolution: 130
+	130) Improved best solution thus far: 784308
+Evolution: 131
+	131) Improved best solution thus far: 783158
+Evolution: 132
+	132) Improved best solution thus far: 782895
+Evolution: 133
+	133) Improved best solution thus far: 782131
+Evolution: 134
+	134) Improved best solution thus far: 781597
+Evolution: 135
+	135) Improved best solution thus far: 780621
+Evolution: 136
+	136) Improved best solution thus far: 780295
+Evolution: 137
+	137) Improved best solution thus far: 780063
+Evolution: 138
+	138) Improved best solution thus far: 778965
+Evolution: 139
+Evolution: 140
+	140) Improved best solution thus far: 778417
+Evolution: 141
+	141) Improved best solution thus far: 778142
+Evolution: 142
+	142) Improved best solution thus far: 777270
+Evolution: 143
+	143) Improved best solution thus far: 777218
+Evolution: 144
+	144) Improved best solution thus far: 776733
+Evolution: 145
+	145) Improved best solution thus far: 776165
+Evolution: 146
+	146) Improved best solution thus far: 775881
+Evolution: 147
+	147) Improved best solution thus far: 775723
+Evolution: 148
+	148) Improved best solution thus far: 774707
+Evolution: 149
+	149) Improved best solution thus far: 774341
+Evolution: 150
+	150) Improved best solution thus far: 774161
+Evolution: 151
+	151) Improved best solution thus far: 773657
+Evolution: 152
+	152) Improved best solution thus far: 773221
+Evolution: 153
+	153) Improved best solution thus far: 772694
+Evolution: 154
+	154) Improved best solution thus far: 772150
+Evolution: 155
+	155) Improved best solution thus far: 771859
+Evolution: 156
+	156) Improved best solution thus far: 771552
+Evolution: 157
+	157) Improved best solution thus far: 771185
+Evolution: 158
+	158) Improved best solution thus far: 770560
+Evolution: 159
+	159) Improved best solution thus far: 770321
+Evolution: 160
+	160) Improved best solution thus far: 769771
+Evolution: 161
+	161) Improved best solution thus far: 769397
+Evolution: 162
+	162) Improved best solution thus far: 769012
+Evolution: 163
+	163) Improved best solution thus far: 768374
+Evolution: 164
+	164) Improved best solution thus far: 767912
+Evolution: 165
+	165) Improved best solution thus far: 767499
+Evolution: 166
+	166) Improved best solution thus far: 766982
+Evolution: 167
+	167) Improved best solution thus far: 766525
+Evolution: 168
+	168) Improved best solution thus far: 765932
+Evolution: 169
+	169) Improved best solution thus far: 765531
+Evolution: 170
+	170) Improved best solution thus far: 765399
+Evolution: 171
+	171) Improved best solution thus far: 765042
+Evolution: 172
+	172) Improved best solution thus far: 764970
+Evolution: 173
+	173) Improved best solution thus far: 764542
+Evolution: 174
+Evolution: 175
+	175) Improved best solution thus far: 764068
+Evolution: 176
+Evolution: 177
+	177) Improved best solution thus far: 763803
+Evolution: 178
+	178) Improved best solution thus far: 763248
+Evolution: 179
+	179) Improved best solution thus far: 762839
+Evolution: 180
+	180) Improved best solution thus far: 762782
+Evolution: 181
+	181) Improved best solution thus far: 762350
+Evolution: 182
+	182) Improved best solution thus far: 761861
+Evolution: 183
+	183) Improved best solution thus far: 761265
+Evolution: 184
+Evolution: 185
+	185) Improved best solution thus far: 760635
+Evolution: 186
+	186) Improved best solution thus far: 760343
+Evolution: 187
+	187) Improved best solution thus far: 759701
+Evolution: 188
+	188) Improved best solution thus far: 759563
+Evolution: 189
+	189) Improved best solution thus far: 758500
+Evolution: 190
+	190) Improved best solution thus far: 757960
+Evolution: 191
+	191) Improved best solution thus far: 757627
+Evolution: 192
+Evolution: 193
+	193) Improved best solution thus far: 757333
+Evolution: 194
+	194) Improved best solution thus far: 757115
+Evolution: 195
+	195) Improved best solution thus far: 756189
+Evolution: 196
+	196) Improved best solution thus far: 756050
+Evolution: 197
+	197) Improved best solution thus far: 755985
+Evolution: 198
+	198) Improved best solution thus far: 755596
+Evolution: 199
+	199) Improved best solution thus far: 755022
+Evolution: 200
+	200) Improved best solution thus far: 755000
+Evolution: 201
+	201) Improved best solution thus far: 754484
+Evolution: 202
+	202) Improved best solution thus far: 753929
+Evolution: 203
+	203) Improved best solution thus far: 753621
+Evolution: 204
+	204) Improved best solution thus far: 753487
+Evolution: 205
+	205) Improved best solution thus far: 752928
+Evolution: 206
+	206) Improved best solution thus far: 752782
+Evolution: 207
+	207) Improved best solution thus far: 752415
+Evolution: 208
+	208) Improved best solution thus far: 752223
+Evolution: 209
+	209) Improved best solution thus far: 751975
+Evolution: 210
+	210) Improved best solution thus far: 751503
+Evolution: 211
+	211) Improved best solution thus far: 751409
+Evolution: 212
+	212) Improved best solution thus far: 751250
+Evolution: 213
+	213) Improved best solution thus far: 750919
+Evolution: 214
+	214) Improved best solution thus far: 750220
+Evolution: 215
+	215) Improved best solution thus far: 749847
+Evolution: 216
+	216) Improved best solution thus far: 749647
+Evolution: 217
+	217) Improved best solution thus far: 749430
+Evolution: 218
+	218) Improved best solution thus far: 748890
+Evolution: 219
+	219) Improved best solution thus far: 748828
+Evolution: 220
+	220) Improved best solution thus far: 748360
+Evolution: 221
+	221) Improved best solution thus far: 747800
+Evolution: 222
+	222) Improved best solution thus far: 747723
+Evolution: 223
+	223) Improved best solution thus far: 747446
+Evolution: 224
+	224) Improved best solution thus far: 747289
+Evolution: 225
+	225) Improved best solution thus far: 746515
+Evolution: 226
+Evolution: 227
+	227) Improved best solution thus far: 746151
+Evolution: 228
+	228) Improved best solution thus far: 745101
+Evolution: 229
+	229) Improved best solution thus far: 745076
+Evolution: 230
+	230) Improved best solution thus far: 744447
+Evolution: 231
+	231) Improved best solution thus far: 743939
+Evolution: 232
+	232) Improved best solution thus far: 743362
+Evolution: 233
+Evolution: 234
+	234) Improved best solution thus far: 743052
+Evolution: 235
+	235) Improved best solution thus far: 743003
+Evolution: 236
+	236) Improved best solution thus far: 742459
+Evolution: 237
+	237) Improved best solution thus far: 742128
+Evolution: 238
+	238) Improved best solution thus far: 741759
+Evolution: 239
+	239) Improved best solution thus far: 741617
+Evolution: 240
+	240) Improved best solution thus far: 741405
+Evolution: 241
+	241) Improved best solution thus far: 740691
+Evolution: 242
+	242) Improved best solution thus far: 739984
+Evolution: 243
+	243) Improved best solution thus far: 739797
+Evolution: 244
+	244) Improved best solution thus far: 739156
+Evolution: 245
+	245) Improved best solution thus far: 738797
+Evolution: 246
+	246) Improved best solution thus far: 738666
+Evolution: 247
+	247) Improved best solution thus far: 738397
+Evolution: 248
+Evolution: 249
+	249) Improved best solution thus far: 738377
+Evolution: 250
+	250) Improved best solution thus far: 737823
+Evolution: 251
+Evolution: 252
+	252) Improved best solution thus far: 737775
+Evolution: 253
+	253) Improved best solution thus far: 737351
+Evolution: 254
+	254) Improved best solution thus far: 737066
+Evolution: 255
+Evolution: 256
+	256) Improved best solution thus far: 736564
+Evolution: 257
+Evolution: 258
+	258) Improved best solution thus far: 736180
+Evolution: 259
+	259) Improved best solution thus far: 735723
+Evolution: 260
+	260) Improved best solution thus far: 735289
+Evolution: 261
+Evolution: 262
+Evolution: 263
+	263) Improved best solution thus far: 735171
+Evolution: 264
+	264) Improved best solution thus far: 734555
+Evolution: 265
+	265) Improved best solution thus far: 734462
+Evolution: 266
+	266) Improved best solution thus far: 733841
+Evolution: 267
+Evolution: 268
+	268) Improved best solution thus far: 733690
+Evolution: 269
+	269) Improved best solution thus far: 733508
+Evolution: 270
+	270) Improved best solution thus far: 733089
+Evolution: 271
+	271) Improved best solution thus far: 732900
+Evolution: 272
+	272) Improved best solution thus far: 732300
+Evolution: 273
+	273) Improved best solution thus far: 731581
+Evolution: 274
+Evolution: 275
+	275) Improved best solution thus far: 731013
+Evolution: 276
+	276) Improved best solution thus far: 730839
+Evolution: 277
+	277) Improved best solution thus far: 730299
+Evolution: 278
+	278) Improved best solution thus far: 729871
+Evolution: 279
+	279) Improved best solution thus far: 729471
+Evolution: 280
+	280) Improved best solution thus far: 729264
+Evolution: 281
+	281) Improved best solution thus far: 729159
+Evolution: 282
+	282) Improved best solution thus far: 728920
+Evolution: 283
+	283) Improved best solution thus far: 728688
+Evolution: 284
+	284) Improved best solution thus far: 728579
+Evolution: 285
+	285) Improved best solution thus far: 728417
+Evolution: 286
+	286) Improved best solution thus far: 728209
+Evolution: 287
+	287) Improved best solution thus far: 728102
+Evolution: 288
+	288) Improved best solution thus far: 728029
+Evolution: 289
+	289) Improved best solution thus far: 727514
+Evolution: 290
+	290) Improved best solution thus far: 727378
+Evolution: 291
+	291) Improved best solution thus far: 727265
+Evolution: 292
+	292) Improved best solution thus far: 726452
+Evolution: 293
+	293) Improved best solution thus far: 726037
+Evolution: 294
+	294) Improved best solution thus far: 725978
+Evolution: 295
+	295) Improved best solution thus far: 725659
+Evolution: 296
+	296) Improved best solution thus far: 724984
+Evolution: 297
+	297) Improved best solution thus far: 724557
+Evolution: 298
+	298) Improved best solution thus far: 724152
+Evolution: 299
+	299) Improved best solution thus far: 723836
+Evolution: 300
+	300) Improved best solution thus far: 723805
+Evolution: 301
+	301) Improved best solution thus far: 723540
+Evolution: 302
+	302) Improved best solution thus far: 722984
+Evolution: 303
+Evolution: 304
+	304) Improved best solution thus far: 722832
+Evolution: 305
+	305) Improved best solution thus far: 722449
+Evolution: 306
+	306) Improved best solution thus far: 722157
+Evolution: 307
+	307) Improved best solution thus far: 721716
+Evolution: 308
+	308) Improved best solution thus far: 721187
+Evolution: 309
+	309) Improved best solution thus far: 720539
+Evolution: 310
+	310) Improved best solution thus far: 720065
+Evolution: 311
+	311) Improved best solution thus far: 719900
+Evolution: 312
+	312) Improved best solution thus far: 719458
+Evolution: 313
+	313) Improved best solution thus far: 719066
+Evolution: 314
+	314) Improved best solution thus far: 718887
+Evolution: 315
+	315) Improved best solution thus far: 718108
+Evolution: 316
+	316) Improved best solution thus far: 717878
+Evolution: 317
+	317) Improved best solution thus far: 717640
+Evolution: 318
+	318) Improved best solution thus far: 717255
+Evolution: 319
+	319) Improved best solution thus far: 716402
+Evolution: 320
+Evolution: 321
+	321) Improved best solution thus far: 716374
+Evolution: 322
+	322) Improved best solution thus far: 716229
+Evolution: 323
+	323) Improved best solution thus far: 715620
+Evolution: 324
+	324) Improved best solution thus far: 715319
+Evolution: 325
+	325) Improved best solution thus far: 715100
+Evolution: 326
+	326) Improved best solution thus far: 715055
+Evolution: 327
+	327) Improved best solution thus far: 714620
+Evolution: 328
+Evolution: 329
+	329) Improved best solution thus far: 714341
+Evolution: 330
+Evolution: 331
+	331) Improved best solution thus far: 714173
+Evolution: 332
+	332) Improved best solution thus far: 713772
+Evolution: 333
+Evolution: 334
+	334) Improved best solution thus far: 713379
+Evolution: 335
+	335) Improved best solution thus far: 713375
+Evolution: 336
+	336) Improved best solution thus far: 713132
+Evolution: 337
+	337) Improved best solution thus far: 712841
+Evolution: 338
+	338) Improved best solution thus far: 712377
+Evolution: 339
+Evolution: 340
+	340) Improved best solution thus far: 712229
+Evolution: 341
+	341) Improved best solution thus far: 712091
+Evolution: 342
+	342) Improved best solution thus far: 711878
+Evolution: 343
+	343) Improved best solution thus far: 711656
+Evolution: 344
+	344) Improved best solution thus far: 711567
+Evolution: 345
+	345) Improved best solution thus far: 711505
+Evolution: 346
+	346) Improved best solution thus far: 711324
+Evolution: 347
+	347) Improved best solution thus far: 711052
+Evolution: 348
+	348) Improved best solution thus far: 710812
+Evolution: 349
+	349) Improved best solution thus far: 710696
+Evolution: 350
+	350) Improved best solution thus far: 710570
+Evolution: 351
+	351) Improved best solution thus far: 710407
+Evolution: 352
+	352) Improved best solution thus far: 710270
+Evolution: 353
+	353) Improved best solution thus far: 709915
+Evolution: 354
+	354) Improved best solution thus far: 709689
+Evolution: 355
+	355) Improved best solution thus far: 709484
+Evolution: 356
+	356) Improved best solution thus far: 708810
+Evolution: 357
+Evolution: 358
+	358) Improved best solution thus far: 708126
+Evolution: 359
+Evolution: 360
+	360) Improved best solution thus far: 707882
+Evolution: 361
+	361) Improved best solution thus far: 707265
+Evolution: 362
+	362) Improved best solution thus far: 707247
+Evolution: 363
+	363) Improved best solution thus far: 706940
+Evolution: 364
+	364) Improved best solution thus far: 706772
+Evolution: 365
+	365) Improved best solution thus far: 706448
+Evolution: 366
+	366) Improved best solution thus far: 706004
+Evolution: 367
+	367) Improved best solution thus far: 705546
+Evolution: 368
+	368) Improved best solution thus far: 705383
+Evolution: 369
+	369) Improved best solution thus far: 704665
+Evolution: 370
+	370) Improved best solution thus far: 704433
+Evolution: 371
+	371) Improved best solution thus far: 704170
+Evolution: 372
+	372) Improved best solution thus far: 703914
+Evolution: 373
+	373) Improved best solution thus far: 703570
+Evolution: 374
+	374) Improved best solution thus far: 703188
+Evolution: 375
+	375) Improved best solution thus far: 702905
+Evolution: 376
+	376) Improved best solution thus far: 702692
+Evolution: 377
+	377) Improved best solution thus far: 702570
+Evolution: 378
+	378) Improved best solution thus far: 702453
+Evolution: 379
+	379) Improved best solution thus far: 702007
+Evolution: 380
+	380) Improved best solution thus far: 701836
+Evolution: 381
+	381) Improved best solution thus far: 701688
+Evolution: 382
+	382) Improved best solution thus far: 701651
+Evolution: 383
+	383) Improved best solution thus far: 701513
+Evolution: 384
+	384) Improved best solution thus far: 700769
+Evolution: 385
+	385) Improved best solution thus far: 700722
+Evolution: 386
+	386) Improved best solution thus far: 700585
+Evolution: 387
+	387) Improved best solution thus far: 700003
+Evolution: 388
+	388) Improved best solution thus far: 699641
+Evolution: 389
+	389) Improved best solution thus far: 699380
+Evolution: 390
+	390) Improved best solution thus far: 699341
+Evolution: 391
+	391) Improved best solution thus far: 698927
+Evolution: 392
+	392) Improved best solution thus far: 698680
+Evolution: 393
+	393) Improved best solution thus far: 698677
+Evolution: 394
+	394) Improved best solution thus far: 698366
+Evolution: 395
+	395) Improved best solution thus far: 698311
+Evolution: 396
+	396) Improved best solution thus far: 698146
+Evolution: 397
+	397) Improved best solution thus far: 697962
+Evolution: 398
+	398) Improved best solution thus far: 697608
+Evolution: 399
+	399) Improved best solution thus far: 697494
+Evolution: 400
+	400) Improved best solution thus far: 696931
+Evolution: 401
+	401) Improved best solution thus far: 696886
+Evolution: 402
+	402) Improved best solution thus far: 696731
+Evolution: 403
+Evolution: 404
+	404) Improved best solution thus far: 696385
+Evolution: 405
+	405) Improved best solution thus far: 696248
+Evolution: 406
+	406) Improved best solution thus far: 695685
+Evolution: 407
+	407) Improved best solution thus far: 695635
+Evolution: 408
+	408) Improved best solution thus far: 695285
+Evolution: 409
+	409) Improved best solution thus far: 695161
+Evolution: 410
+	410) Improved best solution thus far: 694864
+Evolution: 411
+	411) Improved best solution thus far: 694552
+Evolution: 412
+	412) Improved best solution thus far: 694153
+Evolution: 413
+	413) Improved best solution thus far: 693632
+Evolution: 414
+	414) Improved best solution thus far: 693177
+Evolution: 415
+	415) Improved best solution thus far: 693026
+Evolution: 416
+	416) Improved best solution thus far: 692388
+Evolution: 417
+Evolution: 418
+	418) Improved best solution thus far: 691798
+Evolution: 419
+Evolution: 420
+	420) Improved best solution thus far: 691404
+Evolution: 421
+	421) Improved best solution thus far: 691333
+Evolution: 422
+	422) Improved best solution thus far: 691115
+Evolution: 423
+	423) Improved best solution thus far: 690867
+Evolution: 424
+	424) Improved best solution thus far: 690791
+Evolution: 425
+	425) Improved best solution thus far: 690636
+Evolution: 426
+	426) Improved best solution thus far: 690496
+Evolution: 427
+	427) Improved best solution thus far: 690190
+Evolution: 428
+	428) Improved best solution thus far: 690010
+Evolution: 429
+	429) Improved best solution thus far: 689884
+Evolution: 430
+	430) Improved best solution thus far: 689745
+Evolution: 431
+	431) Improved best solution thus far: 689491
+Evolution: 432
+	432) Improved best solution thus far: 689194
+Evolution: 433
+	433) Improved best solution thus far: 689072
+Evolution: 434
+	434) Improved best solution thus far: 688901
+Evolution: 435
+	435) Improved best solution thus far: 688615
+Evolution: 436
+	436) Improved best solution thus far: 688479
+Evolution: 437
+	437) Improved best solution thus far: 688351
+Evolution: 438
+	438) Improved best solution thus far: 688305
+Evolution: 439
+	439) Improved best solution thus far: 688057
+Evolution: 440
+Evolution: 441
+	441) Improved best solution thus far: 688010
+Evolution: 442
+	442) Improved best solution thus far: 687906
+Evolution: 443
+	443) Improved best solution thus far: 687493
+Evolution: 444
+Evolution: 445
+	445) Improved best solution thus far: 687320
+Evolution: 446
+	446) Improved best solution thus far: 687156
+Evolution: 447
+	447) Improved best solution thus far: 686832
+Evolution: 448
+Evolution: 449
+	449) Improved best solution thus far: 686600
+Evolution: 450
+	450) Improved best solution thus far: 686415
+Evolution: 451
+	451) Improved best solution thus far: 686226
+Evolution: 452
+	452) Improved best solution thus far: 686111
+Evolution: 453
+	453) Improved best solution thus far: 685840
+Evolution: 454
+	454) Improved best solution thus far: 685638
+Evolution: 455
+	455) Improved best solution thus far: 685526
+Evolution: 456
+	456) Improved best solution thus far: 684940
+Evolution: 457
+	457) Improved best solution thus far: 684736
+Evolution: 458
+Evolution: 459
+	459) Improved best solution thus far: 684716
+Evolution: 460
+	460) Improved best solution thus far: 684649
+Evolution: 461
+	461) Improved best solution thus far: 684619
+Evolution: 462
+	462) Improved best solution thus far: 684327
+Evolution: 463
+	463) Improved best solution thus far: 684123
+Evolution: 464
+	464) Improved best solution thus far: 683931
+Evolution: 465
+	465) Improved best solution thus far: 683423
+Evolution: 466
+	466) Improved best solution thus far: 683399
+Evolution: 467
+	467) Improved best solution thus far: 683248
+Evolution: 468
+	468) Improved best solution thus far: 682829
+Evolution: 469
+	469) Improved best solution thus far: 682819
+Evolution: 470
+	470) Improved best solution thus far: 682654
+Evolution: 471
+	471) Improved best solution thus far: 682507
+Evolution: 472
+	472) Improved best solution thus far: 682229
+Evolution: 473
+Evolution: 474
+	474) Improved best solution thus far: 681897
+Evolution: 475
+	475) Improved best solution thus far: 681821
+Evolution: 476
+	476) Improved best solution thus far: 681763
+Evolution: 477
+	477) Improved best solution thus far: 681643
+Evolution: 478
+	478) Improved best solution thus far: 681156
+Evolution: 479
+Evolution: 480
+	480) Improved best solution thus far: 680810
+Evolution: 481
+	481) Improved best solution thus far: 680581
+Evolution: 482
+Evolution: 483
+	483) Improved best solution thus far: 680569
+Evolution: 484
+	484) Improved best solution thus far: 680376
+Evolution: 485
+	485) Improved best solution thus far: 679952
+Evolution: 486
+	486) Improved best solution thus far: 679619
+Evolution: 487
+Evolution: 488
+Evolution: 489
+	489) Improved best solution thus far: 679424
+Evolution: 490
+	490) Improved best solution thus far: 679111
+Evolution: 491
+	491) Improved best solution thus far: 679072
+Evolution: 492
+	492) Improved best solution thus far: 678832
+Evolution: 493
+	493) Improved best solution thus far: 678575
+Evolution: 494
+	494) Improved best solution thus far: 678562
+Evolution: 495
+	495) Improved best solution thus far: 678254
+Evolution: 496
+	496) Improved best solution thus far: 678144
+Evolution: 497
+	497) Improved best solution thus far: 677794
+Evolution: 498
+	498) Improved best solution thus far: 677241
+Evolution: 499
+	499) Improved best solution thus far: 677075
+Evolution: 500
+	500) Improved best solution thus far: 676403
+Evolution: 501
+	501) Improved best solution thus far: 676225
+Evolution: 502
+Evolution: 503
+	503) Improved best solution thus far: 676083
+Evolution: 504
+	504) Improved best solution thus far: 676064
+Evolution: 505
+	505) Improved best solution thus far: 675814
+Evolution: 506
+	506) Improved best solution thus far: 675554
+Evolution: 507
+	507) Improved best solution thus far: 675102
+Evolution: 508
+	508) Improved best solution thus far: 674935
+Evolution: 509
+	509) Improved best solution thus far: 674756
+Evolution: 510
+	510) Improved best solution thus far: 674698
+Evolution: 511
+	511) Improved best solution thus far: 674649
+Evolution: 512
+	512) Improved best solution thus far: 674364
+Evolution: 513
+	513) Improved best solution thus far: 674067
+Evolution: 514
+	514) Improved best solution thus far: 673905
+Evolution: 515
+	515) Improved best solution thus far: 673805
+Evolution: 516
+	516) Improved best solution thus far: 673666
+Evolution: 517
+	517) Improved best solution thus far: 673315
+Evolution: 518
+	518) Improved best solution thus far: 673171
+Evolution: 519
+	519) Improved best solution thus far: 673135
+Evolution: 520
+	520) Improved best solution thus far: 672986
+Evolution: 521
+	521) Improved best solution thus far: 672784
+Evolution: 522
+	522) Improved best solution thus far: 672762
+Evolution: 523
+	523) Improved best solution thus far: 672560
+Evolution: 524
+	524) Improved best solution thus far: 672413
+Evolution: 525
+	525) Improved best solution thus far: 672187
+Evolution: 526
+	526) Improved best solution thus far: 671902
+Evolution: 527
+	527) Improved best solution thus far: 671680
+Evolution: 528
+	528) Improved best solution thus far: 671589
+Evolution: 529
+	529) Improved best solution thus far: 671241
+Evolution: 530
+	530) Improved best solution thus far: 671183
+Evolution: 531
+	531) Improved best solution thus far: 670962
+Evolution: 532
+	532) Improved best solution thus far: 670841
+Evolution: 533
+	533) Improved best solution thus far: 670711
+Evolution: 534
+	534) Improved best solution thus far: 670602
+Evolution: 535
+	535) Improved best solution thus far: 670457
+Evolution: 536
+	536) Improved best solution thus far: 669995
+Evolution: 537
+Evolution: 538
+	538) Improved best solution thus far: 669898
+Evolution: 539
+	539) Improved best solution thus far: 669808
+Evolution: 540
+	540) Improved best solution thus far: 669572
+Evolution: 541
+	541) Improved best solution thus far: 669272
+Evolution: 542
+	542) Improved best solution thus far: 669093
+Evolution: 543
+Evolution: 544
+	544) Improved best solution thus far: 669042
+Evolution: 545
+	545) Improved best solution thus far: 668852
+Evolution: 546
+	546) Improved best solution thus far: 668619
+Evolution: 547
+	547) Improved best solution thus far: 668465
+Evolution: 548
+	548) Improved best solution thus far: 668314
+Evolution: 549
+	549) Improved best solution thus far: 668024
+Evolution: 550
+	550) Improved best solution thus far: 667670
+Evolution: 551
+	551) Improved best solution thus far: 667423
+Evolution: 552
+	552) Improved best solution thus far: 667265
+Evolution: 553
+	553) Improved best solution thus far: 666971
+Evolution: 554
+	554) Improved best solution thus far: 666921
+Evolution: 555
+	555) Improved best solution thus far: 666768
+Evolution: 556
+	556) Improved best solution thus far: 666675
+Evolution: 557
+	557) Improved best solution thus far: 666447
+Evolution: 558
+	558) Improved best solution thus far: 666433
+Evolution: 559
+	559) Improved best solution thus far: 666351
+Evolution: 560
+	560) Improved best solution thus far: 666232
+Evolution: 561
+	561) Improved best solution thus far: 665885
+Evolution: 562
+	562) Improved best solution thus far: 665619
+Evolution: 563
+	563) Improved best solution thus far: 665589
+Evolution: 564
+	564) Improved best solution thus far: 665207
+Evolution: 565
+	565) Improved best solution thus far: 665033
+Evolution: 566
+	566) Improved best solution thus far: 664860
+Evolution: 567
+	567) Improved best solution thus far: 664732
+Evolution: 568
+	568) Improved best solution thus far: 664532
+Evolution: 569
+	569) Improved best solution thus far: 664393
+Evolution: 570
+	570) Improved best solution thus far: 664169
+Evolution: 571
+	571) Improved best solution thus far: 664076
+Evolution: 572
+	572) Improved best solution thus far: 663735
+Evolution: 573
+	573) Improved best solution thus far: 663498
+Evolution: 574
+	574) Improved best solution thus far: 663398
+Evolution: 575
+	575) Improved best solution thus far: 663365
+Evolution: 576
+	576) Improved best solution thus far: 663244
+Evolution: 577
+	577) Improved best solution thus far: 663178
+Evolution: 578
+Evolution: 579
+	579) Improved best solution thus far: 662560
+Evolution: 580
+	580) Improved best solution thus far: 662525
+Evolution: 581
+	581) Improved best solution thus far: 662365
+Evolution: 582
+	582) Improved best solution thus far: 662140
+Evolution: 583
+	583) Improved best solution thus far: 661940
+Evolution: 584
+	584) Improved best solution thus far: 661876
+Evolution: 585
+	585) Improved best solution thus far: 661767
+Evolution: 586
+	586) Improved best solution thus far: 661689
+Evolution: 587
+	587) Improved best solution thus far: 661551
+Evolution: 588
+Evolution: 589
+	589) Improved best solution thus far: 660876
+Evolution: 590
+Evolution: 591
+	591) Improved best solution thus far: 660737
+Evolution: 592
+	592) Improved best solution thus far: 660514
+Evolution: 593
+	593) Improved best solution thus far: 660323
+Evolution: 594
+	594) Improved best solution thus far: 660289
+Evolution: 595
+	595) Improved best solution thus far: 659936
+Evolution: 596
+	596) Improved best solution thus far: 659841
+Evolution: 597
+	597) Improved best solution thus far: 659751
+Evolution: 598
+	598) Improved best solution thus far: 659328
+Evolution: 599
+	599) Improved best solution thus far: 659273
+Evolution: 600
+	600) Improved best solution thus far: 659201
+Evolution: 601
+	601) Improved best solution thus far: 658970
+Evolution: 602
+	602) Improved best solution thus far: 658864
+Evolution: 603
+	603) Improved best solution thus far: 658676
+Evolution: 604
+	604) Improved best solution thus far: 658420
+Evolution: 605
+	605) Improved best solution thus far: 658288
+Evolution: 606
+	606) Improved best solution thus far: 658142
+Evolution: 607
+	607) Improved best solution thus far: 657830
+Evolution: 608
+	608) Improved best solution thus far: 657642
+Evolution: 609
+	609) Improved best solution thus far: 657432
+Evolution: 610
+	610) Improved best solution thus far: 657355
+Evolution: 611
+	611) Improved best solution thus far: 656817
+Evolution: 612
+	612) Improved best solution thus far: 656493
+Evolution: 613
+	613) Improved best solution thus far: 656360
+Evolution: 614
+	614) Improved best solution thus far: 656273
+Evolution: 615
+	615) Improved best solution thus far: 656007
+Evolution: 616
+	616) Improved best solution thus far: 655987
+Evolution: 617
+	617) Improved best solution thus far: 655889
+Evolution: 618
+	618) Improved best solution thus far: 655855
+Evolution: 619
+	619) Improved best solution thus far: 655553
+Evolution: 620
+	620) Improved best solution thus far: 655518
+Evolution: 621
+	621) Improved best solution thus far: 655469
+Evolution: 622
+	622) Improved best solution thus far: 655392
+Evolution: 623
+	623) Improved best solution thus far: 654874
+Evolution: 624
+	624) Improved best solution thus far: 654778
+Evolution: 625
+	625) Improved best solution thus far: 654525
+Evolution: 626
+	626) Improved best solution thus far: 654059
+Evolution: 627
+Evolution: 628
+	628) Improved best solution thus far: 653861
+Evolution: 629
+	629) Improved best solution thus far: 653605
+Evolution: 630
+	630) Improved best solution thus far: 653404
+Evolution: 631
+	631) Improved best solution thus far: 653164
+Evolution: 632
+	632) Improved best solution thus far: 652649
+Evolution: 633
+	633) Improved best solution thus far: 652577
+Evolution: 634
+	634) Improved best solution thus far: 652344
+Evolution: 635
+	635) Improved best solution thus far: 652168
+Evolution: 636
+	636) Improved best solution thus far: 651928
+Evolution: 637
+	637) Improved best solution thus far: 651651
+Evolution: 638
+	638) Improved best solution thus far: 651410
+Evolution: 639
+	639) Improved best solution thus far: 650696
+Evolution: 640
+	640) Improved best solution thus far: 650651
+Evolution: 641
+	641) Improved best solution thus far: 650498
+Evolution: 642
+	642) Improved best solution thus far: 649835
+Evolution: 643
+	643) Improved best solution thus far: 649623
+Evolution: 644
+	644) Improved best solution thus far: 649489
+Evolution: 645
+	645) Improved best solution thus far: 649409
+Evolution: 646
+	646) Improved best solution thus far: 649237
+Evolution: 647
+	647) Improved best solution thus far: 648657
+Evolution: 648
+	648) Improved best solution thus far: 648470
+Evolution: 649
+	649) Improved best solution thus far: 648422
+Evolution: 650
+	650) Improved best solution thus far: 648037
+Evolution: 651
+	651) Improved best solution thus far: 647728
+Evolution: 652
+	652) Improved best solution thus far: 647274
+Evolution: 653
+	653) Improved best solution thus far: 647098
+Evolution: 654
+	654) Improved best solution thus far: 646885
+Evolution: 655
+	655) Improved best solution thus far: 646857
+Evolution: 656
+	656) Improved best solution thus far: 646523
+Evolution: 657
+	657) Improved best solution thus far: 646336
+Evolution: 658
+	658) Improved best solution thus far: 646150
+Evolution: 659
+	659) Improved best solution thus far: 646039
+Evolution: 660
+	660) Improved best solution thus far: 645796
+Evolution: 661
+	661) Improved best solution thus far: 645749
+Evolution: 662
+	662) Improved best solution thus far: 645609
+Evolution: 663
+	663) Improved best solution thus far: 645441
+Evolution: 664
+	664) Improved best solution thus far: 645259
+Evolution: 665
+	665) Improved best solution thus far: 645251
+Evolution: 666
+	666) Improved best solution thus far: 645135
+Evolution: 667
+	667) Improved best solution thus far: 644580
+Evolution: 668
+	668) Improved best solution thus far: 644569
+Evolution: 669
+	669) Improved best solution thus far: 644288
+Evolution: 670
+	670) Improved best solution thus far: 644231
+Evolution: 671
+	671) Improved best solution thus far: 644207
+Evolution: 672
+	672) Improved best solution thus far: 643900
+Evolution: 673
+Evolution: 674
+	674) Improved best solution thus far: 643871
+Evolution: 675
+	675) Improved best solution thus far: 643860
+Evolution: 676
+	676) Improved best solution thus far: 643704
+Evolution: 677
+	677) Improved best solution thus far: 643502
+Evolution: 678
+Evolution: 679
+	679) Improved best solution thus far: 643229
+Evolution: 680
+	680) Improved best solution thus far: 643209
+Evolution: 681
+	681) Improved best solution thus far: 643057
+Evolution: 682
+Evolution: 683
+	683) Improved best solution thus far: 643003
+Evolution: 684
+	684) Improved best solution thus far: 642804
+Evolution: 685
+	685) Improved best solution thus far: 642790
+Evolution: 686
+	686) Improved best solution thus far: 642433
+Evolution: 687
+Evolution: 688
+	688) Improved best solution thus far: 642383
+Evolution: 689
+	689) Improved best solution thus far: 642181
+Evolution: 690
+	690) Improved best solution thus far: 642137
+Evolution: 691
+	691) Improved best solution thus far: 641993
+Evolution: 692
+	692) Improved best solution thus far: 641962
+Evolution: 693
+	693) Improved best solution thus far: 641760
+Evolution: 694
+	694) Improved best solution thus far: 641610
+Evolution: 695
+	695) Improved best solution thus far: 641545
+Evolution: 696
+	696) Improved best solution thus far: 641488
+Evolution: 697
+	697) Improved best solution thus far: 641287
+Evolution: 698
+	698) Improved best solution thus far: 641198
+Evolution: 699
+	699) Improved best solution thus far: 641144
+Evolution: 700
+	700) Improved best solution thus far: 640984
+Evolution: 701
+	701) Improved best solution thus far: 640919
+Evolution: 702
+	702) Improved best solution thus far: 640800
+Evolution: 703
+	703) Improved best solution thus far: 640630
+Evolution: 704
+	704) Improved best solution thus far: 640574
+Evolution: 705
+Evolution: 706
+	706) Improved best solution thus far: 639967
+Evolution: 707
+	707) Improved best solution thus far: 639814
+Evolution: 708
+	708) Improved best solution thus far: 639621
+Evolution: 709
+	709) Improved best solution thus far: 639520
+Evolution: 710
+	710) Improved best solution thus far: 639494
+Evolution: 711
+	711) Improved best solution thus far: 639309
+Evolution: 712
+	712) Improved best solution thus far: 639234
+Evolution: 713
+	713) Improved best solution thus far: 639187
+Evolution: 714
+	714) Improved best solution thus far: 638826
+Evolution: 715
+Evolution: 716
+	716) Improved best solution thus far: 638764
+Evolution: 717
+Evolution: 718
+	718) Improved best solution thus far: 638668
+Evolution: 719
+	719) Improved best solution thus far: 638500
+Evolution: 720
+Evolution: 721
+	721) Improved best solution thus far: 638473
+Evolution: 722
+	722) Improved best solution thus far: 638378
+Evolution: 723
+	723) Improved best solution thus far: 638336
+Evolution: 724
+	724) Improved best solution thus far: 638112
+Evolution: 725
+Evolution: 726
+	726) Improved best solution thus far: 638027
+Evolution: 727
+	727) Improved best solution thus far: 637782
+Evolution: 728
+	728) Improved best solution thus far: 637583
+Evolution: 729
+	729) Improved best solution thus far: 637442
+Evolution: 730
+	730) Improved best solution thus far: 637160
+Evolution: 731
+	731) Improved best solution thus far: 636876
+Evolution: 732
+	732) Improved best solution thus far: 636819
+Evolution: 733
+	733) Improved best solution thus far: 636783
+Evolution: 734
+Evolution: 735
+	735) Improved best solution thus far: 636468
+Evolution: 736
+	736) Improved best solution thus far: 636222
+Evolution: 737
+	737) Improved best solution thus far: 636165
+Evolution: 738
+	738) Improved best solution thus far: 636164
+Evolution: 739
+	739) Improved best solution thus far: 635925
+Evolution: 740
+Evolution: 741
+Evolution: 742
+	742) Improved best solution thus far: 635737
+Evolution: 743
+	743) Improved best solution thus far: 635713
+Evolution: 744
+	744) Improved best solution thus far: 635660
+Evolution: 745
+	745) Improved best solution thus far: 635597
+Evolution: 746
+	746) Improved best solution thus far: 635196
+Evolution: 747
+	747) Improved best solution thus far: 635079
+Evolution: 748
+Evolution: 749
+	749) Improved best solution thus far: 634829
+Evolution: 750
+	750) Improved best solution thus far: 634736
+Evolution: 751
+	751) Improved best solution thus far: 634642
+Evolution: 752
+	752) Improved best solution thus far: 634529
+Evolution: 753
+	753) Improved best solution thus far: 634261
+Evolution: 754
+Evolution: 755
+	755) Improved best solution thus far: 634192
+Evolution: 756
+Evolution: 757
+	757) Improved best solution thus far: 633955
+Evolution: 758
+	758) Improved best solution thus far: 633779
+Evolution: 759
+Evolution: 760
+	760) Improved best solution thus far: 633603
+Evolution: 761
+	761) Improved best solution thus far: 633440
+Evolution: 762
+Evolution: 763
+	763) Improved best solution thus far: 633002
+Evolution: 764
+Evolution: 765
+	765) Improved best solution thus far: 632991
+Evolution: 766
+	766) Improved best solution thus far: 632857
+Evolution: 767
+	767) Improved best solution thus far: 632702
+Evolution: 768
+	768) Improved best solution thus far: 632514
+Evolution: 769
+Evolution: 770
+	770) Improved best solution thus far: 632279
+Evolution: 771
+	771) Improved best solution thus far: 632056
+Evolution: 772
+	772) Improved best solution thus far: 631777
+Evolution: 773
+	773) Improved best solution thus far: 631265
+Evolution: 774
+	774) Improved best solution thus far: 631114
+Evolution: 775
+	775) Improved best solution thus far: 630935
+Evolution: 776
+	776) Improved best solution thus far: 630790
+Evolution: 777
+	777) Improved best solution thus far: 630657
+Evolution: 778
+	778) Improved best solution thus far: 630573
+Evolution: 779
+	779) Improved best solution thus far: 630495
+Evolution: 780
+	780) Improved best solution thus far: 630409
+Evolution: 781
+	781) Improved best solution thus far: 630307
+Evolution: 782
+	782) Improved best solution thus far: 630273
+Evolution: 783
+	783) Improved best solution thus far: 629955
+Evolution: 784
+Evolution: 785
+	785) Improved best solution thus far: 629942
+Evolution: 786
+	786) Improved best solution thus far: 629707
+Evolution: 787
+	787) Improved best solution thus far: 629559
+Evolution: 788
+	788) Improved best solution thus far: 629485
+Evolution: 789
+Evolution: 790
+	790) Improved best solution thus far: 629252
+Evolution: 791
+	791) Improved best solution thus far: 629198
+Evolution: 792
+	792) Improved best solution thus far: 629032
+Evolution: 793
+	793) Improved best solution thus far: 628956
+Evolution: 794
+	794) Improved best solution thus far: 628832
+Evolution: 795
+	795) Improved best solution thus far: 628736
+Evolution: 796
+	796) Improved best solution thus far: 628516
+Evolution: 797
+Evolution: 798
+Evolution: 799
+	799) Improved best solution thus far: 628443
+Evolution: 800
+	800) Improved best solution thus far: 628392
+Evolution: 801
+	801) Improved best solution thus far: 628204
+Evolution: 802
+	802) Improved best solution thus far: 627974
+Evolution: 803
+	803) Improved best solution thus far: 627895
+Evolution: 804
+	804) Improved best solution thus far: 627695
+Evolution: 805
+	805) Improved best solution thus far: 627409
+Evolution: 806
+	806) Improved best solution thus far: 627381
+Evolution: 807
+	807) Improved best solution thus far: 627147
+Evolution: 808
+Evolution: 809
+Evolution: 810
+	810) Improved best solution thus far: 627120
+Evolution: 811
+	811) Improved best solution thus far: 627092
+Evolution: 812
+	812) Improved best solution thus far: 626947
+Evolution: 813
+Evolution: 814
+	814) Improved best solution thus far: 626662
+Evolution: 815
+	815) Improved best solution thus far: 626624
+Evolution: 816
+	816) Improved best solution thus far: 626569
+Evolution: 817
+	817) Improved best solution thus far: 626545
+Evolution: 818
+	818) Improved best solution thus far: 626471
+Evolution: 819
+Evolution: 820
+	820) Improved best solution thus far: 626379
+Evolution: 821
+	821) Improved best solution thus far: 626272
+Evolution: 822
+	822) Improved best solution thus far: 626165
+Evolution: 823
+	823) Improved best solution thus far: 626073
+Evolution: 824
+	824) Improved best solution thus far: 625664
+Evolution: 825
+	825) Improved best solution thus far: 625655
+Evolution: 826
+	826) Improved best solution thus far: 625524
+Evolution: 827
+Evolution: 828
+	828) Improved best solution thus far: 625459
+Evolution: 829
+	829) Improved best solution thus far: 625388
+Evolution: 830
+	830) Improved best solution thus far: 625329
+Evolution: 831
+Evolution: 832
+	832) Improved best solution thus far: 625069
+Evolution: 833
+	833) Improved best solution thus far: 625010
+Evolution: 834
+	834) Improved best solution thus far: 624935
+Evolution: 835
+	835) Improved best solution thus far: 624674
+Evolution: 836
+Evolution: 837
+	837) Improved best solution thus far: 624569
+Evolution: 838
+	838) Improved best solution thus far: 624543
+Evolution: 839
+	839) Improved best solution thus far: 624417
+Evolution: 840
+Evolution: 841
+	841) Improved best solution thus far: 624151
+Evolution: 842
+	842) Improved best solution thus far: 624112
+Evolution: 843
+	843) Improved best solution thus far: 623706
+Evolution: 844
+	844) Improved best solution thus far: 623605
+Evolution: 845
+Evolution: 846
+	846) Improved best solution thus far: 623373
+Evolution: 847
+	847) Improved best solution thus far: 623250
+Evolution: 848
+	848) Improved best solution thus far: 623102
+Evolution: 849
+	849) Improved best solution thus far: 622956
+Evolution: 850
+	850) Improved best solution thus far: 622818
+Evolution: 851
+	851) Improved best solution thus far: 622359
+Evolution: 852
+Evolution: 853
+	853) Improved best solution thus far: 622355
+Evolution: 854
+	854) Improved best solution thus far: 622139
+Evolution: 855
+Evolution: 856
+	856) Improved best solution thus far: 622012
+Evolution: 857
+	857) Improved best solution thus far: 621898
+Evolution: 858
+	858) Improved best solution thus far: 621747
+Evolution: 859
+	859) Improved best solution thus far: 621534
+Evolution: 860
+	860) Improved best solution thus far: 621461
+Evolution: 861
+	861) Improved best solution thus far: 621049
+Evolution: 862
+Evolution: 863
+	863) Improved best solution thus far: 620958
+Evolution: 864
+	864) Improved best solution thus far: 620677
+Evolution: 865
+Evolution: 866
+	866) Improved best solution thus far: 620556
+Evolution: 867
+	867) Improved best solution thus far: 620429
+Evolution: 868
+Evolution: 869
+	869) Improved best solution thus far: 620326
+Evolution: 870
+	870) Improved best solution thus far: 620057
+Evolution: 871
+	871) Improved best solution thus far: 620023
+Evolution: 872
+	872) Improved best solution thus far: 619847
+Evolution: 873
+	873) Improved best solution thus far: 619582
+Evolution: 874
+	874) Improved best solution thus far: 619556
+Evolution: 875
+	875) Improved best solution thus far: 619491
+Evolution: 876
+	876) Improved best solution thus far: 619020
+Evolution: 877
+Evolution: 878
+Evolution: 879
+	879) Improved best solution thus far: 619003
+Evolution: 880
+	880) Improved best solution thus far: 618885
+Evolution: 881
+	881) Improved best solution thus far: 618781
+Evolution: 882
+	882) Improved best solution thus far: 618777
+Evolution: 883
+	883) Improved best solution thus far: 618656
+Evolution: 884
+	884) Improved best solution thus far: 618373
+Evolution: 885
+	885) Improved best solution thus far: 618310
+Evolution: 886
+	886) Improved best solution thus far: 618210
+Evolution: 887
+	887) Improved best solution thus far: 618151
+Evolution: 888
+	888) Improved best solution thus far: 618148
+Evolution: 889
+	889) Improved best solution thus far: 617844
+Evolution: 890
+	890) Improved best solution thus far: 617708
+Evolution: 891
+	891) Improved best solution thus far: 617559
+Evolution: 892
+	892) Improved best solution thus far: 617459
+Evolution: 893
+	893) Improved best solution thus far: 617357
+Evolution: 894
+	894) Improved best solution thus far: 617287
+Evolution: 895
+	895) Improved best solution thus far: 617209
+Evolution: 896
+	896) Improved best solution thus far: 617024
+Evolution: 897
+Evolution: 898
+	898) Improved best solution thus far: 616819
+Evolution: 899
+	899) Improved best solution thus far: 616518
+Evolution: 900
+Evolution: 901
+	901) Improved best solution thus far: 616175
+Evolution: 902
+	902) Improved best solution thus far: 616095
+Evolution: 903
+	903) Improved best solution thus far: 615747
+Evolution: 904
+	904) Improved best solution thus far: 615681
+Evolution: 905
+Evolution: 906
+	906) Improved best solution thus far: 615432
+Evolution: 907
+	907) Improved best solution thus far: 615209
+Evolution: 908
+	908) Improved best solution thus far: 615152
+Evolution: 909
+	909) Improved best solution thus far: 614887
+Evolution: 910
+	910) Improved best solution thus far: 614761
+Evolution: 911
+	911) Improved best solution thus far: 614583
+Evolution: 912
+	912) Improved best solution thus far: 614565
+Evolution: 913
+	913) Improved best solution thus far: 614552
+Evolution: 914
+	914) Improved best solution thus far: 614380
+Evolution: 915
+	915) Improved best solution thus far: 614097
+Evolution: 916
+	916) Improved best solution thus far: 614087
+Evolution: 917
+	917) Improved best solution thus far: 613972
+Evolution: 918
+	918) Improved best solution thus far: 613773
+Evolution: 919
+	919) Improved best solution thus far: 613715
+Evolution: 920
+	920) Improved best solution thus far: 613635
+Evolution: 921
+	921) Improved best solution thus far: 613539
+Evolution: 922
+	922) Improved best solution thus far: 613448
+Evolution: 923
+	923) Improved best solution thus far: 613390
+Evolution: 924
+	924) Improved best solution thus far: 613252
+Evolution: 925
+	925) Improved best solution thus far: 613061
+Evolution: 926
+	926) Improved best solution thus far: 612979
+Evolution: 927
+	927) Improved best solution thus far: 612927
+Evolution: 928
+	928) Improved best solution thus far: 612791
+Evolution: 929
+	929) Improved best solution thus far: 612773
+Evolution: 930
+	930) Improved best solution thus far: 612636
+Evolution: 931
+	931) Improved best solution thus far: 612482
+Evolution: 932
+	932) Improved best solution thus far: 612353
+Evolution: 933
+	933) Improved best solution thus far: 612217
+Evolution: 934
+	934) Improved best solution thus far: 612155
+Evolution: 935
+	935) Improved best solution thus far: 611933
+Evolution: 936
+	936) Improved best solution thus far: 611789
+Evolution: 937
+	937) Improved best solution thus far: 611687
+Evolution: 938
+	938) Improved best solution thus far: 611448
+Evolution: 939
+	939) Improved best solution thus far: 611326
+Evolution: 940
+	940) Improved best solution thus far: 611218
+Evolution: 941
+Evolution: 942
+	942) Improved best solution thus far: 611125
+Evolution: 943
+	943) Improved best solution thus far: 611043
+Evolution: 944
+	944) Improved best solution thus far: 610956
+Evolution: 945
+	945) Improved best solution thus far: 610853
+Evolution: 946
+Evolution: 947
+	947) Improved best solution thus far: 610788
+Evolution: 948
+	948) Improved best solution thus far: 610756
+Evolution: 949
+	949) Improved best solution thus far: 610557
+Evolution: 950
+Evolution: 951
+	951) Improved best solution thus far: 610470
+Evolution: 952
+	952) Improved best solution thus far: 610309
+Evolution: 953
+Evolution: 954
+	954) Improved best solution thus far: 610098
+Evolution: 955
+	955) Improved best solution thus far: 609965
+Evolution: 956
+	956) Improved best solution thus far: 609945
+Evolution: 957
+	957) Improved best solution thus far: 609809
+Evolution: 958
+	958) Improved best solution thus far: 609751
+Evolution: 959
+	959) Improved best solution thus far: 609673
+Evolution: 960
+	960) Improved best solution thus far: 609664
+Evolution: 961
+	961) Improved best solution thus far: 609630
+Evolution: 962
+	962) Improved best solution thus far: 609598
+Evolution: 963
+	963) Improved best solution thus far: 609585
+Evolution: 964
+	964) Improved best solution thus far: 609544
+Evolution: 965
+	965) Improved best solution thus far: 609518
+Evolution: 966
+Evolution: 967
+	967) Improved best solution thus far: 609199
+Evolution: 968
+	968) Improved best solution thus far: 609051
+Evolution: 969
+	969) Improved best solution thus far: 608984
+Evolution: 970
+	970) Improved best solution thus far: 608851
+Evolution: 971
+Evolution: 972
+Evolution: 973
+	973) Improved best solution thus far: 608769
+Evolution: 974
+	974) Improved best solution thus far: 608646
+Evolution: 975
+	975) Improved best solution thus far: 608415
+Evolution: 976
+Evolution: 977
+	977) Improved best solution thus far: 608087
+Evolution: 978
+	978) Improved best solution thus far: 608050
+Evolution: 979
+	979) Improved best solution thus far: 607926
+Evolution: 980
+	980) Improved best solution thus far: 607720
+Evolution: 981
+	981) Improved best solution thus far: 607482
+Evolution: 982
+	982) Improved best solution thus far: 607444
+Evolution: 983
+	983) Improved best solution thus far: 607221
+Evolution: 984
+	984) Improved best solution thus far: 607077
+Evolution: 985
+	985) Improved best solution thus far: 606967
+Evolution: 986
+	986) Improved best solution thus far: 606926
+Evolution: 987
+	987) Improved best solution thus far: 606750
+Evolution: 988
+	988) Improved best solution thus far: 606661
+Evolution: 989
+Evolution: 990
+	990) Improved best solution thus far: 606590
+Evolution: 991
+	991) Improved best solution thus far: 606512
+Evolution: 992
+	992) Improved best solution thus far: 606468
+Evolution: 993
+	993) Improved best solution thus far: 606427
+Evolution: 994
+	994) Improved best solution thus far: 606308
+Evolution: 995
+Evolution: 996
+	996) Improved best solution thus far: 606204
+Evolution: 997
+	997) Improved best solution thus far: 606180
+Evolution: 998
+	998) Improved best solution thus far: 606133
+Evolution: 999
+	999) Improved best solution thus far: 606095
+Value of best solution: 606095.00
+Total Time: 210.3471965789795

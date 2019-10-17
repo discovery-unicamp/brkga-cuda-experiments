@@ -1,0 +1,6 @@
+Instance file: ../tsplib-cities/bm33708.tsp
+Instance read; here's the info:
+	Dimension: 33708
+Total Memory Used In GPU 414219264 bytes(414 Mbytes)
+Extra Memory Used In GPU due to Instance Info 4544917056 bytes(4544 Mbytes)
+Total Time: 5.2132248878479

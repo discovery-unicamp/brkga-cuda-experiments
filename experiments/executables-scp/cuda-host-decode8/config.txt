@@ -1,10 +1,10 @@
-population_size 1
-elite_proportion 0.2
+population_size 256
+elite_proportion 0.20
 mutant_proportion 0.15
 rhoe 0.8
 number_populations 2
-max_generations 100
-iterations_exchange_best 200
+max_generations 200
+iterations_exchange_best 20
 size_best_to_exchange 2 
 reset_iterations 1001
 decode_type 1

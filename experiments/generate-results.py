@@ -9,6 +9,8 @@ import math
 SCP = False
 TSP = True
 
+WITH_STD = False #print results with standard deviation or not
+
 if SCP:
 	executables_dir = ['executables-scp/brkgaAPI-1/',  'executables-scp/brkgaAPI-4/', 'executables-scp/brkgaAPI-8/',
 		  'executables-scp/cuda-host-decode1/', 'executables-scp/cuda-host-decode4/','executables-scp/cuda-host-decode8/']
@@ -16,11 +18,18 @@ if SCP:
 	algs_nick_names = ['brkga-scp-1','brkga-scp-4','brkga-scp-8','cuda-host1','cuda-host4','cuda-host8']
 	csv_dir = 'results/scp/'
 elif TSP:
-	executables_dir = ['executables-tsp/brkgaAPI-1/',  'executables-tsp/brkgaAPI-4/','executables-tsp/brkgaAPI-8/',
-		 'executables-tsp/cuda-device-decode/', 
-		 'executables-tsp/cuda-host-decode1/', 'executables-tsp/cuda-host-decode4/','executables-tsp/cuda-host-decode8/']
-	running_results_dir = 'pc-results-tsplib-cities/'
-	algs_nick_names = ['brkga-tsp-1','brkga-tsp-4','brkga-tsp-8','cuda-device','cuda-host1','cuda-host4','cuda-host8']	
+	# executables_dir = ['executables-tsp/brkgaAPI-1/',  'executables-tsp/brkgaAPI-4/','executables-tsp/brkgaAPI-8/',
+	# 	 'executables-tsp/cuda-device-decode/', 
+	# 	 'executables-tsp/cuda-host-decode1/', 'executables-tsp/cuda-host-decode4/','executables-tsp/cuda-host-decode8/']
+	# running_results_dir = 'pc-results-tsplib-vlsi/'
+	# algs_nick_names = ['brkga-tsp-1','brkga-tsp-4','brkga-tsp-8','cuda-device','cuda-host1','cuda-host4','cuda-host8']	
+
+
+	executables_dir = ['executables-tsp/brkgaAPI-1/','executables-tsp/brkgaAPI-4/','executables-tsp/brkgaAPI-8/',
+		 'executables-tsp/cuda-device-decode/']
+	running_results_dir = 'pc-results-tsplib-vlsi/'
+	algs_nick_names = ['brkga-tsp-1','brkga-tsp-4','brkga-tsp-8','cuda-device']	
+
 	csv_dir = 'results/tsp/'
 
 runnings_dir = list(map(lambda x: x+running_results_dir, executables_dir))
@@ -67,10 +76,13 @@ def main():
 				times.append(float(time[0]))
 				values.append(float(value[0]))
 			v_m = "{0:.2f}".format(stat.mean(values))
-			v_d = "{0:.2f}".format(stat.stdev(values))
 			t_m = "{0:.2f}".format(stat.mean(times))
-			t_d = "{0:.2f}".format(stat.stdev(times))
-			fout.write(v_m+' ('+ v_d +')' +', ' +t_m+ ' ('+ t_d +')'+', ')
+			if WITH_STD:
+				v_d = "{0:.2f}".format(stat.stdev(values))
+				t_d = "{0:.2f}".format(stat.stdev(times))
+				fout.write(v_m+' ('+ v_d +')' +', ' +t_m+ ' ('+ t_d +')'+', ')
+			else:
+				fout.write(v_m+', '+t_m+', ')				
 		fout.write('\n')
 	fout.close()
 

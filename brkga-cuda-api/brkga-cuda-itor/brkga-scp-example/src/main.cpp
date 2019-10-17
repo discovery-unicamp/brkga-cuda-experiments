@@ -26,6 +26,8 @@ int main(int argc, char* argv[]) {
 		<< " rows to be covered with " << decoder.getNColumns() << " columns" << std::endl;
 
 	ConfigFile config;
+	//population size is 10*n to use the same rule of Toso and Resende
+	config.p = 10 * decoder.getNRows();
 	BRKGA alg(decoder.getNColumns(), config.p, config.pe, config.pm, config.rhoe, config.K, config.decode_type, config.MAXT);
 
 	alg.setInstanceInfo(&decoder, 0, 0);

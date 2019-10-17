@@ -16,7 +16,9 @@ Constructor
 BRKGA::BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K, unsigned decode_type, unsigned NUM_THREADS, unsigned RAND_SEED){
 	if(p%THREADS_PER_BLOCK != 0){
 			//round population size to a multiple of THREADS_PER_BLOCK
+		std::cout<<"Population size rounded from " << p;
 		p = ((p/THREADS_PER_BLOCK)+1)*THREADS_PER_BLOCK;
+		std::cout<<" to "<< p << std::endl;
 	}
 
 	//set to the maximum number of blocks allowed in CUDA compute capability 2.0

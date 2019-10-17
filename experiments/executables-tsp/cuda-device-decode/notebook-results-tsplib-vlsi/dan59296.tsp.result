@@ -1,0 +1,6 @@
+Instance file: ../tsplib-vlsi/dan59296.tsp
+Instance read; here's the info:
+	Dimension: 59296
+Total Memory Used In GPU 728644608 bytes(728 Mbytes)
+Extra Memory Used In GPU due to Instance Info 14064062464 bytes(14064 Mbytes)
+Total Time: 27.934631824493408

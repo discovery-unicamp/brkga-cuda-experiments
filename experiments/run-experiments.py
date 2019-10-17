@@ -4,17 +4,17 @@ import time
 
 NUMBER_RUNS = 3 #number of times to solve each instance
 
-SCP = False
-TSP = True
+SCP = True
+TSP = False
 
 if SCP:
 	algs_dir = ['executables-scp/brkgaAPI-1/',  'executables-scp/brkgaAPI-4/','executables-scp/brkgaAPI-8/',   
 		    'executables-scp/cuda-host-decode1/','executables-scp/cuda-host-decode4/','executables-scp/cuda-host-decode8/']
 	algs_names = ['brkga-scp','brkga-scp','brkga-scp','cuda-scp','cuda-scp','cuda-scp']
 	algs_nick_names = ['brkga-scp-1','brkga-scp-4','brkga-scp-8','cuda-host1','cuda-host4','cuda-host8']	
-	inst_dir = 'instances/testscp/'
-	results_dir = 'results-scp-testscp/'
-	brkgaAPIparam  = ' 1234 0 100 ' #random-seed 0-is max generations 100-is the number of max generations
+	inst_dir = 'instances/scp-instances/'
+	results_dir = 'pc-results-scp/'
+	brkgaAPIparam  = ' 1234 0 200 ' #random-seed 0 is max generations 200 is the number of max generations
 elif TSP:
 	# algs_dir = ['executables-tsp/brkgaAPI-1/',  'executables-tsp/brkgaAPI-4/', 'executables-tsp/brkgaAPI-8/',
 	#      'executables-tsp/cuda-device-decode/',

@@ -1,0 +1,8 @@
+Instance file: /home/eduardo/dudu/Academico/Publicacoes/futuro/ITOR/implementação/experiments/instances/scp-instances/scp51.txt
+./cuda-scp: instance /home/eduardo/dudu/Academico/Publicacoes/futuro/ITOR/implementação/experiments/instances/scp-instances/scp51.txt has 200 rows to be covered with 2000 columns
+Population size rounded from 2000 to 2048
+Total Memory Used In GPU 131153920 bytes(131 Mbytes)
+Extra Memory Used In GPU due to Instance Info 0 bytes(0 Mbytes)
+Evolution: 1
+Evolution: 2
+Total Time: 0.5198395252227783
