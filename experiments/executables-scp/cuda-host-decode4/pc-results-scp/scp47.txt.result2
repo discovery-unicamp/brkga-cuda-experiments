@@ -1,4 +1,220 @@
-Instance file: /home/eduardo/dudu/Academico/Publicacoes/futuro/ITOR/implementação/experiments/instances/scp-instances/scp47.txt
-./cuda-scp: instance /home/eduardo/dudu/Academico/Publicacoes/futuro/ITOR/implementação/experiments/instances/scp-instances/scp47.txt has 200 rows to be covered with 1000 columns
+Instance file: /home/eduardo/programacao/brkga/brkga-cuda-itor/experiments/instances/scp-instances/scp47.txt
+./cuda-scp: instance /home/eduardo/programacao/brkga/brkga-cuda-itor/experiments/instances/scp-instances/scp47.txt has 200 rows to be covered with 1000 columns
 Population size rounded from 2000 to 2048
-Total Time: 0.032909393310546875
+Total Memory Used In GPU 65617920 bytes(65 Mbytes)
+Extra Memory Used In GPU due to Instance Info 0 bytes(0 Mbytes)
+Evolution: 1
+Evolution: 2
+Evolution: 3
+Evolution: 4
+Evolution: 5
+Evolution: 6
+Evolution: 7
+Evolution: 8
+Evolution: 9
+Evolution: 10
+Evolution: 11
+Evolution: 12
+Evolution: 13
+Evolution: 14
+Evolution: 15
+Evolution: 16
+Evolution: 17
+Evolution: 18
+Evolution: 19
+Evolution: 20
+Exchanged top 2 best individuals!
+Evolution: 21
+Evolution: 22
+Evolution: 23
+Evolution: 24
+Evolution: 25
+Evolution: 26
+Evolution: 27
+Evolution: 28
+Evolution: 29
+Evolution: 30
+Evolution: 31
+Evolution: 32
+Evolution: 33
+Evolution: 34
+Evolution: 35
+Evolution: 36
+Evolution: 37
+Evolution: 38
+Evolution: 39
+Evolution: 40
+Exchanged top 2 best individuals!
+Evolution: 41
+Evolution: 42
+Evolution: 43
+Evolution: 44
+Evolution: 45
+Evolution: 46
+Evolution: 47
+Evolution: 48
+Evolution: 49
+Evolution: 50
+Evolution: 51
+Evolution: 52
+Evolution: 53
+Evolution: 54
+Evolution: 55
+Evolution: 56
+Evolution: 57
+Evolution: 58
+Evolution: 59
+Evolution: 60
+Exchanged top 2 best individuals!
+Evolution: 61
+Evolution: 62
+Evolution: 63
+Evolution: 64
+Evolution: 65
+Evolution: 66
+Evolution: 67
+Evolution: 68
+Evolution: 69
+Evolution: 70
+Evolution: 71
+Evolution: 72
+Evolution: 73
+Evolution: 74
+Evolution: 75
+Evolution: 76
+Evolution: 77
+Evolution: 78
+Evolution: 79
+Evolution: 80
+Exchanged top 2 best individuals!
+Evolution: 81
+Evolution: 82
+Evolution: 83
+Evolution: 84
+Evolution: 85
+Evolution: 86
+Evolution: 87
+Evolution: 88
+Evolution: 89
+Evolution: 90
+Evolution: 91
+Evolution: 92
+Evolution: 93
+Evolution: 94
+Evolution: 95
+Evolution: 96
+Evolution: 97
+Evolution: 98
+Evolution: 99
+Evolution: 100
+Exchanged top 2 best individuals!
+Evolution: 101
+Evolution: 102
+Evolution: 103
+Evolution: 104
+Evolution: 105
+Evolution: 106
+Evolution: 107
+Evolution: 108
+Evolution: 109
+Evolution: 110
+Evolution: 111
+Evolution: 112
+Evolution: 113
+Evolution: 114
+Evolution: 115
+Evolution: 116
+Evolution: 117
+Evolution: 118
+Evolution: 119
+Evolution: 120
+Exchanged top 2 best individuals!
+Evolution: 121
+Evolution: 122
+Evolution: 123
+Evolution: 124
+Evolution: 125
+Evolution: 126
+Evolution: 127
+Evolution: 128
+Evolution: 129
+Evolution: 130
+Evolution: 131
+Evolution: 132
+Evolution: 133
+Evolution: 134
+Evolution: 135
+Evolution: 136
+Evolution: 137
+Evolution: 138
+Evolution: 139
+Evolution: 140
+Exchanged top 2 best individuals!
+Evolution: 141
+Evolution: 142
+Evolution: 143
+Evolution: 144
+Evolution: 145
+Evolution: 146
+Evolution: 147
+Evolution: 148
+Evolution: 149
+Evolution: 150
+Evolution: 151
+Evolution: 152
+Evolution: 153
+Evolution: 154
+Evolution: 155
+Evolution: 156
+Evolution: 157
+Evolution: 158
+Evolution: 159
+Evolution: 160
+Exchanged top 2 best individuals!
+Evolution: 161
+Evolution: 162
+Evolution: 163
+Evolution: 164
+Evolution: 165
+Evolution: 166
+Evolution: 167
+Evolution: 168
+Evolution: 169
+Evolution: 170
+Evolution: 171
+Evolution: 172
+Evolution: 173
+Evolution: 174
+Evolution: 175
+Evolution: 176
+Evolution: 177
+Evolution: 178
+Evolution: 179
+Evolution: 180
+Exchanged top 2 best individuals!
+Evolution: 181
+Evolution: 182
+Evolution: 183
+Evolution: 184
+Evolution: 185
+Evolution: 186
+Evolution: 187
+Evolution: 188
+Evolution: 189
+Evolution: 190
+Evolution: 191
+Evolution: 192
+Evolution: 193
+Evolution: 194
+Evolution: 195
+Evolution: 196
+Evolution: 197
+Evolution: 198
+Evolution: 199
+Evolution: 200
+Exchanged top 2 best individuals!
+
+Value of best solution: 430.00
+
+Best solution: 1 2 3 4 5 7 11 12 15 16 17 18 20 22 24 25 26 27 30 32 35 44 45 47 52 55 57 58 59 62 63 64 65 67 69 70 72 73 76 77 84 85 88 93 96 103 105 107 112 113 132 133 148 151 158 171 182 222 400 404
+Total Time: 13.524657487869263
