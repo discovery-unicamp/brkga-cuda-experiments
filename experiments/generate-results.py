@@ -6,16 +6,16 @@ import datetime
 import statistics as stat
 import math
 
-SCP = False
-TSP = True
+SCP = True
+TSP = False
 
 WITH_STD = False #print results with standard deviation or not
 
 if SCP:
 	executables_dir = ['executables-scp/brkgaAPI-1/',  'executables-scp/brkgaAPI-4/', 'executables-scp/brkgaAPI-8/',
 		  'executables-scp/cuda-host-decode1/', 'executables-scp/cuda-host-decode4/','executables-scp/cuda-host-decode8/']
-	running_results_dir = 'pc-results-tsplib-cities/'
-	algs_nick_names = ['brkga-scp-1','brkga-scp-4','brkga-scp-8','cuda-host1','cuda-host4','cuda-host8']
+	running_results_dir = 'pc-results-scp/'
+	algs_nick_names = ['brkga-1','brkga-4','brkga-8','cuda-host1','cuda-host4','cuda-host8']
 	csv_dir = 'results/scp/'
 elif TSP:
 	# executables_dir = ['executables-tsp/brkgaAPI-1/',  'executables-tsp/brkgaAPI-4/','executables-tsp/brkgaAPI-8/',
