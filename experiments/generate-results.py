@@ -6,8 +6,8 @@ import datetime
 import statistics as stat
 import math
 
-SCP = True
-TSP = False
+SCP = False
+TSP = True
 
 WITH_STD = False #print results with standard deviation or not
 
@@ -27,7 +27,7 @@ elif TSP:
 
 	executables_dir = ['executables-tsp/brkgaAPI-1/','executables-tsp/brkgaAPI-4/','executables-tsp/brkgaAPI-8/',
 		 'executables-tsp/cuda-device-decode/']
-	running_results_dir = 'pc-results-tsplib-vlsi/'
+	running_results_dir = 'notebook-results-tsplib-cities/'
 	algs_nick_names = ['brkga-tsp-1','brkga-tsp-4','brkga-tsp-8','cuda-device']	
 
 	csv_dir = 'results/tsp/'
@@ -48,14 +48,17 @@ def main():
 	exp_value = re.compile(r'Value of best solution: *(\d+.\d+)')
 	exp_time = re.compile(r'Time: *(\d+.?\d*)')
 
+	number_columns = 1
 	fout.write('Instance Name')
 	for alg in algs_nick_names:
 		fout.write(',\t '+alg+' Value,\t '+alg+' Time')
+		number_columns += 1
 	fout.write('\n')
 
 	results_files = merge_same_instances(results_files)
 	for inst_group in results_files:
 		fout.write(inst_group[0][:-1]+',\t ')
+		cont_columns = 1
 		for dirr in runnings_dir:
 			times = []
 			values = []
@@ -80,9 +83,17 @@ def main():
 			if WITH_STD:
 				v_d = "{0:.2f}".format(stat.stdev(values))
 				t_d = "{0:.2f}".format(stat.stdev(times))
-				fout.write(v_m+' ('+ v_d +')' +', ' +t_m+ ' ('+ t_d +')'+', ')
+				cont_columns += 1
+				if cont_columns == number_columns:
+					fout.write(v_m+' ('+ v_d +')' +', ' +t_m+ ' ('+ t_d +')')
+				else:
+					fout.write(v_m+' ('+ v_d +')' +', ' +t_m+ ' ('+ t_d +')'+', ')
 			else:
-				fout.write(v_m+', '+t_m+', ')				
+				cont_columns += 1
+				if cont_columns == number_columns:
+					fout.write(v_m+', '+t_m)	
+				else:
+					fout.write(v_m+', '+t_m+', ')	
 		fout.write('\n')
 	fout.close()
 
