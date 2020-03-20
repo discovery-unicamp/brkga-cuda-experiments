@@ -19,6 +19,7 @@
 #define HOST_DECODE 1
 #define DEVICE_DECODE 2
 #define DEVICE_DECODE_CHROMOSOME_SORTED 3
+#define DEVICE_DECODE_CHROMOSOME_SORTED2 4
 #define POOL_SIZE 10 //size of the pool with best solutions so far
 
 

@@ -16,6 +16,7 @@
 __device__ float device_decode(float *chromosome, int n, void *d_instance_info);
 float host_decode(float *chromosome, int n, void *d_instance_info);
 __device__ float device_decode_chromosome_sorted(ChromosomeGeneIdxPair *chromosome, int n, void *d_instance_info);
-__device__ float device_decode_chromosome_sorted2(int gt, ChromosomeGeneIdxPair *chromosome, int n, void *d_instance_info);
+__global__ void device_decode_chromosome_sorted2(ChromosomeGeneIdxPair *chromosomes, int n, void *d_instance_info, float *d_scores);
+
 
 #endif

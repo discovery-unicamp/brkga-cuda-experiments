@@ -66,6 +66,7 @@ private:
 	float *d_random_parent=NULL; //a random number for each thread to choose its non-elite parent during crossover
 
 	unsigned number_chromosomes;//total number of chromosomes in all K populations
+	unsigned number_genes;//total number of genes in all K populations
 	unsigned chromosome_size;
 	unsigned population_size;
 	unsigned elite_size;
@@ -77,6 +78,7 @@ private:
 	dim3 dimBlock;
   dim3 dimGrid;
   dim3 dimGridChromo;
+  dim3 dimGrid_population;
 
   unsigned decode_type;
 
@@ -91,6 +93,7 @@ private:
 	void evaluate_chromosomes_host();
   void evaluate_chromosomes_device();
   void evaluate_chromosomes_sorted_device();
+  void evaluate_chromosomes_sorted_device2();
   void test_memory_malloc(cudaError_t err, unsigned code, unsigned total_memory);
 };
 

@@ -61,27 +61,6 @@ __device__ float device_decode_chromosome_sorted(ChromosomeGeneIdxPair *chromoso
 
 }
 
-__device__ float device_decode_chromosome_sorted2(int gt, ChromosomeGeneIdxPair *chromosome, int n, void *d_instance_info){
-	float score = 0;
-	float *adjMatrix = (float *)d_instance_info;
-	for(int i=0; i<n-1; i++){
-		 score = score + adjMatrix[chromosome[i].geneIdx*n + chromosome[i+1].geneIdx];
-	}
-	score = score + adjMatrix[chromosome[0].geneIdx*n + chromosome[n-1].geneIdx];
-	
-  if(gt==0){
-	for(int i=0; i<n-1; i++){
-		//if(chromosome[i].geneIdx < n  &&  chromosome[i+1].geneIdx <n)
-		printf("(%d,%d,%.2f), ", i, chromosome[i].geneIdx,adjMatrix[chromosome[i].geneIdx*n + chromosome[i+1].geneIdx]);
-	}
-  printf("(%d,%d,%.2f), Value %.2f\n", n-1,chromosome[n-1].geneIdx, adjMatrix[chromosome[0].geneIdx*n + chromosome[n-1].geneIdx], score);
-
-  }
-
-	return score;
-
-}
-
 __device__ void insertionSort(valueIndexPair *arr, int n){
    int i, j;
    valueIndexPair key; 
@@ -108,8 +87,10 @@ __device__ bool comparator2(const valueIndexPair& lhs, const valueIndexPair& rhs
 ***/
 __device__ float device_decode(float *chromosome, int n, void *d_instance_info){
 	valueIndexPair *valInd = (valueIndexPair *) malloc(n*sizeof(valueIndexPair));
-	if(valInd == NULL)
-		printf("\nMemory error in device_decode!\n");
+	if(valInd == NULL){
+		printf("\nMemory error: could not alloc memory in device_decode!\n");
+		return 0;
+	}
 	for(int i=0; i<n; i++){
 		valInd[i].first = chromosome[i];
 		valInd[i].second = i;
@@ -133,6 +114,49 @@ __device__ float device_decode(float *chromosome, int n, void *d_instance_info){
 }
 
 
+/***
+	Implement this function if you want to decode cromossomes on the device in such a way that you will receive a chromosome
+	with its genes already sorted in increase order by their values. The struct ChromosomeGeneIdxPair contains the genes
+	sorted with their original index in the chromosome saved in geneIdx.
+  Parameters are chromosome pointer, its size n, and instance information used to decode.
+***/
+__global__ void device_decode_chromosome_sorted2(ChromosomeGeneIdxPair *chromosomes, int n, void *d_instance_info, float *d_scores){
+	unsigned tx = threadIdx.x;
+	float *adjMatrix = (float *)d_instance_info;
+	ChromosomeGeneIdxPair *chromosome = chromosomes + blockIdx.x; //pointer to begnning of this chromosome
+
+	__shared__ float sm[THREADS_PER_BLOCK];
+	int total;
+	if(n%THREADS_PER_BLOCK == 0)
+		total = n/THREADS_PER_BLOCK;
+	else
+		total = n/THREADS_PER_BLOCK +1;
+
+	sm[tx] = 0;
+	__syncthreads();
+
+	/*
+	for(int i=0; i<total; i++){
+		unsigned id = i*THREADS_PER_BLOCK + tx;
+		if(id + 1 < n)
+			sm[tx] += adjMatrix[chromosome[id].geneIdx*n + chromosome[id + 1].geneIdx];
+	}
+	if(n%THREADS_PER_BLOCK == tx-1) //last id of this tx is id==n-1
+			sm[tx] += adjMatrix[chromosome[n-1].geneIdx*n + chromosome[0].geneIdx];
+	__syncthreads();
+*/
+	sm[tx] += adjMatrix[chromosome[tx].geneIdx*n + chromosome[tx + 1].geneIdx];
+
+	__syncthreads();
+
+	if(tx ==0){
+		float score = 0;
+		for(int i=0; i<THREADS_PER_BLOCK; i++)
+			 score = score + sm[i];
+		d_scores[blockIdx.x] = score;
+	}
+	//d_scores[blockIdx.x] = score;
+}
 
 
 /*
@@ -140,9 +164,6 @@ __device__ float device_decode(float *chromosome, int n, void *d_instance_info){
  if the decoding functions are cheap (in this case are linear time functions)
  in the size of the chromosome.
 */
-
-
-
 float host_decode2(float *chromosome, int n, void *instance_info){
 	float aux=0;
 	for(int i=0;i<n;i++){

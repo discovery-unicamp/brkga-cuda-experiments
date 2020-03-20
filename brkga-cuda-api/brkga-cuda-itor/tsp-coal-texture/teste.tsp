@@ -1,0 +1,13 @@
+NAME : a280
+COMMENT : drilling problem (Ludwig)
+TYPE : TSP
+DIMENSION: 6
+EDGE_WEIGHT_TYPE : EUC_2D
+NODE_COORD_SECTION
+  1 1 1
+  2 1 2
+  3 1 3
+  4 1 4
+  5 1 5
+  6 1 6
+EOF
