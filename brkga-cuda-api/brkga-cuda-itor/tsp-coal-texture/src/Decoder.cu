@@ -153,23 +153,22 @@ __device__ void insertionSort(valueIndexPair *arr, int n){
 
 
 /***
-	Implement this function if you want to decode cromossomes on the device in such a way that you will receive a chromosome
-	with its genes already sorted in increase order by their values. The struct ChromosomeGeneIdxPair contains the genes
-	sorted with their original index in the chromosome saved in geneIdx.
-  Parameters are chromosome pointer, its size n, and instance information used to decode.
+	In this function a block of threads process each cromossome. So the user needs to take care of which
+	cromossome is being decoded (given by blockIds.x, since gridSize is equal to the total number of cromossomes).
+  The struct ChromosomeGeneIdxPair contains the genes sorted with their original index in the chromosome saved in geneIdx.
 ***/
 __global__ void device_decode_chromosome_sorted_coalesced(ChromosomeGeneIdxPair *chromosomes, int n, void *d_instance_info, float *d_scores){
 	unsigned tx = threadIdx.x;
 	float *adjMatrix = (float *)d_instance_info;
-	ChromosomeGeneIdxPair *chromosome = chromosomes + blockIdx.x*n; //pointer to begnning of this chromosome
+	ChromosomeGeneIdxPair *chromosome = chromosomes + blockIdx.x*n; //pointer to begnning of the chromosome this thread works on
 
+	//All threads in the block work toguether to decode this chromossome
 	__shared__ float sm[THREADS_PER_BLOCK];
-	int total;
+	int total;//number of segments in the chromossome to be worked by the threads in this block
 	if(n%THREADS_PER_BLOCK == 0)
 		total = n/THREADS_PER_BLOCK;
 	else
 		total = n/THREADS_PER_BLOCK +1;
-
 	sm[tx] = 0;
 	__syncthreads();
 
@@ -182,7 +181,7 @@ __global__ void device_decode_chromosome_sorted_coalesced(ChromosomeGeneIdxPair 
 			sm[tx] += adjMatrix[c1*n + c2];
 		}
 	}
-	if(n%THREADS_PER_BLOCK == tx+1) //last id of this tx is id==n-1
+	if( (n%THREADS_PER_BLOCK) - 1 == tx) //last id of this tx is id==n-1
 			sm[tx] += adjMatrix[chromosome[n-1].geneIdx*n + chromosome[0].geneIdx];
 	__syncthreads();
 
