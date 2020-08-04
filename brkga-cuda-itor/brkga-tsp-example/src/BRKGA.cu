@@ -11,7 +11,15 @@
 
 
 /***
-Constructor
+\brief Constructor
+\param n the size of each chromosome, i.e. the number of genes
+\param p the population size
+\param pe a float that represents the proportion of elite chromosomes in each population
+\param pm a float that represents the proportion of mutants in each population
+\param K the number of independent populations
+\param decode_type HOST_DECODE, DEVICE_DECODE, etc (see ConfigFile.h)
+\param NUM_THREADS used in openMP when processing on host
+\param RAND_SEED used to initialize random number generators
 ***/
 BRKGA::BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K, unsigned decode_type, unsigned NUM_THREADS, unsigned RAND_SEED){
 	if(p%THREADS_PER_BLOCK != 0){

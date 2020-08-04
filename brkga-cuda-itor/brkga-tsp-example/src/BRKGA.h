@@ -41,37 +41,37 @@ public:
 
 
 private:
-	float *d_population=NULL; //device population
-	float *d_population2=NULL; //device population
-	float *h_population=NULL; //host population
+	float *d_population=NULL; /// device population pointer
+	float *d_population2=NULL; /// device population pointer
+	float *h_population=NULL; /// host population pointer
 
-	float *d_scores=NULL; //device score of each chromossome
-	float *h_scores=NULL; //host score of each chromossome
+	float *d_scores=NULL; /// device score pointer to save score of each chromossome
+	float *h_scores=NULL; /// host score pointer to save score of each chromossome
 
-	void *d_instance_info=NULL; //vector of unknow type containg instance info used to evaluate a chromosome
-	void *h_instance_info=NULL;
+	void *d_instance_info=NULL; /// array of unknow type in the device containg instance info used to evaluate a chromosome
+	void *h_instance_info=NULL; /// array of unknow type in the host containg instance info used to evaluate a chromosome
 
-	float *d_best_solutions=NULL; //pool of 10 best solutions
-	float *h_best_solutions=NULL;
+	float *d_best_solutions=NULL; /// device pool of POOL_SIZE (see ConfigFile.h) best solutions
+	float *h_best_solutions=NULL; /// device pool of POOL_SIZE (see ConfigFile.h) best solutions
 	unsigned best_saved=0; //indicate whether best solutions were already saved or not
 
-	PopIdxThreadIdxPair *d_scores_idx=NULL; //table with indices of each chromosome score on device 
-	PopIdxThreadIdxPair *h_scores_idx=NULL; //table with indices of each chromosome score on host
+	PopIdxThreadIdxPair *d_scores_idx=NULL; /// table with indices of each chromosome score on device 
+	PopIdxThreadIdxPair *h_scores_idx=NULL; /// table with indices of each chromosome score on host
 
-	ChromosomeGeneIdxPair *d_chromosome_gene_idx = NULL; //table with indices for all chromosomes and each of its gene on device
-	ChromosomeGeneIdxPair *h_chromosome_gene_idx = NULL; //table with indices for all chromosomes and each of its gene on host
+	ChromosomeGeneIdxPair *d_chromosome_gene_idx = NULL; /// table with indices for all chromosomes and each of its genes on device
+	ChromosomeGeneIdxPair *h_chromosome_gene_idx = NULL; /// table with indices for all chromosomes and each of its genes on host
 
 
-	float *d_random_elite_parent=NULL; //a random number for each thread to choose its elite parent during crossover
-	float *d_random_parent=NULL; //a random number for each thread to choose its non-elite parent during crossover
+	float *d_random_elite_parent=NULL; /// contains a random number for each thread to choose its elite parent during crossover
+	float *d_random_parent=NULL; /// contains a random number for each thread to choose its non-elite parent during crossover
 
-	unsigned number_chromosomes;//total number of chromosomes in all K populations
+	unsigned number_chromosomes;/// total number of chromosomes in all K populations
 	unsigned chromosome_size;
 	unsigned population_size;
 	unsigned elite_size;
 	unsigned mutants_size;
 	unsigned number_populations;
-	float rhoe;
+	float rhoe; /// parameter to chose gene from elite parent or non-elite parent
 
 	curandGenerator_t gen; //cuda ramdom number generator
 	dim3 dimBlock;
