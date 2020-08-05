@@ -3,7 +3,8 @@
  *
  * Reads an instance from TSPLIB (Symmetric TSP).
  *
- * Here's the URL: http://www.iwr.uni-heidelberg.de/groups/comopt/software/TSPLIB95/tsp/
+ * Here's the URL:
+ * http://www.iwr.uni-heidelberg.de/groups/comopt/software/TSPLIB95/tsp/
  *
  * Here's the format:
  *
@@ -30,50 +31,47 @@
 #define TSPINSTANCE_H
 
 #include <cmath>
-#include <string>
-#include <vector>
 #include <cstdlib>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <stdexcept>
-#include <iostream>
 #include <stdio.h>
-
+#include <string>
+#include <vector>
 
 class TSPInstance {
 public:
-	typedef std::runtime_error Error;
+  typedef std::runtime_error Error;
 
-	TSPInstance(const std::string& instanceFile);
-	virtual ~TSPInstance();
+  TSPInstance(const std::string &instanceFile);
+  virtual ~TSPInstance();
 
-	// Getters:
-	unsigned getNumNodes() const;
-	// Returns the distance from node i to node j:
-	float getDistance(unsigned i, unsigned j) const;
+  // Getters:
+  unsigned getNumNodes() const;
+  // Returns the distance from node i to node j:
+  float getDistance(unsigned i, unsigned j) const;
 
 private:
-	unsigned nNodes;
+  unsigned nNodes;
 
-	class Coord2D {
-	public:
-		Coord2D() : x(0.0), y(0.0) { }
-		Coord2D(float _x, float _y) : x(_x), y(_y) {}
+  class Coord2D {
+  public:
+    Coord2D() : x(0.0), y(0.0) {}
+    Coord2D(float _x, float _y) : x(_x), y(_y) {}
 
-		float getX() const { return x; }
-		float getY() const { return y; }
+    float getX() const { return x; }
+    float getY() const { return y; }
 
-	private:
-		float x;
-		float y;
-	};
+  private:
+    float x;
+    float y;
+  };
 
-	std::vector< Coord2D > nodeCoords;
+  std::vector<Coord2D> nodeCoords;
 
-	int return_dimension(char *s);
-	int is_digit(char c);
-
-
+  int return_dimension(char *s);
+  int is_digit(char c);
 };
 
 #endif

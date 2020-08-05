@@ -11,6 +11,7 @@ file(GLOB
   brkga_cuda_api/*.cpp brkga_cuda_api/*.cu brkga_cuda_api/*.h brkga_cuda_api/*.cuh
   tsp_example/src/*.cpp tsp_example/src/*.h
 )
+include("cmake/ClangFormat.cmake")
 
 set(API_FILES
   ../brkga_cuda_api/BRKGA.cu
