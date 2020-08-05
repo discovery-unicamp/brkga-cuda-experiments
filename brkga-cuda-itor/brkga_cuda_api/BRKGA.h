@@ -22,7 +22,7 @@ public:
   BRKGA(unsigned n, ConfigFile &conf_file);
   ~BRKGA();
   void reset_population(void);
-  void evolve(int number_generations = 1);
+  void evolve();
   void exchangeElite(unsigned M);
   std::vector<std::vector<float>> getkBestChromosomes(unsigned k);
   void setInstanceInfo(void *info, long unsigned num, long unsigned size);

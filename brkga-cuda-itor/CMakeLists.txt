@@ -4,6 +4,7 @@ project(brkga_cuda)
 
 enable_language(CUDA)
 find_package(CUDA REQUIRED)
+
 include_directories("${CUDA_INCLUDE_DIRS}")
  
 file(GLOB

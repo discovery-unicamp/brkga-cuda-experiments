@@ -44,8 +44,6 @@ int main(int argc, char *argv[]) {
 
   ConfigFile config;
   BRKGA alg(n, config);
-  config.unit_test();
-  exit(0);
   alg.setInstanceInfo(adjMatrix, n * n, sizeof(float));
   // alg.setInstanceInfo2D(adjMatrix, n,n, sizeof(float));
   // for(int i=1; i<= 1; i++){
