@@ -23,17 +23,17 @@
 
 #include <omp.h>
 
-/***
+/**
  * \brief Constructor
  * \param n the size of each chromosome, i.e. the number of genes
  * \param conf_file with the following fields:
  * p the population size
  * pe a float that represents the proportion of elite chromosomes in each
- *population pm a float that represents the proportion of mutants in each
- *population K the number of independent populations decode_type HOST_DECODE,
- *DEVICE_DECODE, etc (see ConfigFile.h) OMP_THREADS used in openMP when
- *processing on host RAND_SEED used to initialize random number generators
- ***/
+ * population pm a float that represents the proportion of mutants in each
+ * population K the number of independent populations decode_type HOST_DECODE,
+ * DEVICE_DECODE, etc (see ConfigFile.h) OMP_THREADS used in openMP when
+ * processing on host RAND_SEED used to initialize random number generators
+ */
 BRKGA::BRKGA(unsigned n, ConfigFile &conf_file) {
   if (conf_file.p % THREADS_PER_BLOCK != 0) {
     // round population size to a multiple of THREADS_PER_BLOCK
@@ -174,10 +174,10 @@ BRKGA::~BRKGA() {
 
 /**
  * \brief Allocate information used to evaluate chromosomes on the device.
- *        It also receives the number of elements (num) in the array info and
- *the size (size) of each element. \param info is a pointer to memory where
- *information resides. \param num is the number of elements info has. \param
- *size is the size of each element.
+ * It also receives the number of elements (num) in the array info and
+ * the size (size) of each element. \param info is a pointer to memory where
+ * information resides. \param num is the number of elements info has. \param
+ * size is the size of each element.
  */
 void BRKGA::setInstanceInfo(void *info, long unsigned num, long unsigned size) {
   if (info != NULL) {
@@ -197,9 +197,9 @@ void BRKGA::setInstanceInfo(void *info, long unsigned num, long unsigned size) {
 }
 
 /**
-* \brief Generates random alleles for all chromosomes on GPU.
-*        d_population points to the memory where the chromosomes are.
-*/
+ * \brief Generates random alleles for all chromosomes on GPU.
+ *        d_population points to the memory where the chromosomes are.
+ */
 void BRKGA::reset_population(void) {
   curandGenerateUniform(gen, d_population,
                         number_chromosomes * chromosome_size);
@@ -208,7 +208,7 @@ void BRKGA::reset_population(void) {
 /**
  * \brief If HOST_DECODE is used then this function decodes each cromosome with
  *        the host_decode function provided in Decoder.cpp.
-*/
+ */
 void BRKGA::evaluate_chromosomes_host() {
   CUDA_CHECK(cudaMemcpy(h_population, d_population,
                         number_chromosomes * chromosome_size * sizeof(float),
@@ -250,27 +250,29 @@ __global__ void decode(float *d_scores, float *d_population,
 }
 
 /***
-* \brief If DEVICE_DECODE is used then this function decodes each cromosome with
-* the kernel function decode above.
-***/
+ * \brief If DEVICE_DECODE is used then this function decodes each cromosome
+ *with the kernel function decode above.
+ ***/
 void BRKGA::evaluate_chromosomes_device() {
   // Make a copy of chromossomes to d_population2 such that they can be messed
   // up inside the decoder functions without afecting the real chromosomes on
   // d_population.
   CUDA_CHECK(cudaMemcpy(d_population2, d_population,
-             number_chromosomes * chromosome_size * sizeof(float),
-             cudaMemcpyDeviceToDevice));
+                        number_chromosomes * chromosome_size * sizeof(float),
+                        cudaMemcpyDeviceToDevice));
   decode<<<dimGrid, dimBlock>>>(d_scores, d_population2, chromosome_size,
                                 d_instance_info);
 }
 
 /**
 * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used then this kernel function
-* decodes each cromosome with the device_decode_chromosome_sorted function provided
+* decodes each cromosome with the device_decode_chromosome_sorted function
+provided
 * in Decoder.cpp. We use one thread per cromosome to process them.
 *
 * Notice that we use the struct ChromosomeGeneIdxPair since the cromosome
-* is given already sorted to the function, and so it has a field with the original
+* is given already sorted to the function, and so it has a field with the
+original
 * index of each gene in the original cromosome.
 * \param d_scores in the array containing the score of each chromosome.
          It will be updated.
@@ -290,11 +292,11 @@ decode_chromosomes_sorted(float *d_scores,
 }
 
 /**
-* \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used then this function decodes
-* each cromosome with the kernel function decode_chromosomes_sorted above. But
-* first we sort each chromosome by its genes values. We save this information in
-* the struct ChromosomeGeneIdxPair d_chromosome_gene_idx.
-*/
+ * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used then this function decodes
+ * each cromosome with the kernel function decode_chromosomes_sorted above. But
+ * first we sort each chromosome by its genes values. We save this information
+ * in the struct ChromosomeGeneIdxPair d_chromosome_gene_idx.
+ */
 void BRKGA::evaluate_chromosomes_sorted_device() {
   sort_chromosomes_genes();
   decode_chromosomes_sorted<<<dimGrid, dimBlock>>>(
@@ -302,14 +304,14 @@ void BRKGA::evaluate_chromosomes_sorted_device() {
 }
 
 /**
-* \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used, then this method 
-* saves for each gene of each chromosome, the chromosome
-* index, and the original gene index. Used later to sort all chromossomes by gene
-* values. We save gene indexes to preserve this information after sorting.
-* \param d_chromosome_gene_idx is an array containing a struct for all
-* chromosomes of all populations.
-* \param chromosome_size is the size of each chromosome.
-*/
+ * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used, then this method
+ * saves for each gene of each chromosome, the chromosome
+ * index, and the original gene index. Used later to sort all chromossomes by
+ * gene values. We save gene indexes to preserve this information after sorting.
+ * \param d_chromosome_gene_idx is an array containing a struct for all
+ * chromosomes of all populations.
+ * \param chromosome_size is the size of each chromosome.
+ */
 __global__ void
 device_set_chromosome_gene_idx(ChromosomeGeneIdxPair *d_chromosome_gene_idx,
                                int chromosome_size) {
@@ -321,24 +323,24 @@ device_set_chromosome_gene_idx(ChromosomeGeneIdxPair *d_chromosome_gene_idx,
 }
 
 /**
-* \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used, then
-* this comparator is used when sorting genes of all chromosomes.
-* After sorting by gene we need to reagroup genes by their chromosomes so
-* we stable sort now using chromosomes indexes which were
-* saved in the field chromosomeIdx.
-*/
+ * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used, then
+ * this comparator is used when sorting genes of all chromosomes.
+ * After sorting by gene we need to reagroup genes by their chromosomes so
+ * we stable sort now using chromosomes indexes which were
+ * saved in the field chromosomeIdx.
+ */
 __device__ bool operator<(const ChromosomeGeneIdxPair &lhs,
                           const ChromosomeGeneIdxPair &rhs) {
   return lhs.chromosomeIdx < rhs.chromosomeIdx;
 }
 
 /**
-* \brief If DEVICE_DECODE_CHROMOSOME_SORTED, then we
-* we perform 2 stable_sort sorts: first we sort all genes of all
-* chromosomes by their values, and then we sort by the chromosomes index, and since
-* stable_sort is used, for each chromosome we will have its genes sorted by their
-* values.
-*/
+ * \brief If DEVICE_DECODE_CHROMOSOME_SORTED, then we
+ * we perform 2 stable_sort sorts: first we sort all genes of all
+ * chromosomes by their values, and then we sort by the chromosomes index, and
+ * since stable_sort is used, for each chromosome we will have its genes sorted
+ * by their values.
+ */
 void BRKGA::sort_chromosomes_genes() {
   // First set for each gene, its chromosome index and its original index in the
   // chromosome
@@ -362,20 +364,21 @@ void BRKGA::sort_chromosomes_genes() {
 }
 
 /**
-* \brief Kernel function to compute a next population.
-* In this function each thread process one chromosome.
-* \param d_population is the array of chromosomes in the current population.
-* \param d_population2 is the array where the next population will be set.
-* \param d_random_parent is an array with random values to compute indices of parents for crossover.
-* \param d_random_elite_parent is an array with random values to compute indices of ELITE parents for crossover.
-* \param chromosome_size is the size of each individual.
-* \param population_size is the size of each population.
-* \param elite_size is the number of elite chromosomes.
-* \param mutants_size is the number of mutants chromosomes.
-* \param rhoe is the parameter used to decide if a gene is inherited from the ELINTE parent or the normal parent.
-* \param d_scores_idx contains the original index of a chromosome in its population, and this struct is
-* ordered by the chromosomes fitness.
-*/
+ * \brief Kernel function to compute a next population.
+ * In this function each thread process one chromosome.
+ * \param d_population is the array of chromosomes in the current population.
+ * \param d_population2 is the array where the next population will be set.
+ * \param d_random_parent is an array with random values to compute indices of
+ * parents for crossover. \param d_random_elite_parent is an array with random
+ * values to compute indices of ELITE parents for crossover. \param
+ * chromosome_size is the size of each individual. \param population_size is the
+ * size of each population. \param elite_size is the number of elite
+ * chromosomes. \param mutants_size is the number of mutants chromosomes. \param
+ * rhoe is the parameter used to decide if a gene is inherited from the ELINTE
+ * parent or the normal parent. \param d_scores_idx contains the original index
+ * of a chromosome in its population, and this struct is ordered by the
+ * chromosomes fitness.
+ */
 __global__ void
 device_next_population(float *d_population, float *d_population2,
                        float *d_random_elite_parent, float *d_random_parent,
@@ -427,9 +430,9 @@ device_next_population(float *d_population, float *d_population2,
 }
 
 /**
-* \brief Main function of the BRKGA algorithm. 
-* It evolves K populations for one generation.
-*/
+ * \brief Main function of the BRKGA algorithm.
+ * It evolves K populations for one generation.
+ */
 void BRKGA::evolve() {
   using std::domain_error;
 
@@ -470,9 +473,9 @@ void BRKGA::evolve() {
 }
 
 /**
-* \brief initializes all chromosomes in all populations with random values.
-* \param p is used to decide to initialize d_population or d_population2.
-*/
+ * \brief initializes all chromosomes in all populations with random values.
+ * \param p is used to decide to initialize d_population or d_population2.
+ */
 void BRKGA::initialize_population(int p) {
   if (p == 1)
     curandGenerateUniform(gen, d_population,
@@ -483,10 +486,10 @@ void BRKGA::initialize_population(int p) {
 }
 
 /**
-* \brief Kernel function that sets for each cromosome its global index (among all
-* populations) and its population index.
-* \param d_scores_idx is the struct where chromosome index and its population index is saved.
-*/
+ * \brief Kernel function that sets for each cromosome its global index (among
+ * all populations) and its population index. \param d_scores_idx is the struct
+ * where chromosome index and its population index is saved.
+ */
 __global__ void device_set_idx(PopIdxThreadIdxPair *d_scores_idx,
                                int population_size) {
   int tx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -495,20 +498,20 @@ __global__ void device_set_idx(PopIdxThreadIdxPair *d_scores_idx,
 }
 
 /**
-* \brief comparator used to sort chromosomes by population index.
-*/
+ * \brief comparator used to sort chromosomes by population index.
+ */
 __device__ bool operator<(const PopIdxThreadIdxPair &lhs,
                           const PopIdxThreadIdxPair &rhs) {
   return lhs.popIdx < rhs.popIdx;
 }
 
 /**
-* \brief Sort chromosomes for each population.
-* We use the thread index to index each population, and perform 2 stable_sort
-* sorts: first we sort by the chromosome scores, and then by their population
-* index, and since stable_sort is used in each population the chromosomes are
-* sorted by scores.
-*/
+ * \brief Sort chromosomes for each population.
+ * We use the thread index to index each population, and perform 2 stable_sort
+ * sorts: first we sort by the chromosome scores, and then by their population
+ * index, and since stable_sort is used in each population the chromosomes are
+ * sorted by scores.
+ */
 void BRKGA::sort_chromosomes() {
   // For each thread we store in d_scores_idx the global chromosome index and
   // its population index.
@@ -525,18 +528,18 @@ void BRKGA::sort_chromosomes() {
 }
 
 /**
-* \brief Kernel function to operate the exchange of elite chromosomes.
-* It must be launched M*number_populations threads.
-* For each population each one of M threads do the copy of an elite
-* chromosome of its own population into the other populations. 
-* To do: make kernel save in local memory the chromosome and then copy to each other population.
-\param d_population is the array containing all chromosomes of all populations.
-\param chromosome_size is the size of each individual/chromosome.
-\param population_size is the size of each population.
-\param number_populations is the number of independent populations.
-\param d_scores_ids is the struct sorted by chromosomes fitness.
-\param M is the number of elite chromosomes to exchange.
-*/
+ * \brief Kernel function to operate the exchange of elite chromosomes.
+ * It must be launched M*number_populations threads.
+ * For each population each one of M threads do the copy of an elite
+ * chromosome of its own population into the other populations.
+ * To do: make kernel save in local memory the chromosome and then copy to each
+ * other population. \param d_population is the array containing all chromosomes
+ * of all populations. \param chromosome_size is the size of each
+ * individual/chromosome. \param population_size is the size of each population.
+ * \param number_populations is the number of independent populations.
+ * \param d_scores_ids is the struct sorted by chromosomes fitness.
+ * \param M is the number of elite chromosomes to exchange.
+ */
 __global__ void device_exchange_elite(float *d_population, int chromosome_size,
                                       unsigned population_size,
                                       unsigned number_populations,
@@ -564,9 +567,9 @@ __global__ void device_exchange_elite(float *d_population, int chromosome_size,
 }
 
 /**
-* \brief Exchange M individuals among the different populations.
-* \param M is the number of elite individuals to be exchanged.
-*/
+ * \brief Exchange M individuals among the different populations.
+ * \param M is the number of elite individuals to be exchanged.
+ */
 void BRKGA::exchangeElite(unsigned M) {
   using std::range_error;
   if (M > elite_size) {
@@ -594,11 +597,12 @@ void BRKGA::exchangeElite(unsigned M) {
       d_scores_idx, M);
 }
 
-/***
-        Return a vector of vectors, where each line vector corresponds to a
-chromosome, where in position 0 we have its score and in positions 1 to
-chromosome_size the aleles values
-***/
+/**
+ * \brief This method returns a vector of vectors, where each vector corresponds
+ * to a chromosome, where in position 0 we have its score and in positions 1 to
+ * chromosome_size the aleles values of the chromosome.
+ * \param k is the number of chromosomes to return. The best k are returned.
+ */
 std::vector<std::vector<float>> BRKGA::getkBestChromosomes(unsigned k) {
   std::vector<std::vector<float>> ret(k,
                                       std::vector<float>(chromosome_size + 1));
@@ -624,11 +628,14 @@ std::vector<std::vector<float>> BRKGA::getkBestChromosomes(unsigned k) {
   return ret;
 }
 
-/***
-  Return a vector of vectors, where each line vector corresponds to a
-chromosome, where in position 0 we have its score and in positions 1 to
-chromosome_size the aleles values
-***/
+/**
+ * \brief This method returns a vector of vectors, where each vector corresponds
+ * to a chromosome, where in position 0 we have its score and in positions 1 to
+ * chromosome_size the aleles values of the chromosome.
+ *
+ * This function copys chromosomes directly from the pool of best solutions.
+ * \param k is the number of chromosomes to return. The best k are returned.
+ */
 std::vector<std::vector<float>> BRKGA::getkBestChromosomes2(unsigned k) {
   if (k > POOL_SIZE)
     k = POOL_SIZE;
@@ -648,6 +655,23 @@ std::vector<std::vector<float>> BRKGA::getkBestChromosomes2(unsigned k) {
   return ret;
 }
 
+/**
+* \brief This kernel is used to update the pool with the best POOL_SIZE
+solutions.
+*
+* It is assumed that a global sort by fitness of chromosomes has been done.
+* \param d_population is the array containing all chromosomes of all
+populations.
+* \param chromosome_size is the size of each individual/chromosome.
+* \param d_scores_idx is the struct sorted by chromosomes fitness.
+
+* \param d_best_solution is the array to save the best chromosomes.
+* \param d_scores contains the fitness of all chromosomes sorted according to
+d_scores_idx.
+* \param best_saved is used to indicate if we want to save POOL_SIZE best
+* solutions or keep POOL_SIZE solutions considering previously saved
+chromosomes.
+*/
 __global__ void device_save_best_chromosomes(float *d_population,
                                              unsigned chromosome_size,
                                              PopIdxThreadIdxPair *d_scores_idx,
@@ -681,10 +705,10 @@ __global__ void device_save_best_chromosomes(float *d_population,
   }
 }
 
-/***
- This Function saves in the pool d_best_solutions and h_best_solutions the best
-solutions generated so far among all populations.
-***/
+/**
+ * \brief This Function saves in the pool d_best_solutions and h_best_solutions
+ * the best POOL_SIZE solutions generated so far among all populations.
+ */
 void BRKGA::saveBestChromosomes() {
   global_sort_chromosomes();
   device_save_best_chromosomes<<<1, 1>>>(d_population, chromosome_size,
@@ -693,13 +717,13 @@ void BRKGA::saveBestChromosomes() {
   best_saved = 1;
 }
 
-/***
-        We sort all chromosomes of all populations toguether.
-        We use the global thread index to index each chromosome, since each
-thread is responsible for one thread. Notice that in this function we only
-perform one sort, since we want the best chromosomes overall, so we do not
-        perform a second sort to separate chromosomes by their population.
-***/
+/**
+ * \brief We sort all chromosomes of all populations toguether.
+ * We use the global thread index to index each chromosome, since each
+ * thread is responsible for one thread. Notice that in this function we only
+ * perform one sort, since we want the best chromosomes overall, so we do not
+ * perform a second sort to separate chromosomes by their population.
+ */
 void BRKGA::global_sort_chromosomes() {
   using std::domain_error;
   if (decode_type == DEVICE_DECODE) {

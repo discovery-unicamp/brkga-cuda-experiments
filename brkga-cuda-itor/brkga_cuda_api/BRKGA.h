@@ -17,6 +17,9 @@
 
 #define THREADS_PER_BLOCK 256
 
+/**
+ * \brief BRKGA class contains the main interface of the BRKGA algorithm.
+ */
 class BRKGA {
 public:
   BRKGA(unsigned n, ConfigFile &conf_file);
