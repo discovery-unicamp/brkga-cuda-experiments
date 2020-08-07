@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.10)
 
 project(brkga_cuda)
 
-enable_language(CUDA)
+find_package(OpenMP)
 find_package(CUDA REQUIRED)
-
+enable_language(CUDA)
 include_directories("${CUDA_INCLUDE_DIRS}")
  
 file(GLOB

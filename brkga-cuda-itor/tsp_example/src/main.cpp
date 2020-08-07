@@ -19,8 +19,7 @@ int main(int argc, char *argv[]) {
   int option;
   char *par_file = NULL, *inst_file = NULL;
   bool evolve_coalesced = false;
-  // put ':' at the starting of the string so compiler can distinguish between
-  // '?' and ':'
+
   while ((option = getopt(argc, argv, ":-p:-i:-c")) !=
          -1) { // get option from the getopt() method
     switch (option) {
@@ -76,7 +75,7 @@ int main(int argc, char *argv[]) {
   // alg.setInstanceInfo2D(adjMatrix, n,n, sizeof(float));
   // for(int i=1; i<= 1; i++){
   for (int i = 1; i <= config.MAX_GENS; i++) {
-    alg.evolve();
+    alg.evolve(evolve_coalesced);
     std::cout << "Evolution: " << i << std::endl;
     if (i % config.X_INTVL == 0) {
       std::cout << "Exchanged top " << config.X_NUMBER << " best individuals!"

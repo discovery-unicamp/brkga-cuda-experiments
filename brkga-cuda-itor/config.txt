@@ -7,7 +7,7 @@ max_generations 1000
 iterations_exchange_best 200
 size_best_to_exchange 2 
 reset_iterations 1001
-decode_type 4
+decode_type 1
 num_threads_omp 8
 rand_seed 1234
 

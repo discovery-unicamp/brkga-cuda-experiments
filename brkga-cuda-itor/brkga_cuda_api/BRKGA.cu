@@ -237,7 +237,6 @@ void BRKGA::evaluate_chromosomes_host() {
   CUDA_CHECK(cudaMemcpy(h_population, d_population,
                         number_chromosomes * chromosome_size * sizeof(float),
                         cudaMemcpyDeviceToHost));
-
 #pragma omp parallel for default(none)                                         \
     shared(dimGrid, dimBlock, h_population, h_scores) collapse(2)              \
         num_threads(NUM_THREADS)
@@ -457,7 +456,7 @@ device_next_population(float *d_population, float *d_population2,
  * \brief Main function of the BRKGA algorithm.
  * It evolves K populations for one generation.
  */
-void BRKGA::evolve() {
+void BRKGA::evolve(bool coalesced) {
   using std::domain_error;
 
   if (decode_type == DEVICE_DECODE) {
@@ -488,7 +487,7 @@ void BRKGA::evolve() {
 
   // Kernel function, where each thread process one chromosome of the next
   // population.
-  if (decode_type != DEVICE_DECODE_CHROMOSOME_SORTED_COALESCED) {
+  if (!coalesced) {
     device_next_population<<<dimGrid, dimBlock>>>(
         d_population, d_population2, d_random_elite_parent, d_random_parent,
         chromosome_size, population_size, elite_size, mutants_size, rhoe,
