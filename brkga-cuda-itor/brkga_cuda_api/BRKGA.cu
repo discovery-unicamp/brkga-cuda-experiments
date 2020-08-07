@@ -31,6 +31,11 @@ __global__ void device_next_population_coalesced(
     float *d_random_parent, int chromosome_size, unsigned population_size,
     unsigned elite_size, unsigned mutants_size, float rhoe,
     PopIdxThreadIdxPair *d_scores_idx, unsigned number_genes);
+__global__ void device_next_population_coalesced_shared_mem(
+    float *d_population, float *d_population2, float *d_random_elite_parent,
+    float *d_random_parent, int chromosome_size, unsigned population_size,
+    unsigned elite_size, unsigned mutants_size, float rhoe,
+    PopIdxThreadIdxPair *d_scores_idx, unsigned number_genes);
 
 /**
  * End of Kernel functions
@@ -801,11 +806,21 @@ void BRKGA::evaluate_chromosomes_sorted_device_coalesced() {
 }
 
 /**
-\brief Kernel function, where each thread process one gene of one chromosome. It
-receives the current population *d_population, the next population pointer
-*d_population2, two random vectors for indices of parents, d_random_elite_parent
-and d_random_parent,
-*/
+ * \brief Kernel function to compute a next population.
+ * In this function each thread process one GENE.
+ * \param d_population is the array of chromosomes in the current population.
+ * \param d_population2 is the array where the next population will be set.
+ * \param d_random_parent is an array with random values to compute indices of
+ * parents for crossover. \param d_random_elite_parent is an array with random
+ * values to compute indices of ELITE parents for crossover. \param
+ * chromosome_size is the size of each individual. \param population_size is the
+ * size of each population. \param elite_size is the number of elite
+ * chromosomes. \param mutants_size is the number of mutants chromosomes. \param
+ * rhoe is the parameter used to decide if a gene is inherited from the ELINTE
+ * parent or the normal parent. \param d_scores_idx contains the original index
+ * of a chromosome in its population, and this struct is ordered by the
+ * chromosomes fitness.
+ */
 __global__ void device_next_population_coalesced(
     float *d_population, float *d_population2, float *d_random_elite_parent,
     float *d_random_parent, int chromosome_size, unsigned population_size,
@@ -866,5 +881,96 @@ __global__ void device_next_population_coalesced(
             d_population[parent_chromosome_idx * chromosome_size + gene_idx];
     } // in the else case the thread corresponds to a mutant and nothing is
       // done.
+  }
+}
+
+/**
+ * \brief Kernel function to compute a next population.
+ * In this function each thread process one GENE and also uses SHARED MEMORY.
+ * \param d_population is the array of chromosomes in the current population.
+ * \param d_population2 is the array where the next population will be set.
+ * \param d_random_parent is an array with random values to compute indices of
+ * parents for crossover. \param d_random_elite_parent is an array with random
+ * values to compute indices of ELITE parents for crossover. \param
+ * chromosome_size is the size of each individual. \param population_size is the
+ * size of each population. \param elite_size is the number of elite
+ * chromosomes. \param mutants_size is the number of mutants chromosomes. \param
+ * rhoe is the parameter used to decide if a gene is inherited from the ELINTE
+ * parent or the normal parent. \param d_scores_idx contains the original index
+ * of a chromosome in its population, and this struct is ordered by the
+ * chromosomes fitness.
+ */
+__global__ void device_next_population_coalesced_shared_mem(
+    float *d_population, float *d_population2, float *d_random_elite_parent,
+    float *d_random_parent, int chromosome_size, unsigned population_size,
+    unsigned elite_size, unsigned mutants_size, float rhoe,
+    PopIdxThreadIdxPair *d_scores_idx, unsigned number_genes) {
+
+  __shared__ float sm[THREADS_PER_BLOCK];
+
+  unsigned tx =
+      blockIdx.x * blockDim.x +
+      threadIdx
+          .x; // global thread index pointing to some gene of some chromosome
+  if (tx < number_genes) {
+    unsigned chromosome_idx =
+        tx / chromosome_size; // global chromosome index having this gene
+    unsigned gene_idx =
+        tx % chromosome_size; // the index of this gene in this chromosome
+
+    unsigned pop_idx =
+        chromosome_idx /
+        population_size; // the population index of this chromosome
+    unsigned inside_pop_idx =
+        chromosome_idx %
+        population_size; // the chromosome index inside this population
+
+    // if inside_pop_idx < elite_size then the chromosome is elite, so we copy
+    // elite gene
+    if (inside_pop_idx < elite_size) {
+      unsigned elite_chromosome_idx =
+          d_scores_idx[chromosome_idx]
+              .thIdx; // previous elite chromosome
+                      // corresponding to this chromosome
+      sm[threadIdx.x] =
+          d_population[elite_chromosome_idx * chromosome_size + gene_idx];
+      // d_population[elite_chromosome_idx * chromosome_size + gene_idx];
+    } else if (inside_pop_idx < population_size - mutants_size) {
+      // thread is responsible to crossover of this gene of this chromosome_idx
+      // below are the inside population random indexes of a elite parent and
+      // regular parent for crossover
+      unsigned inside_parent_elite_idx =
+          (unsigned)(ceilf(d_random_elite_parent[chromosome_idx] * elite_size) -
+                     1);
+      unsigned inside_parent_idx =
+          (unsigned)(elite_size +
+                     ceilf(d_random_parent[chromosome_idx] *
+                           (population_size - elite_size)) -
+                     1);
+
+      unsigned elite_chromosome_idx =
+          d_scores_idx[pop_idx * population_size + inside_parent_elite_idx]
+              .thIdx;
+
+      unsigned parent_chromosome_idx =
+          d_scores_idx[pop_idx * population_size + inside_parent_idx].thIdx;
+      if (d_population2[tx] <= rhoe)
+        // copy allele from elite parent
+        sm[threadIdx.x] =
+            d_population[elite_chromosome_idx * chromosome_size + gene_idx];
+      // d_population2[tx] =
+      //    d_population[elite_chromosome_idx * chromosome_size + gene_idx];
+      else
+        // copy allele from regular parent
+        sm[threadIdx.x] =
+            d_population[parent_chromosome_idx * chromosome_size + gene_idx];
+      // d_population2[tx] =
+      //    d_population[parent_chromosome_idx * chromosome_size + gene_idx];
+    } // in the else case the thread corresponds to a mutant and nothing is
+      // done.
+    if (inside_pop_idx < population_size - mutants_size) {
+      __syncthreads();
+      d_population2[tx] = sm[threadIdx.x];
+    }
   }
 }
