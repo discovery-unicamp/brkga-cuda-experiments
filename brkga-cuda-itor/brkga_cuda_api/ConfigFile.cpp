@@ -13,8 +13,9 @@
 #include <stdio.h>
 using namespace std;
 
-ConfigFile::ConfigFile() {
-  FILE *f = fopen(FILE_NAME, "r");
+ConfigFile::ConfigFile(char *instanceFile) {
+  FILE *f = fopen(instanceFile, "r");
+  //  FILE *f = fopen(FILE_NAME, "r");
 
   if (f == NULL) {
     throw Error("ConfigFile: Cannot open config file.");

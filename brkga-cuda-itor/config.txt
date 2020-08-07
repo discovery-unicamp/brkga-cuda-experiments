@@ -7,7 +7,7 @@ max_generations 1000
 iterations_exchange_best 200
 size_best_to_exchange 2 
 reset_iterations 1001
-decode_type 3
+decode_type 4
 num_threads_omp 8
 rand_seed 1234
 
@@ -15,6 +15,6 @@ rand_seed 1234
 #define HOST_DECODE 1
 #define DEVICE_DECODE 2
 #define DEVICE_DECODE_CHROMOSOME_SORTED 3
-#define DEVICE_DECODE_CHROMOSOME_SORTED_TEXTURE 4
-#define DEVICE_DECODE_CHROMOSOME_SORTED_COALESCED 5
+#define DEVICE_DECODE_CHROMOSOME_SORTED_COALESCED 4
+#define DEVICE_DECODE_CHROMOSOME_SORTED_TEXTURE 5
 

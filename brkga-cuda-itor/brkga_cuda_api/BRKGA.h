@@ -69,6 +69,7 @@ private:
 
   unsigned
       number_chromosomes; // total number of chromosomes in all K populations
+  unsigned number_genes;  // total number of genes in all K populations
   unsigned chromosome_size;
   unsigned population_size;
   unsigned elite_size;
@@ -78,10 +79,12 @@ private:
 
   curandGenerator_t gen; // cuda ramdom number generator
   dim3 dimBlock;
-  dim3 dimGrid;       // Grid dimension when having one thread per gene
-  dim3 dimGridChromo; // Grid dimension when having one thread per chromosome
-  dim3 dimGrid_population; // Grid dimension when having one block to process
-                           // each chromosome
+  dim3 dimGrid;       /// Grid dimension when having one thread per chromosome
+  dim3 dimGrid_gene;  /// Grid dimension when we have one thread per gene
+                      /// (coalesced used)
+  dim3 dimGridChromo; /// Grid dimension when having one thread per chromosome
+  dim3 dimGrid_population; /// Grid dimension when having one block to process
+                           /// each chromosome
 
   unsigned decode_type;
 
@@ -95,8 +98,7 @@ private:
   void evaluate_chromosomes_host();
   void evaluate_chromosomes_device();
   void evaluate_chromosomes_sorted_device();
-  void test_memory_malloc(cudaError_t err, unsigned code,
-                          unsigned total_memory);
+  void evaluate_chromosomes_sorted_device_coalesced();
 };
 
 #endif

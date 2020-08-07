@@ -666,4 +666,3 @@ void BRKGA::global_sort_chromosomes(){
 	thrust::sort_by_key(keys, keys + number_chromosomes, vals);
 }
 
-

@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "BRKGA.h"
 #include "ConfigFile.h"
@@ -15,13 +16,40 @@
 #include "TSPInstance.h"
 
 int main(int argc, char *argv[]) {
-  if (argc < 2) {
-    std::cerr << "usage: <TSPLIB-file>" << std::endl;
-    return -1;
+  int option;
+  char *par_file = NULL, *inst_file = NULL;
+  bool evolve_coalesced = false;
+  // put ':' at the starting of the string so compiler can distinguish between
+  // '?' and ':'
+  while ((option = getopt(argc, argv, ":-p:-i:-c")) !=
+         -1) { // get option from the getopt() method
+    switch (option) {
+    case 'p':
+      if (optarg == NULL) {
+        printf("No config file with parameters supplied: -p configfile");
+        return 0;
+      }
+      par_file = optarg;
+      break;
+    case 'i':
+      if (optarg == NULL) {
+        printf("No instance file supplied: -i instance");
+        return 0;
+      }
+      inst_file = optarg;
+      break;
+    case 'c':
+      evolve_coalesced = true;
+      break;
+    }
   }
-
-  const std::string instanceFile = std::string(argv[1]);
+  if (par_file == NULL || inst_file == NULL) {
+    std::cout << "Usage: -p configfile -i instance_file" << std::endl;
+    return 0;
+  }
+  const std::string instanceFile = std::string(inst_file);
   std::cout << "Instance file: " << instanceFile << std::endl;
+  std::cout << "Use coalesced evolution: " << evolve_coalesced << std::endl;
 
   // Read the instance:
   TSPInstance instance(instanceFile); // initialize the instance
@@ -42,7 +70,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  ConfigFile config;
+  ConfigFile config(par_file);
   BRKGA alg(n, config);
   alg.setInstanceInfo(adjMatrix, n * n, sizeof(float));
   // alg.setInstanceInfo2D(adjMatrix, n,n, sizeof(float));

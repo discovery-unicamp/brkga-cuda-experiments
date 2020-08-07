@@ -24,6 +24,19 @@
 #include <omp.h>
 
 /**
+ * Kernel functions
+ */
+__global__ void device_next_population_coalesced(
+    float *d_population, float *d_population2, float *d_random_elite_parent,
+    float *d_random_parent, int chromosome_size, unsigned population_size,
+    unsigned elite_size, unsigned mutants_size, float rhoe,
+    PopIdxThreadIdxPair *d_scores_idx, unsigned number_genes);
+
+/**
+ * End of Kernel functions
+ */
+
+/**
  * \brief Constructor
  * \param n the size of each chromosome, i.e. the number of genes
  * \param conf_file with the following fields:
@@ -48,6 +61,7 @@ BRKGA::BRKGA(unsigned n, ConfigFile &conf_file) {
   this->population_size = conf_file.p;
   this->number_populations = conf_file.K;
   this->number_chromosomes = conf_file.p * conf_file.K;
+  this->number_genes = this->number_chromosomes * n;
   this->chromosome_size = n;
   this->elite_size = (unsigned)(conf_file.pe * conf_file.p);
   this->mutants_size = (unsigned)(conf_file.pm * conf_file.p);
@@ -128,7 +142,17 @@ BRKGA::BRKGA(unsigned n, ConfigFile &conf_file) {
          total_memory / 1000000);
 
   this->dimBlock.x = THREADS_PER_BLOCK;
+
+  // Grid dimension when having one thread per chromosome
   this->dimGrid.x = (population_size * number_populations) / THREADS_PER_BLOCK;
+
+  // Grid dimension when having one thread per gene
+  if ((chromosome_size * conf_file.p * conf_file.K) % THREADS_PER_BLOCK == 0)
+    this->dimGrid_gene.x =
+        (chromosome_size * conf_file.p * conf_file.K) / THREADS_PER_BLOCK;
+  else
+    this->dimGrid_gene.x =
+        (chromosome_size * conf_file.p * conf_file.K) / THREADS_PER_BLOCK + 1;
 
   // Create pseudo-random number generator
   curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
@@ -440,6 +464,8 @@ void BRKGA::evolve() {
     evaluate_chromosomes_device();
   } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
     evaluate_chromosomes_sorted_device();
+  } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED_COALESCED) {
+    evaluate_chromosomes_sorted_device_coalesced();
   } else if (decode_type == HOST_DECODE) {
     evaluate_chromosomes_host();
   } else {
@@ -462,11 +488,19 @@ void BRKGA::evolve() {
 
   // Kernel function, where each thread process one chromosome of the next
   // population.
-  device_next_population<<<dimGrid, dimBlock>>>(
-      d_population, d_population2, d_random_elite_parent, d_random_parent,
-      chromosome_size, population_size, elite_size, mutants_size, rhoe,
-      d_scores_idx);
-
+  if (decode_type != DEVICE_DECODE_CHROMOSOME_SORTED_COALESCED) {
+    device_next_population<<<dimGrid, dimBlock>>>(
+        d_population, d_population2, d_random_elite_parent, d_random_parent,
+        chromosome_size, population_size, elite_size, mutants_size, rhoe,
+        d_scores_idx);
+  } else {
+    // Kernel function, where each thread process one chromosome of the next
+    // population.
+    device_next_population_coalesced<<<dimGrid_gene, dimBlock>>>(
+        d_population, d_population2, d_random_elite_parent, d_random_parent,
+        chromosome_size, population_size, elite_size, mutants_size, rhoe,
+        d_scores_idx, number_genes);
+  }
   float *aux = d_population2;
   d_population2 = d_population;
   d_population = aux;
@@ -740,4 +774,98 @@ void BRKGA::global_sort_chromosomes() {
   thrust::device_ptr<float> keys(d_scores);
   thrust::device_ptr<PopIdxThreadIdxPair> vals(d_scores_idx);
   thrust::sort_by_key(keys, keys + number_chromosomes, vals);
+}
+
+/**********************************
+ *
+ *
+ * COALESCED METHODS
+ *
+ */
+
+/***
+  If DEVICE_DECODE_CHROMOSOME_SORTED is used then this function decodes each
+cromosome with the kernel function decode_chromosomes_sorted above. But first we
+sort each chromosome by its genes values. We save this information in the struct
+ChromosomeGeneIdxPair d_chromosome_gene_idx.
+***/
+void BRKGA::evaluate_chromosomes_sorted_device_coalesced() {
+  // sort_chromosomes_genes();
+
+  // here we are supposed to have one block of threads per chromossome
+  // so in the function call dimGrid_population is used
+  // CHECK IF THIS IS REALLY AN IMPROVEMENT
+  // device_decode_chromosome_sorted_coalesced<<<dimGrid_population,
+  // dimBlock>>>(d_chromosome_gene_idx, chromosome_size,
+  //                                                                      d_instance_info,
+  //                                                                      d_scores);
+}
+
+/**
+\brief Kernel function, where each thread process one gene of one chromosome. It
+receives the current population *d_population, the next population pointer
+*d_population2, two random vectors for indices of parents, d_random_elite_parent
+and d_random_parent,
+*/
+__global__ void device_next_population_coalesced(
+    float *d_population, float *d_population2, float *d_random_elite_parent,
+    float *d_random_parent, int chromosome_size, unsigned population_size,
+    unsigned elite_size, unsigned mutants_size, float rhoe,
+    PopIdxThreadIdxPair *d_scores_idx, unsigned number_genes) {
+
+  unsigned tx =
+      blockIdx.x * blockDim.x +
+      threadIdx
+          .x; // global thread index pointing to some gene of some chromosome
+  if (tx < number_genes) {
+    unsigned chromosome_idx =
+        tx / chromosome_size; // global chromosome index having this gene
+    unsigned gene_idx =
+        tx % chromosome_size; // the index of this gene in this chromosome
+
+    unsigned pop_idx =
+        chromosome_idx /
+        population_size; // the population index of this chromosome
+    unsigned inside_pop_idx =
+        chromosome_idx %
+        population_size; // the chromosome index inside this population
+
+    // if inside_pop_idx < elite_size then the chromosome is elite, so we copy
+    // elite gene
+    if (inside_pop_idx < elite_size) {
+      unsigned elite_chromosome_idx =
+          d_scores_idx[chromosome_idx]
+              .thIdx; // previous elite chromosome
+                      // corresponding to this chromosome
+      d_population2[tx] =
+          d_population[elite_chromosome_idx * chromosome_size + gene_idx];
+    } else if (inside_pop_idx < population_size - mutants_size) {
+      // thread is responsible to crossover of this gene of this chromosome_idx
+      // below are the inside population random indexes of a elite parent and
+      // regular parent for crossover
+      unsigned inside_parent_elite_idx =
+          (unsigned)(ceilf(d_random_elite_parent[chromosome_idx] * elite_size) -
+                     1);
+      unsigned inside_parent_idx =
+          (unsigned)(elite_size +
+                     ceilf(d_random_parent[chromosome_idx] *
+                           (population_size - elite_size)) -
+                     1);
+
+      unsigned elite_chromosome_idx =
+          d_scores_idx[pop_idx * population_size + inside_parent_elite_idx]
+              .thIdx;
+      unsigned parent_chromosome_idx =
+          d_scores_idx[pop_idx * population_size + inside_parent_idx].thIdx;
+      if (d_population2[tx] <= rhoe)
+        // copy allele from elite parent
+        d_population2[tx] =
+            d_population[elite_chromosome_idx * chromosome_size + gene_idx];
+      else
+        // copy allele from regular parent
+        d_population2[tx] =
+            d_population[parent_chromosome_idx * chromosome_size + gene_idx];
+    } // in the else case the thread corresponds to a mutant and nothing is
+      // done.
+  }
 }
