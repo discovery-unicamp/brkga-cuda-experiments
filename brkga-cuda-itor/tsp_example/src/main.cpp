@@ -19,8 +19,9 @@ int main(int argc, char *argv[]) {
   int option;
   char *par_file = NULL, *inst_file = NULL;
   bool evolve_coalesced = false;
+  bool evolve_pipeline = false;
 
-  while ((option = getopt(argc, argv, ":-p:-i:-c")) !=
+  while ((option = getopt(argc, argv, ":-p:-i:-c:-l")) !=
          -1) { // get option from the getopt() method
     switch (option) {
     case 'p':
@@ -39,6 +40,9 @@ int main(int argc, char *argv[]) {
       break;
     case 'c':
       evolve_coalesced = true;
+      break;
+    case 'l':
+      evolve_pipeline = true;
       break;
     }
   }
@@ -70,12 +74,12 @@ int main(int argc, char *argv[]) {
   }
 
   ConfigFile config(par_file);
-  BRKGA alg(n, config);
+  BRKGA alg(n, config, evolve_coalesced, evolve_pipeline);
   alg.setInstanceInfo(adjMatrix, n * n, sizeof(float));
   // alg.setInstanceInfo2D(adjMatrix, n,n, sizeof(float));
   // for(int i=1; i<= 1; i++){
   for (int i = 1; i <= config.MAX_GENS; i++) {
-    alg.evolve(evolve_coalesced);
+    alg.evolve();
     std::cout << "Evolution: " << i << std::endl;
     if (i % config.X_INTVL == 0) {
       std::cout << "Exchanged top " << config.X_NUMBER << " best individuals!"

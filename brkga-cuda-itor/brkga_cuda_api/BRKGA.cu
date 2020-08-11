@@ -24,8 +24,23 @@
 #include <omp.h>
 
 /**
- * Kernel functions
+ * GPU Kernel functions
  */
+__global__ void decode(float *d_scores, float *d_population,
+                       int chromosome_size, void *d_instance_info);
+__global__ void
+decode_chromosomes_sorted(float *d_scores,
+                          ChromosomeGeneIdxPair *d_chromosome_gene_idx,
+                          int chromosome_size, void *d_instance_info);
+__global__ void
+device_set_chromosome_gene_idx(ChromosomeGeneIdxPair *d_chromosome_gene_idx,
+                               int chromosome_size);
+__global__ void
+device_next_population(float *d_population, float *d_population2,
+                       float *d_random_elite_parent, float *d_random_parent,
+                       int chromosome_size, unsigned population_size,
+                       unsigned elite_size, unsigned mutants_size, float rhoe,
+                       PopIdxThreadIdxPair *d_scores_idx);
 __global__ void device_next_population_coalesced(
     float *d_population, float *d_population2, float *d_random_elite_parent,
     float *d_random_parent, int chromosome_size, unsigned population_size,
@@ -36,6 +51,19 @@ __global__ void device_next_population_coalesced_shared_mem(
     float *d_random_parent, int chromosome_size, unsigned population_size,
     unsigned elite_size, unsigned mutants_size, float rhoe,
     PopIdxThreadIdxPair *d_scores_idx, unsigned number_genes);
+__global__ void device_set_idx(PopIdxThreadIdxPair *d_scores_idx,
+                               int population_size);
+__global__ void device_exchange_elite(float *d_population, int chromosome_size,
+                                     unsigned population_size,
+                                     unsigned number_populations,
+                                     PopIdxThreadIdxPair *d_scores_idx,
+                                     unsigned M);
+__global__ void device_save_best_chromosomes(float *d_population,
+                                             unsigned chromosome_size,
+                                             PopIdxThreadIdxPair *d_scores_idx,
+                                             float *d_best_solutions,
+                                             float *d_scores,
+                                             unsigned best_saved);
 
 /**
  * End of Kernel functions
@@ -45,14 +73,16 @@ __global__ void device_next_population_coalesced_shared_mem(
  * \brief Constructor
  * \param n the size of each chromosome, i.e. the number of genes
  * \param conf_file with the following fields:
- * p the population size
+ * p the population size;
  * pe a float that represents the proportion of elite chromosomes in each
- * population pm a float that represents the proportion of mutants in each
- * population K the number of independent populations decode_type HOST_DECODE,
- * DEVICE_DECODE, etc (see ConfigFile.h) OMP_THREADS used in openMP when
- * processing on host RAND_SEED used to initialize random number generators
+ * population; pm a float that represents the proportion of mutants in each
+ * population; K the number of independent populations; decode_type HOST_DECODE,
+ * DEVICE_DECODE, etc (see ConfigFile.h); OMP_THREADS used in openMP when
+ * processing on host; RAND_SEED used to initialize random number generators.
+ * \param evolve_coalesced indicates if it will be used one thread per gene to compute next population (coalesced) or one thread per chromosome.
+ * \param evolve_pipeline indicates if each population is processed independent and in paralell while CPU compute scores of other population.
  */
-BRKGA::BRKGA(unsigned n, ConfigFile &conf_file) {
+BRKGA::BRKGA(unsigned n, ConfigFile &conf_file, bool evolve_coalesced, bool evolve_pipeline) {
   if (conf_file.p % THREADS_PER_BLOCK != 0) {
     // round population size to a multiple of THREADS_PER_BLOCK
     conf_file.p = ((conf_file.p / THREADS_PER_BLOCK) + 1) * THREADS_PER_BLOCK;
@@ -73,6 +103,8 @@ BRKGA::BRKGA(unsigned n, ConfigFile &conf_file) {
   this->rhoe = conf_file.rhoe;
   this->decode_type = conf_file.decode_type;
   this->NUM_THREADS = conf_file.OMP_THREADS;
+  this->evolve_pipeline = evolve_pipeline;
+  this->evolve_coalesced = evolve_coalesced;
 
   using std::range_error;
   if (chromosome_size == 0) {
@@ -461,7 +493,7 @@ device_next_population(float *d_population, float *d_population2,
  * \brief Main function of the BRKGA algorithm.
  * It evolves K populations for one generation.
  */
-void BRKGA::evolve(bool coalesced) {
+void BRKGA::evolve() {
   using std::domain_error;
 
   if (decode_type == DEVICE_DECODE) {
@@ -492,7 +524,7 @@ void BRKGA::evolve(bool coalesced) {
 
   // Kernel function, where each thread process one chromosome of the next
   // population.
-  if (!coalesced) {
+  if (!evolve_coalesced) {
     device_next_population<<<dimGrid, dimBlock>>>(
         d_population, d_population2, d_random_elite_parent, d_random_parent,
         chromosome_size, population_size, elite_size, mutants_size, rhoe,

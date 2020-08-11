@@ -22,10 +22,10 @@
  */
 class BRKGA {
 public:
-  BRKGA(unsigned n, ConfigFile &conf_file);
+  BRKGA(unsigned n, ConfigFile &conf_file, bool coalesced = true, bool evolve_pipeline = true);
   ~BRKGA();
   void reset_population(void);
-  void evolve(bool coalesced = false);
+  void evolve();
   void exchangeElite(unsigned M);
   std::vector<std::vector<float>> getkBestChromosomes(unsigned k);
   void setInstanceInfo(void *info, long unsigned num, long unsigned size);
@@ -88,8 +88,10 @@ private:
 
   unsigned decode_type;
 
-  unsigned NUM_THREADS = 8; // if host_decod is used openmp can be used to
+  unsigned NUM_THREADS = 8; /// if host_decod is used openmp can be used to
                             // decode
+  bool evolve_coalesced = false; /// use one thread per gene to compute a next population
+  bool evolve_pipeline = false; /// use pipeline to process one population at a time in paralell with CPU computing scores
 
   void initialize_population(int p);
   void global_sort_chromosomes();
