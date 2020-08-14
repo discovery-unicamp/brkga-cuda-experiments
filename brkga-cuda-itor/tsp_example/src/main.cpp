@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
   bool evolve_coalesced = false;
   bool evolve_pipeline = false;
 
-  while ((option = getopt(argc, argv, ":-p:-i:-c:-l")) !=
+  while ((option = getopt(argc, argv, "p:i:cl")) !=
          -1) { // get option from the getopt() method
     switch (option) {
     case 'p':
@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
   const std::string instanceFile = std::string(inst_file);
   std::cout << "Instance file: " << instanceFile << std::endl;
   std::cout << "Use coalesced evolution: " << evolve_coalesced << std::endl;
+  std::cout << "Use pipelined evolution: " << evolve_pipeline << std::endl;
 
   // Read the instance:
   TSPInstance instance(instanceFile); // initialize the instance
@@ -78,8 +79,9 @@ int main(int argc, char *argv[]) {
   alg.setInstanceInfo(adjMatrix, n * n, sizeof(float));
   // alg.setInstanceInfo2D(adjMatrix, n,n, sizeof(float));
   // for(int i=1; i<= 1; i++){
-  for (int i = 1; i <= config.MAX_GENS; i++) {
-    alg.evolve();
+  int step=1;
+  for (int i = 1; i <= config.MAX_GENS; i+=step) {
+    alg.evolve(step);
     std::cout << "Evolution: " << i << std::endl;
     if (i % config.X_INTVL == 0) {
       std::cout << "Exchanged top " << config.X_NUMBER << " best individuals!"
@@ -93,6 +95,7 @@ int main(int argc, char *argv[]) {
     }
     // std::vector<std::vector <float>> res = alg.getkBestChromosomes(1);
     // std::cout<<"Value of cuda score: " << res[0][0] << std::endl;
+    //i += 1;
   }
 
   std::vector<std::vector<float>> res2 = alg.getkBestChromosomes2(3);
