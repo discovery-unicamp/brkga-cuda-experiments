@@ -109,6 +109,9 @@ private:
                                 /// time in paralell with CPU computing scores
   bool pinned = false; /// use pinned memory or not to allocate h_population
 
+  cudaStream_t *pop_stream =
+      NULL; // use one stream per population when doing pipelined version
+
   size_t allocate_data();
   void initialize_population(int p);
   void global_sort_chromosomes();
