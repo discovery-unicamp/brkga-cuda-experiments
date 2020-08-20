@@ -79,8 +79,8 @@ int main(int argc, char *argv[]) {
   alg.setInstanceInfo(adjMatrix, n * n, sizeof(float));
   // alg.setInstanceInfo2D(adjMatrix, n,n, sizeof(float));
   // for(int i=1; i<= 1; i++){
-  int step=1;
-  for (int i = 1; i <= config.MAX_GENS; i+=step) {
+  int step = 1;
+  for (int i = 1; i <= config.MAX_GENS; i += step) {
     alg.evolve(step);
     std::cout << "Evolution: " << i << std::endl;
     if (i % config.X_INTVL == 0) {
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
     }
     // std::vector<std::vector <float>> res = alg.getkBestChromosomes(1);
     // std::cout<<"Value of cuda score: " << res[0][0] << std::endl;
-    //i += 1;
+    // i += 1;
   }
 
   std::vector<std::vector<float>> res2 = alg.getkBestChromosomes2(3);

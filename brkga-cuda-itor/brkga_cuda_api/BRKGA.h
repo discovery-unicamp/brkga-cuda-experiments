@@ -107,6 +107,7 @@ private:
       false; /// use one thread per gene to compute a next population
   bool evolve_pipeline = false; /// use pipeline to process one population at a
                                 /// time in paralell with CPU computing scores
+  bool pinned = false; /// use pinned memory or not to allocate h_population
 
   size_t allocate_data();
   void initialize_population(int p);
@@ -121,6 +122,8 @@ private:
   void evolve_pipe(int num_generations = 1);
   void sort_chromosomes_pipe(int pop_id);
   void initialize_population_pipe(int p, int pop_id);
+  void sort_chromosomes_genes_pipe(int pop_id);
+  void evaluate_chromosomes_sorted_device_pipe(int pop_id);
 };
 
 #endif

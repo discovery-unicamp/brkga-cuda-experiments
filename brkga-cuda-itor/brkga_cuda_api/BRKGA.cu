@@ -33,6 +33,12 @@ decode_chromosomes_sorted(float *d_scores,
                           ChromosomeGeneIdxPair *d_chromosome_gene_idx,
                           int chromosome_size, void *d_instance_info);
 __global__ void
+decode_chromosomes_sorted_pipe(float *d_scores,
+                               ChromosomeGeneIdxPair *d_chromosome_gene_idx,
+                               int chromosome_size, void *d_instance_info,
+                               unsigned population_size, int pop_id);
+
+__global__ void
 device_set_chromosome_gene_idx(ChromosomeGeneIdxPair *d_chromosome_gene_idx,
                                int chromosome_size);
 __global__ void
@@ -91,6 +97,8 @@ __global__ void device_save_best_chromosomes(float *d_population,
  */
 BRKGA::BRKGA(unsigned n, ConfigFile &conf_file, bool evolve_coalesced,
              bool evolve_pipeline) {
+  this->pinned =
+      true; // Allocate host population pointer as pinned memory or not.
   if (conf_file.p % THREADS_PER_BLOCK != 0) {
     // round population size to a multiple of THREADS_PER_BLOCK
     conf_file.p = ((conf_file.p / THREADS_PER_BLOCK) + 1) * THREADS_PER_BLOCK;
@@ -154,7 +162,7 @@ BRKGA::BRKGA(unsigned n, ConfigFile &conf_file, bool evolve_coalesced,
     this->dimGrid_gene.x =
         (chromosome_size * conf_file.p * conf_file.K) / THREADS_PER_BLOCK + 1;
 
-  // Grid dimension the using pipeline
+  // Grid dimension when using pipeline
   this->dimGrid_pipe.x = (population_size) / THREADS_PER_BLOCK;
   if ((chromosome_size * conf_file.p) % THREADS_PER_BLOCK == 0)
     this->dimGrid_gene_pipe.x =
@@ -179,8 +187,13 @@ size_t BRKGA::allocate_data() {
   size_t total_memory = 0;
 
   // Allocate a float array representing all K populations on host and device
-  h_population =
-      (float *)malloc(number_chromosomes * chromosome_size * sizeof(float));
+  if (!pinned) {
+    h_population =
+        (float *)malloc(number_chromosomes * chromosome_size * sizeof(float));
+  } else {
+    CUDA_CHECK(cudaMallocHost((void **)&h_population,
+               number_chromosomes * chromosome_size * sizeof(float)));
+  }
   total_memory += number_chromosomes * chromosome_size * sizeof(float);
   CUDA_CHECK(cudaMalloc((void **)&d_population,
                         number_chromosomes * chromosome_size * sizeof(float)));
@@ -191,7 +204,12 @@ size_t BRKGA::allocate_data() {
   total_memory += number_chromosomes * sizeof(float);
   // Allocate an array representing the scores of each chromosome on host and
   // device
-  h_scores = (float *)malloc(number_chromosomes * sizeof(float));
+  if (!pinned) {
+    h_scores = (float *)malloc(number_chromosomes * sizeof(float));
+  } else {
+    CUDA_CHECK(cudaMallocHost((void **)&h_scores,
+               number_chromosomes * sizeof(float)));
+  }
   CUDA_CHECK(
       cudaMalloc((void **)&d_scores, number_chromosomes * sizeof(float)));
 
@@ -241,10 +259,16 @@ BRKGA::~BRKGA() {
 
   cudaFree(d_population);
   cudaFree(d_population2);
-  free(h_population);
+  if(!pinned)
+    free(h_population);
+  else
+    cudaFree(h_population);
 
   cudaFree(d_scores);
-  free(h_scores);
+  if(!pinned)
+    free(h_scores);
+  else
+    cudaFree(h_scores);
 
   cudaFree(d_scores_idx);
   free(h_scores_idx);
@@ -318,7 +342,8 @@ void BRKGA::evaluate_chromosomes_host() {
 /**
  * \brief If pipeline decoding is used then HOST_DECODE must be used.
  * This function decodes each cromosome with the host_decode function provided
- * in Decoder.cpp. One population specific population is decoded. \param pop_id
+ * in Decoder.cpp. One population specific population is decoded.
+ * \param pop_id
  * is the index of the population to be decoded.
  */
 void BRKGA::evaluate_chromosomes_host_pipe(int pop_id) {
@@ -405,6 +430,17 @@ decode_chromosomes_sorted(float *d_scores,
       d_instance_info);
 }
 
+__global__ void
+decode_chromosomes_sorted_pipe(float *d_scores,
+                               ChromosomeGeneIdxPair *d_chromosome_gene_idx,
+                               int chromosome_size, void *d_instance_info,
+                               unsigned population_size, int pop_id) {
+  unsigned tx = blockIdx.x * blockDim.x + threadIdx.x;
+  d_scores[pop_id * population_size + tx] = device_decode_chromosome_sorted(
+      d_chromosome_gene_idx + (pop_id * population_size + tx) * chromosome_size,
+      chromosome_size, d_instance_info);
+}
+
 /**
  * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used then this function decodes
  * each cromosome with the kernel function decode_chromosomes_sorted above. But
@@ -415,6 +451,20 @@ void BRKGA::evaluate_chromosomes_sorted_device() {
   sort_chromosomes_genes();
   decode_chromosomes_sorted<<<dimGrid, dimBlock>>>(
       d_scores, d_chromosome_gene_idx, chromosome_size, d_instance_info);
+}
+
+/**
+ * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used then this function decodes
+ * each cromosome with the kernel function decode_chromosomes_sorted above. But
+ * first we sort each chromosome by its genes values. We save this information
+ * in the struct ChromosomeGeneIdxPair d_chromosome_gene_idx.
+ * \param pop_id is the index of the population to be processed
+ */
+void BRKGA::evaluate_chromosomes_sorted_device_pipe(int pop_id) {
+  sort_chromosomes_genes_pipe(pop_id);
+  decode_chromosomes_sorted_pipe<<<dimGrid_pipe, dimBlock>>>(
+      d_scores, d_chromosome_gene_idx, chromosome_size, d_instance_info,
+      population_size, pop_id);
 }
 
 /**
@@ -433,6 +483,30 @@ device_set_chromosome_gene_idx(ChromosomeGeneIdxPair *d_chromosome_gene_idx,
   for (int i = 0; i < chromosome_size; i++) {
     d_chromosome_gene_idx[tx * chromosome_size + i].chromosomeIdx = tx;
     d_chromosome_gene_idx[tx * chromosome_size + i].geneIdx = i;
+  }
+}
+
+/**
+ * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used, then this method
+ * saves for each gene of each chromosome, the chromosome
+ * index, and the original gene index. Used later to sort all chromossomes by
+ * gene values. We save gene indexes to preserve this information after sorting.
+ * \param d_chromosome_gene_idx is an array containing a struct for all
+ * chromosomes of all populations.
+ * \param chromosome_size is the size of each chromosome.
+ * \param pop_id is the index of the population to work on.
+ */
+__global__ void device_set_chromosome_gene_idx_pipe(
+    ChromosomeGeneIdxPair *d_chromosome_gene_idx, int chromosome_size,
+    int population_size, int pop_id) {
+  int tx = blockIdx.x * blockDim.x + threadIdx.x;
+  for (int i = 0; i < chromosome_size; i++) {
+    d_chromosome_gene_idx[pop_id * population_size * chromosome_size +
+                          tx * chromosome_size + i]
+        .chromosomeIdx = tx;
+    d_chromosome_gene_idx[pop_id * population_size * chromosome_size +
+                          tx * chromosome_size + i]
+        .geneIdx = i;
   }
 }
 
@@ -474,6 +548,39 @@ void BRKGA::sort_chromosomes_genes() {
   // stable sort both d_population2 and d_chromosome_gene_idx by the chromosome
   // index values
   thrust::stable_sort_by_key(vals, vals + number_chromosomes * chromosome_size,
+                             keys);
+}
+
+/**
+ * \brief If DEVICE_DECODE_CHROMOSOME_SORTED, then we
+ * we perform 2 stable_sort sorts: first we sort all genes of all
+ * chromosomes by their values, and then we sort by the chromosomes index, and
+ * since stable_sort is used, for each chromosome we will have its genes sorted
+ * by their values.
+ * \param pop_id is the index of the population to be sorted
+ */
+void BRKGA::sort_chromosomes_genes_pipe(int pop_id) {
+  // First set for each gene, its chromosome index and its original index in the
+  // chromosome
+  device_set_chromosome_gene_idx_pipe<<<dimGrid_pipe, dimBlock>>>(
+      d_chromosome_gene_idx, chromosome_size, population_size, pop_id);
+  // we use d_population2 to sort all genes by their values
+  cudaMemcpy(&d_population2[pop_id * population_size * chromosome_size],
+             &d_population[pop_id * population_size * chromosome_size],
+             population_size * chromosome_size * sizeof(float),
+             cudaMemcpyDeviceToDevice);
+
+  thrust::device_ptr<float> keys(
+      &d_population2[pop_id * population_size * chromosome_size]);
+  thrust::device_ptr<ChromosomeGeneIdxPair> vals(
+      &d_chromosome_gene_idx[pop_id * population_size * chromosome_size]);
+  // stable sort both d_population2 and d_chromosome_gene_idx by all the genes
+  // values
+  thrust::stable_sort_by_key(keys, keys + population_size * chromosome_size,
+                             vals);
+  // stable sort both d_population2 and d_chromosome_gene_idx by the chromosome
+  // index values
+  thrust::stable_sort_by_key(vals, vals + population_size * chromosome_size,
                              keys);
 }
 
@@ -600,7 +707,7 @@ void BRKGA::evolve(int num_generations) {
     float *aux = d_population2;
     d_population2 = d_population;
     d_population = aux;
-  } //end of for
+  } // end of for
 }
 
 /**
@@ -608,7 +715,7 @@ void BRKGA::evolve(int num_generations) {
  * It evolves K populations for one generation in a pipelined fashion: each
  population is evolved separatly in the GPU while decoding is performed on CPU.
  */
-/*void BRKGA::evolve_pipe2() {
+void BRKGA::evolve_pipe(int num_generations) {
   using std::domain_error;
 
   // generate random numbers to index parents used for crossover
@@ -624,12 +731,18 @@ void BRKGA::evolve(int num_generations) {
     {
       for (int p = 0; p < number_populations; p++) {
 #pragma omp task depend(out : f1[p])
-        { printf("evaluate chromosomes by thread %d\n", omp_get_thread_num());
-        evaluate_chromosomes_host_pipe(p); } // end of task
+        {
+          // printf("evaluate chromosomes by thread %d\n",
+          // omp_get_thread_num());
+          if (p > 1)
+            evaluate_chromosomes_host_pipe(p);
+          else
+            evaluate_chromosomes_sorted_device_pipe(p);
+        } // end of task
 
 #pragma omp task depend(in : f1[p])
         {
-          printf("process chromosomes by thread %d\n", omp_get_thread_num());
+          // printf("process chromosomes by thread %d\n", omp_get_thread_num());
           // After this call the vector d_scores_idx has all chromosomes sorted
           // by population, and inside each population, chromosomes are sorted
           // by score
@@ -656,9 +769,8 @@ void BRKGA::evolve(int num_generations) {
   d_population2 = d_population;
   d_population = aux;
 }
-*/
 
-void BRKGA::evolve_pipe(int num_generations) {
+/*void BRKGA::evolve_pipe(int num_generations) {
   using std::domain_error;
 
   // generate random numbers to index parents used for crossover
@@ -708,7 +820,7 @@ void BRKGA::evolve_pipe(int num_generations) {
   d_population2 = d_population;
   d_population = aux;
 }
-
+*/
 /**
  * \brief initializes all chromosomes in all populations with random values.
  * \param p is used to decide to initialize d_population or d_population2.
