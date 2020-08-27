@@ -52,8 +52,6 @@ int main(int argc, char *argv[]) {
   }
   const std::string instanceFile = std::string(inst_file);
   std::cout << "Instance file: " << instanceFile << std::endl;
-  std::cout << "Use coalesced evolution: " << evolve_coalesced << std::endl;
-  std::cout << "Use pipelined evolution: " << evolve_pipeline << std::endl;
 
   // Read the instance:
   TSPInstance instance(instanceFile); // initialize the instance
@@ -77,6 +75,7 @@ int main(int argc, char *argv[]) {
   ConfigFile config(par_file);
   BRKGA alg(n, config, evolve_coalesced, evolve_pipeline);
   alg.setInstanceInfo(adjMatrix, n * n, sizeof(float));
+
   // alg.setInstanceInfo2D(adjMatrix, n,n, sizeof(float));
   // for(int i=1; i<= 1; i++){
   int step = 1;

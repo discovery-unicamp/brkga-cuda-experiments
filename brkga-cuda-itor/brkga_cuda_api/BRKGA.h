@@ -34,16 +34,25 @@ public:
   std::vector<std::vector<float>> getkBestChromosomes2(unsigned k);
 
 private:
-  float *d_population = NULL;  /// device population
-  float *d_population2 = NULL; /// device population
-  float **d_population_pipeline =
-      NULL; /// device population using evolve_pipeline
-  float **d_population_pipeline2 =
-      NULL;                   /// device population using evolve_pipeline
-  float *h_population = NULL; /// host population
+  float *d_population = NULL;  /// Device populations
+  float *d_population2 = NULL; /// Device populations
+  float **d_population_pipe =
+      NULL; /// Device populations using evolve_pipeline. One pointer is used to
+            /// each population.
+  float **d_population_pipe2 =
+      NULL; /// Device populations using evolve_pipeline. One pointer is used to
+            /// each population.
+  float *h_population = NULL; /// Host populations.
+  float **h_population_pipe =
+      NULL; /// Device populations using evolve_pipeline. One
+            /// pointer is used to each population.
 
-  float *d_scores = NULL; /// device score of each chromossome
-  float *h_scores = NULL; /// host score of each chromossome
+  float *d_scores = NULL; /// Device score of each chromossome
+  float *h_scores = NULL; /// Host score of each chromossome
+  float **d_scores_pipe =
+      NULL; /// Pointer to each population device score of each chromossome
+  float **h_scores_pipe =
+      NULL; /// Pointer to each populatio host score of each chromossome
 
   void *d_instance_info = NULL; /// vector of unknow type containg instance info
                                 /// used to evaluate a chromosome
@@ -56,21 +65,32 @@ private:
 
   PopIdxThreadIdxPair *d_scores_idx =
       NULL; /// table with indices of each chromosome score on device
+  PopIdxThreadIdxPair **d_scores_idx_pipe =
+      NULL; /// Pointer for each population for its table with indices of each
+            /// chromosome score on device
+
   PopIdxThreadIdxPair *h_scores_idx =
       NULL; /// table with indices of each chromosome score on host
 
   ChromosomeGeneIdxPair *d_chromosome_gene_idx =
-      NULL; /// table with indices for all chromosomes and each of its gene on
+      NULL; /// Table with indices for all chromosomes and each of its gene on
             /// device
-  ChromosomeGeneIdxPair *h_chromosome_gene_idx =
-      NULL; /// table with indices for all chromosomes and each of its gene on
             /// host
+  ChromosomeGeneIdxPair **d_chromosome_gene_idx_pipe =
+      NULL; /// Pointer for each population for its table with indices for all
+            /// chromosomes in the population and each of its gene on device
 
   float *d_random_elite_parent =
       NULL; /// a random number for each thread to choose its elite parent
             /// during crossover
   float *d_random_parent = NULL; /// a random number for each thread to choose
                                  /// its non-elite parent during crossover
+  float **d_random_elite_parent_pipe =
+      NULL; /// A pointer to each population where random numbers for each
+            /// thread to choose its elite parent during crossover
+  float **d_random_parent_pipe =
+      NULL; /// A pointer to each population to random numbers for each thread
+            /// to choose its non-elite parent during crossover
 
   unsigned
       number_chromosomes; /// total number of chromosomes in all K populations
@@ -127,6 +147,7 @@ private:
   void initialize_population_pipe(int p, int pop_id);
   void sort_chromosomes_genes_pipe(int pop_id);
   void evaluate_chromosomes_sorted_device_pipe(int pop_id);
+  void initialize_pipeline_parameters();
 };
 
 #endif
