@@ -22,11 +22,12 @@
  */
 class BRKGA {
 public:
-  BRKGA(unsigned n, ConfigFile &conf_file, bool coalesced = true,
-        bool evolve_pipeline = true);
+  BRKGA(unsigned n, ConfigFile &conf_file, bool coalesced = false,
+        bool evolve_pipeline = false, unsigned n_pop_pipe = 0,
+        unsigned RAND_SEED = 1234);
   ~BRKGA();
   void reset_population(void);
-  void evolve(int num_generations = 1);
+  void evolve();
   void exchangeElite(unsigned M);
   std::vector<std::vector<float>> getkBestChromosomes(unsigned k);
   void setInstanceInfo(void *info, long unsigned num, long unsigned size);
@@ -119,7 +120,10 @@ private:
   dim3 dimGrid_population_pipe; /// Grid dimension when having one block to
                                 /// process each chromosome
 
-  unsigned decode_type;
+  unsigned decode_type;  /// How to decode each chromossome
+  unsigned decode_type2; /// How to decode chromossomes when pipeline is used. A
+                         /// minor part of populations are decoded with this
+                         /// other option
 
   unsigned NUM_THREADS = 8; /// if host_decod is used openmp can be used to
                             // decode
@@ -131,6 +135,8 @@ private:
 
   cudaStream_t *pop_stream =
       NULL; // use one stream per population when doing pipelined version
+  unsigned n_pop_pipe =
+      0; // number of populations to be decoded on GPU when using pipelining
 
   size_t allocate_data();
   void initialize_population(int p);
@@ -140,14 +146,14 @@ private:
   void evaluate_chromosomes_host();
   void evaluate_chromosomes_device();
   void evaluate_chromosomes_sorted_device();
-  void evaluate_chromosomes_sorted_device_coalesced();
-  void evaluate_chromosomes_host_pipe(int pop_id);
-  void evolve_pipe(int num_generations = 1);
-  void sort_chromosomes_pipe(int pop_id);
-  void initialize_population_pipe(int p, int pop_id);
-  void sort_chromosomes_genes_pipe(int pop_id);
-  void evaluate_chromosomes_sorted_device_pipe(int pop_id);
+  void evaluate_chromosomes_host_pipe(unsigned pop_id);
+  void evolve_pipe();
+  void sort_chromosomes_pipe(unsigned pop_id);
+  void initialize_population_pipe(int p, unsigned pop_id);
+  void sort_chromosomes_genes_pipe(unsigned pop_id);
+  void evaluate_chromosomes_sorted_device_pipe(unsigned pop_id);
   void initialize_pipeline_parameters();
+  void evaluate_chromosomes_device_pipe(unsigned pop_id);
 };
 
 #endif

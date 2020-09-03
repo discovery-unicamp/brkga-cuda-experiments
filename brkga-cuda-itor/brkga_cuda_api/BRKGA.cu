@@ -11,6 +11,7 @@
 #include "Decoder.h"
 #include "cuda_error.cuh"
 
+#include <algorithm>
 #include <exception>
 #include <iostream>
 #include <stdio.h>
@@ -63,7 +64,7 @@ __global__ void device_next_population_coalesced_shared_mem(
 __global__ void device_set_idx(PopIdxThreadIdxPair *d_scores_idx,
                                int population_size);
 __global__ void device_set_idx_pipe(PopIdxThreadIdxPair *d_scores_idx_pop,
-                                    int pop_id);
+                                    unsigned pop_id);
 __global__ void device_exchange_elite(float *d_population, int chromosome_size,
                                       unsigned population_size,
                                       unsigned number_populations,
@@ -89,14 +90,17 @@ __global__ void device_save_best_chromosomes(float *d_population,
  * population; pm a float that represents the proportion of mutants in each
  * population; K the number of independent populations; decode_type HOST_DECODE,
  * DEVICE_DECODE, etc (see ConfigFile.h); OMP_THREADS used in openMP when
- * processing on host; RAND_SEED used to initialize random number generators.
+ * processing on host;
  * \param evolve_coalesced indicates if it will be used one thread per gene to
- * compute next population (coalesced) or one thread per chromosome. \param
- * evolve_pipeline indicates if each population is processed independent and in
- * paralell while CPU compute scores of other population.
+ * compute next population (coalesced) or one thread per chromosome.
+ * \param evolve_pipeline indicates if each population is processed independent
+ * and in paralell while CPU compute scores of other population.
+ * \param n_pop_pipe If pipeline is used them n_pop_pipe indicates
+ * how many of all populations are to be decoded on GPU.
+ * \param RAND_SEED used to initialize random number generators.
  */
 BRKGA::BRKGA(unsigned n, ConfigFile &conf_file, bool evolve_coalesced,
-             bool evolve_pipeline) {
+             bool evolve_pipeline, unsigned n_pop_pipe, unsigned RAND_SEED) {
   this->pinned =
       true; // Allocate host population pointer as pinned memory or not.
   if (conf_file.p % THREADS_PER_BLOCK != 0) {
@@ -118,12 +122,14 @@ BRKGA::BRKGA(unsigned n, ConfigFile &conf_file, bool evolve_coalesced,
   this->mutants_size = (unsigned)(conf_file.pm * conf_file.p);
   this->rhoe = conf_file.rhoe;
   this->decode_type = conf_file.decode_type;
+  this->decode_type2 = conf_file.decode_type2;
   this->NUM_THREADS = conf_file.OMP_THREADS;
   this->evolve_pipeline = evolve_pipeline;
   this->evolve_coalesced = evolve_coalesced;
-
+  this->n_pop_pipe = min(n_pop_pipe, number_populations);
   if (evolve_pipeline)
-    std::cout << "Evolving with pipeline!" << std::endl;
+    std::cout << "Evolving with pipeline with " << this->n_pop_pipe
+              << " populations decoded on GPU !" << std::endl;
   if (evolve_coalesced)
     std::cout << "Evolving with coalesced memory!" << std::endl;
   if (pinned)
@@ -171,7 +177,7 @@ BRKGA::BRKGA(unsigned n, ConfigFile &conf_file, bool evolve_coalesced,
   // Create pseudo-random number generator
   curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
   // Set seed
-  curandSetPseudoRandomGeneratorSeed(gen, conf_file.RAND_SEED);
+  curandSetPseudoRandomGeneratorSeed(gen, RAND_SEED);
   // Initialize population with random alleles with generated random floats on
   // device
   reset_population();
@@ -366,7 +372,9 @@ void BRKGA::setInstanceInfo(void *info, long unsigned num, long unsigned size) {
         total_memory, total_memory / 1000000);
 
     if (decode_type == DEVICE_DECODE ||
-        decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
+        decode_type == DEVICE_DECODE_CHROMOSOME_SORTED ||
+        decode_type2 == DEVICE_DECODE ||
+        decode_type2 == DEVICE_DECODE_CHROMOSOME_SORTED) {
       CUDA_CHECK(cudaMalloc((void **)&d_instance_info, num * size));
       CUDA_CHECK(cudaMemcpy(d_instance_info, info, num * size,
                             cudaMemcpyHostToDevice));
@@ -409,7 +417,7 @@ void BRKGA::evaluate_chromosomes_host() {
  * \param pop_id
  * is the index of the population to be decoded.
  */
-void BRKGA::evaluate_chromosomes_host_pipe(int pop_id) {
+void BRKGA::evaluate_chromosomes_host_pipe(unsigned pop_id) {
   /*  float *d_population_ad =
         &d_population[chromosome_size * population_size * pop_id];
     float *h_population_ad =
@@ -466,6 +474,22 @@ void BRKGA::evaluate_chromosomes_device() {
   CUDA_CHECK(cudaMemcpy(d_population2, d_population,
                         number_chromosomes * chromosome_size * sizeof(float),
                         cudaMemcpyDeviceToDevice));
+  decode<<<dimGrid, dimBlock>>>(d_scores, d_population2, chromosome_size,
+                                d_instance_info);
+}
+
+/***
+ * \brief If DEVICE_DECODE is used then this function decodes each cromosome
+ *with the kernel function decode above.
+ ***/
+void BRKGA::evaluate_chromosomes_device_pipe(unsigned pop_id) {
+  // Make a copy of chromossomes to d_population2 such that they can be messed
+  // up inside the decoder functions without afecting the real chromosomes on
+  // d_population.
+  CUDA_CHECK(
+      cudaMemcpyAsync(d_population2, d_population,
+                      number_chromosomes * chromosome_size * sizeof(float),
+                      cudaMemcpyDeviceToDevice, pop_stream[pop_id]));
   decode<<<dimGrid, dimBlock>>>(d_scores, d_population2, chromosome_size,
                                 d_instance_info);
 }
@@ -544,7 +568,7 @@ void BRKGA::evaluate_chromosomes_sorted_device() {
  * in the struct ChromosomeGeneIdxPair d_chromosome_gene_idx.
  * \param pop_id is the index of the population to be processed
  */
-void BRKGA::evaluate_chromosomes_sorted_device_pipe(int pop_id) {
+void BRKGA::evaluate_chromosomes_sorted_device_pipe(unsigned pop_id) {
   sort_chromosomes_genes_pipe(pop_id);
   decode_chromosomes_sorted_pipe<<<dimGrid_pipe, dimBlock, 0,
                                    pop_stream[pop_id]>>>(
@@ -640,7 +664,7 @@ void BRKGA::sort_chromosomes_genes() {
  * by their values.
  * \param pop_id is the index of the population to be sorted
  */
-void BRKGA::sort_chromosomes_genes_pipe(int pop_id) {
+void BRKGA::sort_chromosomes_genes_pipe(unsigned pop_id) {
   // First set for each gene, its chromosome index and its original index in the
   // chromosome
   device_set_chromosome_gene_idx_pipe<<<dimGrid_pipe, dimBlock, 0,
@@ -733,69 +757,67 @@ device_next_population(float *d_population, float *d_population2,
 /**
  * \brief Main function of the BRKGA algorithm.
  * It evolves K populations for one generation.
+ * \param num_generatios The number of evolutions to perform on all populations.
  */
-void BRKGA::evolve(int num_generations) {
+void BRKGA::evolve() {
   using std::domain_error;
   if (evolve_pipeline) {
-    evolve_pipe(num_generations);
+    evolve_pipe();
     return;
   }
 
-  for (int g = 0; g < num_generations; g++) {
+  if (decode_type == DEVICE_DECODE) {
+    evaluate_chromosomes_device();
+  } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
+    evaluate_chromosomes_sorted_device();
+  } else if (decode_type == HOST_DECODE) {
+    evaluate_chromosomes_host();
+  } else {
+    throw domain_error("Function decode type is unknown");
+  }
 
-    if (decode_type == DEVICE_DECODE) {
-      evaluate_chromosomes_device();
-    } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
-      evaluate_chromosomes_sorted_device();
-    } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED_COALESCED) {
-      evaluate_chromosomes_sorted_device_coalesced();
-    } else if (decode_type == HOST_DECODE) {
-      evaluate_chromosomes_host();
-    } else {
-      throw domain_error("Function decode type is unknown");
-    }
+  // After this call the vector d_scores_idx has all chromosomes sorted by
+  // population, and inside each population, chromosomes are sorted by score
+  sort_chromosomes();
 
-    // After this call the vector d_scores_idx has all chromosomes sorted by
-    // population, and inside each population, chromosomes are sorted by score
-    sort_chromosomes();
+  // This call initialize the whole area of the next population d_population2
+  // with random values. So mutants are already build. For the non mutants we
+  // use the random values generated here to perform the crossover on the
+  // current population d_population.
+  initialize_population(2);
 
-    // This call initialize the whole area of the next population d_population2
-    // with random values. So mutants are already build. For the non mutants we
-    // use the random values generated here to perform the crossover on the
-    // current population d_population.
-    initialize_population(2);
+  // generate random numbers to index parents used for crossover
+  curandGenerateUniform(gen, d_random_elite_parent, number_chromosomes);
+  curandGenerateUniform(gen, d_random_parent, number_chromosomes);
 
-    // generate random numbers to index parents used for crossover
-    curandGenerateUniform(gen, d_random_elite_parent, number_chromosomes);
-    curandGenerateUniform(gen, d_random_parent, number_chromosomes);
-
+  // Kernel function, where each thread process one chromosome of the next
+  // population.
+  if (!evolve_coalesced) {
+    device_next_population<<<dimGrid, dimBlock>>>(
+        d_population, d_population2, d_random_elite_parent, d_random_parent,
+        chromosome_size, population_size, elite_size, mutants_size, rhoe,
+        d_scores_idx);
+  } else {
     // Kernel function, where each thread process one chromosome of the next
     // population.
-    if (!evolve_coalesced) {
-      device_next_population<<<dimGrid, dimBlock>>>(
-          d_population, d_population2, d_random_elite_parent, d_random_parent,
-          chromosome_size, population_size, elite_size, mutants_size, rhoe,
-          d_scores_idx);
-    } else {
-      // Kernel function, where each thread process one chromosome of the next
-      // population.
-      device_next_population_coalesced<<<dimGrid_gene, dimBlock>>>(
-          d_population, d_population2, d_random_elite_parent, d_random_parent,
-          chromosome_size, population_size, elite_size, mutants_size, rhoe,
-          d_scores_idx, number_genes);
-    }
-    float *aux = d_population2;
-    d_population2 = d_population;
-    d_population = aux;
-  } // end of for
+    device_next_population_coalesced<<<dimGrid_gene, dimBlock>>>(
+        d_population, d_population2, d_random_elite_parent, d_random_parent,
+        chromosome_size, population_size, elite_size, mutants_size, rhoe,
+        d_scores_idx, number_genes);
+  }
+  float *aux = d_population2;
+  d_population2 = d_population;
+  d_population = aux;
 }
 
 /**
- * \brief Main function of the BRKGA algorithm.
+ * \brief Main function of the BRKGA algorithm, using pipeline.
  * It evolves K populations for one generation in a pipelined fashion: each
- population is evolved separatly in the GPU while decoding is performed on CPU.
+ population is evolved separatly in the GPU while decoding is mostly performed
+ on CPU except for n_pop_pipe populations that are decoded on GPU.
+ * \param num_generatios The number of evolutions to perform on all populations.
  */
-void BRKGA::evolve_pipe(int num_generations) {
+void BRKGA::evolve_pipe() {
   using std::domain_error;
   int f1[population_size];
 
@@ -814,25 +836,41 @@ void BRKGA::evolve_pipe(int num_generations) {
         {
           // printf("evaluate chromosomes by thread %d\n",
           // omp_get_thread_num());
-          if (p >= 1) {
-            evaluate_chromosomes_host_pipe(p);
+          if (p < n_pop_pipe) {
+            if (decode_type2 == DEVICE_DECODE) {
+              evaluate_chromosomes_device_pipe(p);
+            } else if (decode_type2 == DEVICE_DECODE_CHROMOSOME_SORTED) {
+              evaluate_chromosomes_sorted_device_pipe(p);
+            } else if (decode_type2 == HOST_DECODE) {
+              evaluate_chromosomes_host_pipe(p);
+            } else {
+              throw domain_error("Function decode type is unknown");
+            }
           } else {
-            evaluate_chromosomes_sorted_device_pipe(p);
+            if (decode_type == DEVICE_DECODE) {
+              evaluate_chromosomes_device_pipe(p);
+            } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
+              evaluate_chromosomes_sorted_device_pipe(p);
+            } else if (decode_type == HOST_DECODE) {
+              evaluate_chromosomes_host_pipe(p);
+            } else {
+              throw domain_error("Function decode type is unknown");
+            }
           }
         } // end of task
 
 #pragma omp task depend(in : f1[p])
         {
-          // printf("process chromosomes by thread %d\n", omp_get_thread_num());
-          // After this call the vector d_scores_idx has all chromosomes sorted
-          // by population, and inside each population, chromosomes are sorted
-          // by score
+          // printf("process chromosomes by thread %d\n",
+          // omp_get_thread_num()); After this call the vector d_scores_idx
+          // has all chromosomes sorted by population, and inside each
+          // population, chromosomes are sorted by score
           sort_chromosomes_pipe(p);
 
           // This call initialize the whole area of the next population
-          // d_population2 with random values. So mutants are already build. For
-          // the non mutants we use the random values generated here to perform
-          // the crossover on the current population d_population.
+          // d_population2 with random values. So mutants are already build.
+          // For the non mutants we use the random values generated here to
+          // perform the crossover on the current population d_population.
           // initialize_population_pipe(2, p);
 
           // Kernel function, where each thread process one chromosome of the
@@ -861,57 +899,6 @@ void BRKGA::evolve_pipe(int num_generations) {
   d_population = aux;
 }
 
-/*void BRKGA::evolve_pipe(int num_generations) {
-  using std::domain_error;
-
-  // generate random numbers to index parents used for crossover
-  // we already initialize ramdom numbers for all populations
-  curandGenerateUniform(gen, d_random_elite_parent, number_chromosomes);
-  curandGenerateUniform(gen, d_random_parent, number_chromosomes);
-
-  int f1[population_size];
-
-#pragma omp parallel shared(f1)
-  {
-#pragma omp single nowait
-    {
-      for (int p = 0; p < number_populations; p++) {
-#pragma omp task depend(out : f1[p])
-        { // printf("evaluate chromosomes by thread %d\n",
-          // omp_get_thread_num());
-          evaluate_chromosomes_host_pipe(p);
-        } // end of task
-
-#pragma omp task depend(in : f1[p])
-        {
-          // printf("process chromosomes by thread %d\n", omp_get_thread_num());
-          // After this call the vector d_scores_idx has all chromosomes sorted
-          // by population, and inside each population, chromosomes are sorted
-          // by score
-          sort_chromosomes_pipe(p);
-
-          // This call initialize the whole area of the next population
-          // d_population2 with random values. So mutants are already build. For
-          // the non mutants we use the random values generated here to perform
-          // the crossover on the current population d_population.
-          initialize_population_pipe(2, p);
-
-          // Kernel function, where each thread process one chromosome of the
-          // next population.
-          device_next_population_coalesced_pipe<<<dimGrid_gene_pipe,
-                                                  dimBlock>>>(
-              d_population, d_population2, d_random_elite_parent,
-              d_random_parent, chromosome_size, population_size, elite_size,
-              mutants_size, rhoe, d_scores_idx, number_genes, p);
-        } // end of task
-      }   // end of for
-    }     // end of single region
-  }       // end of parallel region
-  float *aux = d_population2;
-  d_population2 = d_population;
-  d_population = aux;
-}
-*/
 /**
  * \brief initializes all chromosomes in all populations with random values.
  * \param p is used to decide to initialize d_population or d_population2.
@@ -930,7 +917,7 @@ void BRKGA::initialize_population(int p) {
  * \param p is used to decide to initialize d_population or d_population2.
  * \param pop_id is the population index to be initialized
  */
-void BRKGA::initialize_population_pipe(int p, int pop_id) {
+void BRKGA::initialize_population_pipe(int p, unsigned pop_id) {
   if (p == 1)
     curandGenerateUniform(
         gen, &d_population[population_size * chromosome_size * pop_id],
@@ -964,7 +951,7 @@ __global__ void device_set_idx(PopIdxThreadIdxPair *d_scores_idx,
  * \param pop_id is the index of the population to work on.
  */
 __global__ void device_set_idx_pipe(PopIdxThreadIdxPair *d_scores_idx_pop,
-                                    int pop_id) {
+                                    unsigned pop_id) {
   int tx = blockIdx.x * blockDim.x + threadIdx.x;
   d_scores_idx_pop[tx].popIdx = pop_id;
   d_scores_idx_pop[tx].thIdx = tx;
@@ -1004,7 +991,7 @@ void BRKGA::sort_chromosomes() {
  * \brief Sort chromosomes for each population.
  * \param pop_id is the index of the population to be sorted.
  */
-void BRKGA::sort_chromosomes_pipe(int pop_id) {
+void BRKGA::sort_chromosomes_pipe(unsigned pop_id) {
   // For each thread we store in d_scores_idx the global chromosome index and
   // its population index.
   device_set_idx_pipe<<<dimGrid_pipe, dimBlock, 0, pop_stream[pop_id]>>>(
@@ -1235,31 +1222,6 @@ void BRKGA::global_sort_chromosomes() {
   thrust::device_ptr<float> keys(d_scores);
   thrust::device_ptr<PopIdxThreadIdxPair> vals(d_scores_idx);
   thrust::sort_by_key(keys, keys + number_chromosomes, vals);
-}
-
-/**********************************
- *
- *
- * COALESCED METHODS
- *
- */
-
-/***
-  If DEVICE_DECODE_CHROMOSOME_SORTED is used then this function decodes each
-cromosome with the kernel function decode_chromosomes_sorted above. But first we
-sort each chromosome by its genes values. We save this information in the struct
-ChromosomeGeneIdxPair d_chromosome_gene_idx.
-***/
-void BRKGA::evaluate_chromosomes_sorted_device_coalesced() {
-  // sort_chromosomes_genes();
-
-  // here we are supposed to have one block of threads per chromossome
-  // so in the function call dimGrid_population is used
-  // CHECK IF THIS IS REALLY AN IMPROVEMENT
-  // device_decode_chromosome_sorted_coalesced<<<dimGrid_population,
-  // dimBlock>>>(d_chromosome_gene_idx, chromosome_size,
-  //                                                                      d_instance_info,
-  //                                                                      d_scores);
 }
 
 /**

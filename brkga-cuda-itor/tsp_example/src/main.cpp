@@ -7,7 +7,7 @@
  */
 
 #include <iostream>
-#include <stdio.h>
+#include <string>
 #include <unistd.h>
 
 #include "BRKGA.h"
@@ -16,24 +16,25 @@
 #include "TSPInstance.h"
 
 int main(int argc, char *argv[]) {
-  int option;
   char *par_file = NULL, *inst_file = NULL;
-  bool evolve_coalesced = false;
-  bool evolve_pipeline = false;
+  bool evolve_coalesced = false, evolve_pipeline = false;
+  int option;
+  unsigned num_pop_pipe = 0, rand_seed = 0;
 
-  while ((option = getopt(argc, argv, "p:i:cl")) !=
+  while ((option = getopt(argc, argv, "p:i:l:r:c")) !=
          -1) { // get option from the getopt() method
     switch (option) {
     case 'p':
       if (optarg == NULL) {
-        printf("No config file with parameters supplied: -p configfile");
+        std::cout << "No config file with parameters supplied: -p configfile"
+                  << std::endl;
         return 0;
       }
       par_file = optarg;
       break;
     case 'i':
       if (optarg == NULL) {
-        printf("No instance file supplied: -i instance");
+        std::cout << "No instance file supplied: -i instance" << std::endl;
         return 0;
       }
       inst_file = optarg;
@@ -43,11 +44,27 @@ int main(int argc, char *argv[]) {
       break;
     case 'l':
       evolve_pipeline = true;
+      if (optarg == NULL)
+        num_pop_pipe = 0;
+      else {
+        std::cout << optarg << std::endl;
+        num_pop_pipe = std::stoi(optarg);
+      }
       break;
+    case 'r':
+      if (optarg == NULL)
+        rand_seed = 1;
+      else
+        rand_seed = std::stoi(optarg);
     }
   }
   if (par_file == NULL || inst_file == NULL) {
     std::cout << "Usage: -p configfile -i instance_file" << std::endl;
+    std::cout << "Optional: -c Use coalesced memory." << std::endl;
+    std::cout
+        << "Optional: -l n Use pipeline with n populations decoded on GPU."
+        << std::endl;
+    std::cout << "Optional: -r s Sets s as the random seed." << std::endl;
     return 0;
   }
   const std::string instanceFile = std::string(inst_file);
@@ -73,14 +90,13 @@ int main(int argc, char *argv[]) {
   }
 
   ConfigFile config(par_file);
-  BRKGA alg(n, config, evolve_coalesced, evolve_pipeline);
+  BRKGA alg(n, config, evolve_coalesced, evolve_pipeline, num_pop_pipe,
+            rand_seed);
   alg.setInstanceInfo(adjMatrix, n * n, sizeof(float));
 
   // alg.setInstanceInfo2D(adjMatrix, n,n, sizeof(float));
-  // for(int i=1; i<= 1; i++){
-  int step = 1;
-  for (int i = 1; i <= config.MAX_GENS; i += step) {
-    alg.evolve(step);
+  for (int i = 1; i <= config.MAX_GENS; i++) {
+    alg.evolve();
     std::cout << "Evolution: " << i << std::endl;
     if (i % config.X_INTVL == 0) {
       std::cout << "Exchanged top " << config.X_NUMBER << " best individuals!"
@@ -99,13 +115,15 @@ int main(int argc, char *argv[]) {
 
   std::vector<std::vector<float>> res2 = alg.getkBestChromosomes2(3);
 
-  std::vector<double> aux;
+  std::vector<float> aux;
   // aux will be the vector with best solution
   for (int i = 1; i < res2[0].size(); i++) {
     aux.push_back(res2[0][i]);
   }
   printf("\n");
   printf("Value of best solution: %.2f\n", res2[0][0]);
+  printf("Value of best solution: %.2f\n",
+         host_decode(&aux[0], aux.size(), adjMatrix));
 
   free(adjMatrix);
 }

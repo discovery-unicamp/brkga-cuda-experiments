@@ -33,8 +33,8 @@ ConfigFile::ConfigFile(char *instanceFile) {
   aux = fscanf(f, "%s %u", st, &X_NUMBER);
   aux = fscanf(f, "%s %u", st, &RESET_AFTER);
   aux = fscanf(f, "%s %u", st, &decode_type);
+  aux = fscanf(f, "%s %u", st, &decode_type2);
   aux = fscanf(f, "%s %u", st, &OMP_THREADS);
-  aux = fscanf(f, "%s %u", st, &RAND_SEED);
   fclose(f);
 }
 
@@ -51,6 +51,6 @@ void ConfigFile::unit_test() {
   cout << "X_NUMBER: " << X_NUMBER << endl;
   cout << "RESET_AFTER: " << RESET_AFTER << endl;
   cout << "decode_type: " << decode_type << endl;
+  cout << "decode_type2: " << decode_type2 << endl;
   cout << "OMP_THREADS: " << OMP_THREADS << endl;
-  cout << "RAND_SEED: " << RAND_SEED << endl;
 }
