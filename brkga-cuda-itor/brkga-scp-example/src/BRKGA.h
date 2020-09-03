@@ -26,7 +26,6 @@
 
 #define THREADS_PER_BLOCK 256
 
-
 class BRKGA{
 public:
 	BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K, unsigned decode_type, unsigned NUM_THREADS=1, unsigned RAND_SEED=1234);
