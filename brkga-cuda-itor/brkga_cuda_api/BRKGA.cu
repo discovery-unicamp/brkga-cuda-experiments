@@ -816,8 +816,6 @@ void BRKGA::evolve() {
  */
 void BRKGA::evolve_pipe() {
   using std::domain_error;
-  int f1[population_size];
-
   NVTX_PUSH_FUNCTION(BLACK);
   NVTX_PUSH_RANGE("Initialization", GRAY);
   NVTX_NAME_THREAD("Main thread");

@@ -28,3 +28,4 @@ set(API_FILES
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/)
 
 add_subdirectory(tsp_example)
+add_subdirectory(scp_example)
