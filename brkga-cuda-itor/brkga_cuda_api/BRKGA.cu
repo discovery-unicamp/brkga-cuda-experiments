@@ -104,18 +104,7 @@ __global__ void device_save_best_chromosomes(float *d_population,
 BRKGA::BRKGA(unsigned n, ConfigFile &conf_file, bool evolve_coalesced,
              bool evolve_pipeline, unsigned n_pop_pipe, unsigned RAND_SEED) {
   omp_set_nested(1);
-  this->pinned =
-      true; // Allocate host population pointer as pinned memory or not.
-            /*  if (conf_file.p % THREADS_PER_BLOCK != 0) {
-                // round population size to a multiple of THREADS_PER_BLOCK
-                conf_file.p = ((conf_file.p / THREADS_PER_BLOCK) + 1) * THREADS_PER_BLOCK;
-              }
-          
-              // set to the maximum number of blocks allowed in CUDA compute
-              capability 2.0           if (conf_file.K > (unsigned)(2 << 30)) {
-              conf_file.K =           (unsigned)2 << 30;
-              }
-            */
+  this->pinned = true;
   this->population_size = conf_file.p;
   this->number_populations = conf_file.K;
   this->number_chromosomes = conf_file.p * conf_file.K;
