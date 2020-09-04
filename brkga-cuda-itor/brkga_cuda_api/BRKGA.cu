@@ -11,6 +11,8 @@
 #include "Decoder.h"
 #include "cuda_error.cuh"
 
+#include "nvtx.cuh"
+
 #include <algorithm>
 #include <exception>
 #include <iostream>
@@ -101,6 +103,7 @@ __global__ void device_save_best_chromosomes(float *d_population,
  */
 BRKGA::BRKGA(unsigned n, ConfigFile &conf_file, bool evolve_coalesced,
              bool evolve_pipeline, unsigned n_pop_pipe, unsigned RAND_SEED) {
+  omp_set_nested(1);
   this->pinned =
       true; // Allocate host population pointer as pinned memory or not.
             /*  if (conf_file.p % THREADS_PER_BLOCK != 0) {
@@ -819,90 +822,95 @@ void BRKGA::evolve() {
 /**
  * \brief Main function of the BRKGA algorithm, using pipeline.
  * It evolves K populations for one generation in a pipelined fashion: each
- population is evolved separatly in the GPU while decoding is mostly performed
- on CPU except for n_pop_pipe populations that are decoded on GPU.
- * \param num_generatios The number of evolutions to perform on all populations.
+ * population is evolved separatly in the GPU while decoding is mostly performed
+ * on CPU except for n_pop_pipe populations that are decoded on GPU.
  */
 void BRKGA::evolve_pipe() {
   using std::domain_error;
   int f1[population_size];
 
+  NVTX_PUSH_FUNCTION(BLACK);
+  NVTX_PUSH_RANGE("Initialization", GRAY);
+  NVTX_NAME_THREAD("Main thread");
+
   // generate random numbers to index parents used for crossover
   // we already initialize ramdom numbers for all populations
   curandGenerateUniform(gen, d_random_elite_parent, number_chromosomes);
   curandGenerateUniform(gen, d_random_parent, number_chromosomes);
+  // This next call initialize the whole area of the next population
+  // d_population2 with random values. So mutants are already build.
+  // For the non mutants we use the random values generated here to
+  // perform the crossover on the current population d_population.
   initialize_population(2);
   cudaDeviceSynchronize();
-#pragma omp parallel shared(f1) num_threads(number_populations)
-  {
-#pragma omp single nowait
-    {
-      for (int p = 0; p < number_populations; p++) {
-#pragma omp task depend(out : f1[p])
-        {
-          // printf("evaluate chromosomes by thread %d\n",
-          // omp_get_thread_num());
-          if (p < n_pop_pipe) {
-            if (decode_type2 == DEVICE_DECODE) {
-              evaluate_chromosomes_device_pipe(p);
-            } else if (decode_type2 == DEVICE_DECODE_CHROMOSOME_SORTED) {
-              evaluate_chromosomes_sorted_device_pipe(p);
-            } else if (decode_type2 == HOST_DECODE) {
-              evaluate_chromosomes_host_pipe(p);
-            } else {
-              throw domain_error("Function decode type is unknown");
-            }
-          } else {
-            if (decode_type == DEVICE_DECODE) {
-              evaluate_chromosomes_device_pipe(p);
-            } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
-              evaluate_chromosomes_sorted_device_pipe(p);
-            } else if (decode_type == HOST_DECODE) {
-              evaluate_chromosomes_host_pipe(p);
-            } else {
-              throw domain_error("Function decode type is unknown");
-            }
-          }
-        } // end of task
 
-#pragma omp task depend(in : f1[p])
-        {
-          // printf("process chromosomes by thread %d\n",
-          // omp_get_thread_num()); After this call the vector d_scores_idx
-          // has all chromosomes sorted by population, and inside each
-          // population, chromosomes are sorted by score
-          sort_chromosomes_pipe(p);
+  NVTX_POP_RANGE(); // Initialization
 
-          // This call initialize the whole area of the next population
-          // d_population2 with random values. So mutants are already build.
-          // For the non mutants we use the random values generated here to
-          // perform the crossover on the current population d_population.
-          // initialize_population_pipe(2, p);
+  NVTX_PUSH_RANGE("evaluate all", MY_PINK);
+#pragma omp parallel for num_threads(number_populations)
+  for (int p = 0; p < number_populations; p++) {
 
-          // Kernel function, where each thread process one chromosome of the
-          // next population.
-          unsigned num_genes =
-              population_size *
-              chromosome_size; // number of genes in one population
+    if (p < n_pop_pipe) {
+      NVTX_PUSH_RANGE("evaluate device", MY_PINK);
+      if (decode_type2 == DEVICE_DECODE) {
+        evaluate_chromosomes_device_pipe(p);
+      } else if (decode_type2 == DEVICE_DECODE_CHROMOSOME_SORTED) {
+        evaluate_chromosomes_sorted_device_pipe(p);
+      } else if (decode_type2 == HOST_DECODE) {
+        evaluate_chromosomes_host_pipe(p);
+      } else {
+        throw domain_error("Function decode type is unknown");
+      }
+      NVTX_POP_RANGE(); // evaluate device
+    } else {
+      NVTX_PUSH_RANGE("evaluate host", MY_GREEN);
+      if (decode_type == DEVICE_DECODE) {
+        evaluate_chromosomes_device_pipe(p);
+      } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
+        evaluate_chromosomes_sorted_device_pipe(p);
+      } else if (decode_type == HOST_DECODE) {
+        evaluate_chromosomes_host_pipe(p);
+      } else {
+        throw domain_error("Function decode type is unknown");
+      }
+      NVTX_POP_RANGE(); // evaluate host
+    }
+  }                 // end of for
+  NVTX_POP_RANGE(); // evaluate all
 
-          device_next_population_coalesced_pipe<<<dimGrid_gene_pipe, dimBlock,
-                                                  0, pop_stream[p]>>>(
-              d_population_pipe[p], d_population_pipe2[p],
-              d_random_elite_parent_pipe[p], d_random_parent_pipe[p],
-              chromosome_size, population_size, elite_size, mutants_size, rhoe,
-              d_scores_idx_pipe[p], num_genes);
+  NVTX_PUSH_RANGE("next population", MY_GREEN);
 
-          float *aux = d_population_pipe2[p];
-          d_population_pipe2[p] = d_population_pipe[p];
-          d_population_pipe[p] = aux;
+#pragma omp parallel for num_threads(number_populations)
+  for (int p = 0; p < number_populations; p++) {
+    NVTX_PUSH_RANGE("sort chromosomes", GREEN);
+    // After this call the vector d_scores_idx_pop
+    // has all chromosomes sorted by score
+    sort_chromosomes_pipe(p);
+    NVTX_POP_RANGE(); // sort chromossomes
 
-        } // end of task
-      }   // end of for number_populations
-    }     // end of single region
-  }       // end of parallel region
+    // Kernel function, where each thread process one chromosome of the
+    // next population.
+    unsigned num_genes =
+        population_size * chromosome_size; // number of genes in one population
+
+    device_next_population_coalesced_pipe<<<dimGrid_gene_pipe, dimBlock, 0,
+                                            pop_stream[p]>>>(
+        d_population_pipe[p], d_population_pipe2[p],
+        d_random_elite_parent_pipe[p], d_random_parent_pipe[p], chromosome_size,
+        population_size, elite_size, mutants_size, rhoe, d_scores_idx_pipe[p],
+        num_genes);
+
+    float *aux = d_population_pipe2[p];
+    d_population_pipe2[p] = d_population_pipe[p];
+    d_population_pipe[p] = aux;
+
+  }                 // end of for
+  NVTX_POP_RANGE(); // next population
   float *aux = d_population2;
   d_population2 = d_population;
   d_population = aux;
+
+  NVTX_POP_RANGE(); // FUNCTION
 }
 
 /**

@@ -6,6 +6,12 @@ find_package(OpenMP)
 find_package(CUDA REQUIRED)
 enable_language(CUDA)
 include_directories("${CUDA_INCLUDE_DIRS}")
+
+if(USE_NVTX)
+ message("Compiling to use NVTX!")
+ add_definitions(-DUSE_NVTX)
+ find_library(LIBNVTOOLSEXT nvToolsExt PATHS ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+endif()
  
 file(GLOB
   CHECK_SOURCE_FILES
