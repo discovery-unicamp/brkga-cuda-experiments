@@ -1,5 +1,0 @@
-Ao inves de usar ordenacao fazer uma thread que para cada 10 cromossomos salva como elite o melhor cromossomo dentre os 10 (assumindo pe=10%)
-
-fazer um kernel separado so para o elite que copia os dados dos cromossomos elite
-
-rearranjar os cromossomos tal que (assumindo pop_size=256) as primeiras 256 posicoes do vetor sao os genes 1 dos 256 cromossomos, os proximos 256 valores sao os genes 2 dos cromossomos etc. Desta forma todas as threads trabalham com genes em ordem e aproveitam localidade de memoria.
