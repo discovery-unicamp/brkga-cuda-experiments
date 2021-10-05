@@ -29,54 +29,64 @@
 /**
  * GPU Kernel functions
  */
-__global__ void decode(float *d_scores, float *d_population,
-                       int chromosome_size, void *d_instance_info,
+__global__ void decode(float* d_scores, float* d_population,
+                       int chromosome_size, void* d_instance_info,
                        unsigned number_chromosomes);
+
 __global__ void decode_chromosomes_sorted(
-    float *d_scores, ChromosomeGeneIdxPair *d_chromosome_gene_idx,
-    int chromosome_size, void *d_instance_info, unsigned number_chromosomes);
+    float* d_scores, ChromosomeGeneIdxPair* d_chromosome_gene_idx,
+    int chromosome_size, void* d_instance_info, unsigned number_chromosomes);
+
 __global__ void decode_chromosomes_sorted_pipe(
-    float *d_scores_pop, ChromosomeGeneIdxPair *d_chromosome_gene_idx_pop,
-    int chromosome_size, void *d_instance_info, unsigned population_size);
+    float* d_scores_pop, ChromosomeGeneIdxPair* d_chromosome_gene_idx_pop,
+    int chromosome_size, void* d_instance_info, unsigned population_size);
 
 __global__ void
-device_set_chromosome_gene_idx(ChromosomeGeneIdxPair *d_chromosome_gene_idx,
+device_set_chromosome_gene_idx(ChromosomeGeneIdxPair* d_chromosome_gene_idx,
                                int chromosome_size,
                                unsigned number_chromosomes);
+
 __global__ void device_next_population(
-    float *d_population, float *d_population2, float *d_random_elite_parent,
-    float *d_random_parent, int chromosome_size, unsigned population_size,
+    float* d_population, float* d_population2, float* d_random_elite_parent,
+    float* d_random_parent, int chromosome_size, unsigned population_size,
     unsigned elite_size, unsigned mutants_size, float rhoe,
-    PopIdxThreadIdxPair *d_scores_idx, unsigned number_chromosomes);
+    PopIdxThreadIdxPair* d_scores_idx, unsigned number_chromosomes);
+
 __global__ void device_next_population_coalesced(
-    float *d_population, float *d_population2, float *d_random_elite_parent,
-    float *d_random_parent, int chromosome_size, unsigned population_size,
+    float* d_population, float* d_population2, float* d_random_elite_parent,
+    float* d_random_parent, int chromosome_size, unsigned population_size,
     unsigned elite_size, unsigned mutants_size, float rhoe,
-    PopIdxThreadIdxPair *d_scores_idx, unsigned number_genes);
+    PopIdxThreadIdxPair* d_scores_idx, unsigned number_genes);
+
 __global__ void device_next_population_coalesced_pipe(
-    float *d_population, float *d_population2, float *d_random_elite_parent,
-    float *d_random_parent, int chromosome_size, unsigned population_size,
+    float* d_population, float* d_population2, float* d_random_elite_parent,
+    float* d_random_parent, int chromosome_size, unsigned population_size,
     unsigned elite_size, unsigned mutants_size, float rhoe,
-    PopIdxThreadIdxPair *d_scores_idx, unsigned number_genes);
+    PopIdxThreadIdxPair* d_scores_idx, unsigned number_genes);
+
 __global__ void device_next_population_coalesced_shared_mem(
-    float *d_population, float *d_population2, float *d_random_elite_parent,
-    float *d_random_parent, int chromosome_size, unsigned population_size,
+    float* d_population, float* d_population2, float* d_random_elite_parent,
+    float* d_random_parent, int chromosome_size, unsigned population_size,
     unsigned elite_size, unsigned mutants_size, float rhoe,
-    PopIdxThreadIdxPair *d_scores_idx, unsigned number_genes);
-__global__ void device_set_idx(PopIdxThreadIdxPair *d_scores_idx,
+    PopIdxThreadIdxPair* d_scores_idx, unsigned number_genes);
+
+__global__ void device_set_idx(PopIdxThreadIdxPair* d_scores_idx,
                                int population_size);
-__global__ void device_set_idx_pipe(PopIdxThreadIdxPair *d_scores_idx_pop,
+
+__global__ void device_set_idx_pipe(PopIdxThreadIdxPair* d_scores_idx_pop,
                                     unsigned pop_id);
-__global__ void device_exchange_elite(float *d_population, int chromosome_size,
+
+__global__ void device_exchange_elite(float* d_population, int chromosome_size,
                                       unsigned population_size,
                                       unsigned number_populations,
-                                      PopIdxThreadIdxPair *d_scores_idx,
+                                      PopIdxThreadIdxPair* d_scores_idx,
                                       unsigned M);
-__global__ void device_save_best_chromosomes(float *d_population,
+
+__global__ void device_save_best_chromosomes(float* d_population,
                                              unsigned chromosome_size,
-                                             PopIdxThreadIdxPair *d_scores_idx,
-                                             float *d_best_solutions,
-                                             float *d_scores,
+                                             PopIdxThreadIdxPair* d_scores_idx,
+                                             float* d_best_solutions,
+                                             float* d_scores,
                                              unsigned best_saved);
 
 /**
@@ -101,17 +111,17 @@ __global__ void device_save_best_chromosomes(float *d_population,
  * how many of all populations are to be decoded on GPU.
  * \param RAND_SEED used to initialize random number generators.
  */
-BRKGA::BRKGA(unsigned n, ConfigFile &conf_file, bool evolve_coalesced,
+BRKGA::BRKGA(unsigned n, ConfigFile& conf_file, bool evolve_coalesced,
              bool evolve_pipeline, unsigned n_pop_pipe, unsigned RAND_SEED) {
   omp_set_nested(1);
-  this->pinned = true;
+  this->pinned = false;
   this->population_size = conf_file.p;
   this->number_populations = conf_file.K;
   this->number_chromosomes = conf_file.p * conf_file.K;
   this->number_genes = this->number_chromosomes * n;
   this->chromosome_size = n;
-  this->elite_size = (unsigned)(conf_file.pe * conf_file.p);
-  this->mutants_size = (unsigned)(conf_file.pm * conf_file.p);
+  this->elite_size = (unsigned) (conf_file.pe * conf_file.p);
+  this->mutants_size = (unsigned) (conf_file.pm * conf_file.p);
   this->rhoe = conf_file.rhoe;
   this->decode_type = conf_file.decode_type;
   this->decode_type2 = conf_file.decode_type2;
@@ -194,24 +204,24 @@ void BRKGA::initialize_pipeline_parameters() {
 
   // Allocate one stream for each population
   this->pop_stream =
-      (cudaStream_t *)malloc(number_populations * sizeof(cudaStream_t));
+      (cudaStream_t*) malloc(number_populations * sizeof(cudaStream_t));
   for (int p = 0; p < number_populations; p++) {
     CUDA_CHECK(cudaStreamCreate(&pop_stream[p]));
   }
 
   // set pointers for each population in the BRKGA arrays
-  d_population_pipe = (float **)malloc(number_populations * sizeof(float *));
-  d_population_pipe2 = (float **)malloc(number_populations * sizeof(float *));
-  h_population_pipe = (float **)malloc(number_populations * sizeof(float *));
-  d_scores_pipe = (float **)malloc(number_populations * sizeof(float *));
-  h_scores_pipe = (float **)malloc(number_populations * sizeof(float *));
-  d_chromosome_gene_idx_pipe = (ChromosomeGeneIdxPair **)malloc(
-      number_populations * sizeof(ChromosomeGeneIdxPair *));
-  d_scores_idx_pipe = (PopIdxThreadIdxPair **)malloc(
-      number_populations * sizeof(PopIdxThreadIdxPair *));
+  d_population_pipe = (float**) malloc(number_populations * sizeof(float*));
+  d_population_pipe2 = (float**) malloc(number_populations * sizeof(float*));
+  h_population_pipe = (float**) malloc(number_populations * sizeof(float*));
+  d_scores_pipe = (float**) malloc(number_populations * sizeof(float*));
+  h_scores_pipe = (float**) malloc(number_populations * sizeof(float*));
+  d_chromosome_gene_idx_pipe = (ChromosomeGeneIdxPair**) malloc(
+      number_populations * sizeof(ChromosomeGeneIdxPair*));
+  d_scores_idx_pipe = (PopIdxThreadIdxPair**) malloc(
+      number_populations * sizeof(PopIdxThreadIdxPair*));
   d_random_elite_parent_pipe =
-      (float **)malloc(number_populations * sizeof(float *));
-  d_random_parent_pipe = (float **)malloc(number_populations * sizeof(float *));
+      (float**) malloc(number_populations * sizeof(float*));
+  d_random_parent_pipe = (float**) malloc(number_populations * sizeof(float*));
 
   for (int p = 0; p < number_populations; p++) {
     d_population_pipe[p] =
@@ -240,60 +250,62 @@ size_t BRKGA::allocate_data() {
   // Allocate a float array representing all K populations on host and device
   if (!pinned) {
     h_population =
-        (float *)malloc(number_chromosomes * chromosome_size * sizeof(float));
+        (float*) malloc(number_chromosomes * chromosome_size * sizeof(float));
   } else {
+    printf(" ---> %d %d %d -- %d\n", number_chromosomes, chromosome_size, (int) sizeof(float),
+           number_chromosomes * chromosome_size * (int) sizeof(float));
     CUDA_CHECK(
-        cudaMallocHost((void **)&h_population,
+        cudaMallocHost((void**) &h_population,
                        number_chromosomes * chromosome_size * sizeof(float)));
   }
   total_memory += number_chromosomes * chromosome_size * sizeof(float);
-  CUDA_CHECK(cudaMalloc((void **)&d_population,
+  CUDA_CHECK(cudaMalloc((void**) &d_population,
                         number_chromosomes * chromosome_size * sizeof(float)));
 
   total_memory += number_chromosomes * chromosome_size * sizeof(float);
-  CUDA_CHECK(cudaMalloc((void **)&d_population2,
+  CUDA_CHECK(cudaMalloc((void**) &d_population2,
                         number_chromosomes * chromosome_size * sizeof(float)));
   total_memory += number_chromosomes * sizeof(float);
   // Allocate an array representing the scores of each chromosome on host and
   // device
   if (!pinned) {
-    h_scores = (float *)malloc(number_chromosomes * sizeof(float));
+    h_scores = (float*) malloc(number_chromosomes * sizeof(float));
   } else {
     CUDA_CHECK(
-        cudaMallocHost((void **)&h_scores, number_chromosomes * sizeof(float)));
+        cudaMallocHost((void**) &h_scores, number_chromosomes * sizeof(float)));
   }
   CUDA_CHECK(
-      cudaMalloc((void **)&d_scores, number_chromosomes * sizeof(float)));
+      cudaMalloc((void**) &d_scores, number_chromosomes * sizeof(float)));
 
   total_memory += number_chromosomes * sizeof(PopIdxThreadIdxPair);
   // Allocate an array representing the indices of each chromosome on host and
   // device
-  h_scores_idx = (PopIdxThreadIdxPair *)malloc(number_chromosomes *
+  h_scores_idx = (PopIdxThreadIdxPair*) malloc(number_chromosomes *
                                                sizeof(PopIdxThreadIdxPair));
-  CUDA_CHECK(cudaMalloc((void **)&d_scores_idx,
+  CUDA_CHECK(cudaMalloc((void**) &d_scores_idx,
                         number_chromosomes * sizeof(PopIdxThreadIdxPair)));
 
   total_memory +=
       number_chromosomes * chromosome_size * sizeof(ChromosomeGeneIdxPair);
   // Allocate an array representing the indices of each gene of each chromosome
   // on host and device
-  CUDA_CHECK(cudaMalloc((void **)&d_chromosome_gene_idx,
+  CUDA_CHECK(cudaMalloc((void**) &d_chromosome_gene_idx,
                         number_chromosomes * chromosome_size *
-                            sizeof(ChromosomeGeneIdxPair)));
+                        sizeof(ChromosomeGeneIdxPair)));
 
   total_memory += number_chromosomes * sizeof(float);
-  CUDA_CHECK(cudaMalloc((void **)&d_random_elite_parent,
+  CUDA_CHECK(cudaMalloc((void**) &d_random_elite_parent,
                         number_chromosomes * sizeof(float)));
 
   total_memory += number_chromosomes * sizeof(float);
-  CUDA_CHECK(cudaMalloc((void **)&d_random_parent,
+  CUDA_CHECK(cudaMalloc((void**) &d_random_parent,
                         number_chromosomes * sizeof(float)));
 
   // Allocate a poll to save the POOL_SIZE best solutions, where the first value
   // in each chromosome is the chromosome score
   h_best_solutions =
-      (float *)malloc(POOL_SIZE * (chromosome_size + 1) * sizeof(float));
-  CUDA_CHECK(cudaMalloc((void **)&d_best_solutions,
+      (float*) malloc(POOL_SIZE * (chromosome_size + 1) * sizeof(float));
+  CUDA_CHECK(cudaMalloc((void**) &d_best_solutions,
                         POOL_SIZE * (chromosome_size + 1) * sizeof(float)));
 
   return total_memory;
@@ -359,7 +371,7 @@ BRKGA::~BRKGA() {
  * information resides. \param num is the number of elements info has. \param
  * size is the size of each element.
  */
-void BRKGA::setInstanceInfo(void *info, long unsigned num, long unsigned size) {
+void BRKGA::setInstanceInfo(void* info, long unsigned num, long unsigned size) {
   if (info != NULL) {
     long unsigned total_memory = num * size;
     printf(
@@ -370,7 +382,7 @@ void BRKGA::setInstanceInfo(void *info, long unsigned num, long unsigned size) {
         decode_type == DEVICE_DECODE_CHROMOSOME_SORTED ||
         decode_type2 == DEVICE_DECODE ||
         decode_type2 == DEVICE_DECODE_CHROMOSOME_SORTED) {
-      CUDA_CHECK(cudaMalloc((void **)&d_instance_info, num * size));
+      CUDA_CHECK(cudaMalloc((void**) &d_instance_info, num * size));
       CUDA_CHECK(cudaMemcpy(d_instance_info, info, num * size,
                             cudaMemcpyHostToDevice));
     }
@@ -392,12 +404,13 @@ void BRKGA::reset_population(void) {
  *        the host_decode function provided in Decoder.cpp.
  */
 void BRKGA::evaluate_chromosomes_host() {
+  std::cerr << "Evaluating chromosomes on host\n";
   CUDA_CHECK(cudaMemcpy(h_population, d_population,
                         number_chromosomes * chromosome_size * sizeof(float),
                         cudaMemcpyDeviceToHost));
 #pragma omp parallel for num_threads(NUM_THREADS)
   for (int c = 0; c < number_chromosomes; c++) {
-    float *chromosome =
+    float* chromosome =
         &h_population[c * chromosome_size]; //+ (tx * chromosome_size);
     h_scores[c] = host_decode(chromosome, chromosome_size, h_instance_info);
   }
@@ -420,9 +433,9 @@ void BRKGA::evaluate_chromosomes_host_pipe(unsigned pop_id) {
 
 #pragma omp parallel for num_threads(NUM_THREADS)
   for (int c = 0; c < population_size; c++) {
-    float *chromosome =
+    float* chromosome =
         &h_population_pipe[pop_id]
-                          [c * chromosome_size]; //+ (tx * chromosome_size);
+        [c * chromosome_size]; //+ (tx * chromosome_size);
     h_scores_pipe[pop_id][c] =
         host_decode(chromosome, chromosome_size, h_instance_info);
   }
@@ -442,8 +455,8 @@ populations.
 * \param chromosome_size is the size of each chromosome.
 * \param d_instance_info is the information necessary to decode the chromosomes.
 ***/
-__global__ void decode(float *d_scores, float *d_population,
-                       int chromosome_size, void *d_instance_info,
+__global__ void decode(float* d_scores, float* d_population,
+                       int chromosome_size, void* d_instance_info,
                        unsigned number_chromosomes) {
   unsigned global_tx = blockIdx.x * blockDim.x + threadIdx.x;
   if (global_tx < number_chromosomes)
@@ -460,6 +473,7 @@ void BRKGA::evaluate_chromosomes_device() {
   // Make a copy of chromossomes to d_population2 such that they can be messed
   // up inside the decoder functions without afecting the real chromosomes on
   // d_population.
+  std::cerr << "Evaluating chromosomes on device\n";
   CUDA_CHECK(cudaMemcpy(d_population2, d_population,
                         number_chromosomes * chromosome_size * sizeof(float),
                         cudaMemcpyDeviceToDevice));
@@ -501,8 +515,8 @@ original
 * \param d_instance_info is the information necessary to decode the chromosomes.
 */
 __global__ void decode_chromosomes_sorted(
-    float *d_scores, ChromosomeGeneIdxPair *d_chromosome_gene_idx,
-    int chromosome_size, void *d_instance_info, unsigned number_chromosomes) {
+    float* d_scores, ChromosomeGeneIdxPair* d_chromosome_gene_idx,
+    int chromosome_size, void* d_instance_info, unsigned number_chromosomes) {
   unsigned global_tx = blockIdx.x * blockDim.x + threadIdx.x;
   if (global_tx < number_chromosomes)
     d_scores[global_tx] = device_decode_chromosome_sorted(
@@ -530,8 +544,8 @@ this population starts. It saves for each gene in a chromosome its original
 * \param d_instance_info is the information necessary to decode the chromosomes.
 */
 __global__ void decode_chromosomes_sorted_pipe(
-    float *d_scores_pop, ChromosomeGeneIdxPair *d_chromosome_gene_idx_pop,
-    int chromosome_size, void *d_instance_info, unsigned population_size) {
+    float* d_scores_pop, ChromosomeGeneIdxPair* d_chromosome_gene_idx_pop,
+    int chromosome_size, void* d_instance_info, unsigned population_size) {
   unsigned tx = blockIdx.x * blockDim.x + threadIdx.x;
   if (tx < population_size)
     d_scores_pop[tx] = device_decode_chromosome_sorted(
@@ -546,6 +560,7 @@ __global__ void decode_chromosomes_sorted_pipe(
  * in the struct ChromosomeGeneIdxPair d_chromosome_gene_idx.
  */
 void BRKGA::evaluate_chromosomes_sorted_device() {
+  std::cerr << "Sorting chromosomes to evaluate on device\n";
   sort_chromosomes_genes();
   decode_chromosomes_sorted<<<dimGrid, dimBlock>>>(
       d_scores, d_chromosome_gene_idx, chromosome_size, d_instance_info,
@@ -562,7 +577,7 @@ void BRKGA::evaluate_chromosomes_sorted_device() {
 void BRKGA::evaluate_chromosomes_sorted_device_pipe(unsigned pop_id) {
   sort_chromosomes_genes_pipe(pop_id);
   decode_chromosomes_sorted_pipe<<<dimGrid_pipe, dimBlock, 0,
-                                   pop_stream[pop_id]>>>(
+  pop_stream[pop_id]>>>(
       d_scores_pipe[pop_id], d_chromosome_gene_idx_pipe[pop_id],
       chromosome_size, d_instance_info, population_size);
 }
@@ -577,7 +592,7 @@ void BRKGA::evaluate_chromosomes_sorted_device_pipe(unsigned pop_id) {
  * \param chromosome_size is the size of each chromosome.
  */
 __global__ void
-device_set_chromosome_gene_idx(ChromosomeGeneIdxPair *d_chromosome_gene_idx,
+device_set_chromosome_gene_idx(ChromosomeGeneIdxPair* d_chromosome_gene_idx,
                                int chromosome_size,
                                unsigned number_chromosomes) {
   int tx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -600,7 +615,7 @@ device_set_chromosome_gene_idx(ChromosomeGeneIdxPair *d_chromosome_gene_idx,
  * \param pop_id is the index of the population to work on.
  */
 __global__ void device_set_chromosome_gene_idx_pipe(
-    ChromosomeGeneIdxPair *d_chromosome_gene_idx_pop, int chromosome_size,
+    ChromosomeGeneIdxPair* d_chromosome_gene_idx_pop, int chromosome_size,
     int population_size) {
   int tx = blockIdx.x * blockDim.x + threadIdx.x;
   if (tx < population_size) {
@@ -618,8 +633,8 @@ __global__ void device_set_chromosome_gene_idx_pipe(
  * we stable sort now using chromosomes indexes which were
  * saved in the field chromosomeIdx.
  */
-__device__ bool operator<(const ChromosomeGeneIdxPair &lhs,
-                          const ChromosomeGeneIdxPair &rhs) {
+__device__ bool operator<(const ChromosomeGeneIdxPair& lhs,
+                          const ChromosomeGeneIdxPair& rhs) {
   return lhs.chromosomeIdx < rhs.chromosomeIdx;
 }
 
@@ -664,7 +679,7 @@ void BRKGA::sort_chromosomes_genes_pipe(unsigned pop_id) {
   // First set for each gene, its chromosome index and its original index in the
   // chromosome
   device_set_chromosome_gene_idx_pipe<<<dimGrid_pipe, dimBlock, 0,
-                                        pop_stream[pop_id]>>>(
+  pop_stream[pop_id]>>>(
       d_chromosome_gene_idx_pipe[pop_id], chromosome_size, population_size);
   // we use d_population2 to sort all genes by their values
   cudaMemcpyAsync(d_population_pipe2[pop_id], d_population_pipe[pop_id],
@@ -701,25 +716,25 @@ void BRKGA::sort_chromosomes_genes_pipe(unsigned pop_id) {
  * chromosomes fitness.
  */
 __global__ void device_next_population(
-    float *d_population, float *d_population2, float *d_random_elite_parent,
-    float *d_random_parent, int chromosome_size, unsigned population_size,
+    float* d_population, float* d_population2, float* d_random_elite_parent,
+    float* d_random_parent, int chromosome_size, unsigned population_size,
     unsigned elite_size, unsigned mutants_size, float rhoe,
-    PopIdxThreadIdxPair *d_scores_idx, unsigned number_chromosomes) {
+    PopIdxThreadIdxPair* d_scores_idx, unsigned number_chromosomes) {
 
   unsigned tx = blockIdx.x * blockDim.x + threadIdx.x; // global thread index
   if (tx < number_chromosomes) {
     unsigned chromosome_idx = tx * chromosome_size;
     unsigned pop_idx =
-        (unsigned)tx / population_size; // the population index of this thread
+        (unsigned) tx / population_size; // the population index of this thread
     unsigned inside_pop_idx = tx % population_size;
     // below are the inside population random indexes of a elite parent and
     // regular parent for crossover
     unsigned parent_elite_idx =
-        (unsigned)(ceilf(d_random_elite_parent[tx] * elite_size) - 1);
+        (unsigned) (ceilf(d_random_elite_parent[tx] * elite_size) - 1);
     unsigned parent_idx =
-        (unsigned)(elite_size +
-                   ceilf(d_random_parent[tx] * (population_size - elite_size)) -
-                   1);
+        (unsigned) (elite_size +
+                    ceilf(d_random_parent[tx] * (population_size - elite_size)) -
+                    1);
 
     // if inside_pop_idx < elite_size then thread is elite, so we copy elite
     // chromosome to the next population
@@ -748,7 +763,7 @@ __global__ void device_next_population(
               d_population[parent_chromosome_idx + i];
       }
     } // in the else case the thread corresponds to a mutant and nothing is
-      // done.
+    // done.
   }   // if tx < number_chromosomes
 }
 
@@ -803,7 +818,7 @@ void BRKGA::evolve() {
         chromosome_size, population_size, elite_size, mutants_size, rhoe,
         d_scores_idx, number_genes);
   }
-  float *aux = d_population2;
+  float* aux = d_population2;
   d_population2 = d_population;
   d_population = aux;
 }
@@ -881,19 +896,18 @@ void BRKGA::evolve_pipe() {
         population_size * chromosome_size; // number of genes in one population
 
     device_next_population_coalesced_pipe<<<dimGrid_gene_pipe, dimBlock, 0,
-                                            pop_stream[p]>>>(
+    pop_stream[p]>>>(
         d_population_pipe[p], d_population_pipe2[p],
         d_random_elite_parent_pipe[p], d_random_parent_pipe[p], chromosome_size,
         population_size, elite_size, mutants_size, rhoe, d_scores_idx_pipe[p],
         num_genes);
 
-    float *aux = d_population_pipe2[p];
+    float* aux = d_population_pipe2[p];
     d_population_pipe2[p] = d_population_pipe[p];
     d_population_pipe[p] = aux;
-
   }                 // end of for
   NVTX_POP_RANGE(); // next population
-  float *aux = d_population2;
+  float* aux = d_population2;
   d_population2 = d_population;
   d_population = aux;
 
@@ -936,7 +950,7 @@ void BRKGA::initialize_population_pipe(int p, unsigned pop_id) {
  * where chromosome index and its population index is saved.
  * \param population size is the size of each population.
  */
-__global__ void device_set_idx(PopIdxThreadIdxPair *d_scores_idx,
+__global__ void device_set_idx(PopIdxThreadIdxPair* d_scores_idx,
                                int population_size,
                                unsigned number_chromosomes) {
   int tx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -954,7 +968,7 @@ __global__ void device_set_idx(PopIdxThreadIdxPair *d_scores_idx,
  * \param population size is the size of each population.
  * \param pop_id is the index of the population to work on.
  */
-__global__ void device_set_idx_pipe(PopIdxThreadIdxPair *d_scores_idx_pop,
+__global__ void device_set_idx_pipe(PopIdxThreadIdxPair* d_scores_idx_pop,
                                     unsigned pop_id, unsigned population_size) {
   int tx = blockIdx.x * blockDim.x + threadIdx.x;
   if (tx < population_size) {
@@ -966,8 +980,8 @@ __global__ void device_set_idx_pipe(PopIdxThreadIdxPair *d_scores_idx_pop,
 /**
  * \brief comparator used to sort chromosomes by population index.
  */
-__device__ bool operator<(const PopIdxThreadIdxPair &lhs,
-                          const PopIdxThreadIdxPair &rhs) {
+__device__ bool operator<(const PopIdxThreadIdxPair& lhs,
+                          const PopIdxThreadIdxPair& rhs) {
   return lhs.popIdx < rhs.popIdx;
 }
 
@@ -1029,15 +1043,15 @@ void BRKGA::sort_chromosomes_pipe(unsigned pop_id) {
  * \param d_scores_ids is the struct sorted by chromosomes fitness.
  * \param M is the number of elite chromosomes to exchange.
  */
-__global__ void device_exchange_elite(float *d_population, int chromosome_size,
+__global__ void device_exchange_elite(float* d_population, int chromosome_size,
                                       unsigned population_size,
                                       unsigned number_populations,
-                                      PopIdxThreadIdxPair *d_scores_idx,
+                                      PopIdxThreadIdxPair* d_scores_idx,
                                       unsigned M) {
 
   unsigned tx = threadIdx.x;     // this thread value between 0 and M-1
   unsigned pop_idx = blockIdx.x; // this thread population index, a value
-                                 // between 0 and number_populations-1
+  // between 0 and number_populations-1
   unsigned elite_idx = pop_idx * population_size + tx;
   unsigned elite_chromosome_idx = d_scores_idx[elite_idx].thIdx;
   unsigned inside_destiny_idx =
@@ -1108,7 +1122,7 @@ std::vector<std::vector<float>> BRKGA::getkBestChromosomes(unsigned k) {
 
   for (int i = 0; i < k; i++) {
     unsigned tx = h_scores_idx[i].thIdx;
-    float *begin = &h_population[tx * chromosome_size];
+    float* begin = &h_population[tx * chromosome_size];
     ret[i][0] = h_scores[i];
     for (int u = 1; u <= chromosome_size; u++) {
       ret[i][u] = begin[u - 1];
@@ -1161,17 +1175,17 @@ d_scores_idx.
 * solutions or keep POOL_SIZE solutions considering previously saved
 chromosomes.
 */
-__global__ void device_save_best_chromosomes(float *d_population,
+__global__ void device_save_best_chromosomes(float* d_population,
                                              unsigned chromosome_size,
-                                             PopIdxThreadIdxPair *d_scores_idx,
-                                             float *d_best_solutions,
-                                             float *d_scores,
+                                             PopIdxThreadIdxPair* d_scores_idx,
+                                             float* d_best_solutions,
+                                             float* d_scores,
                                              unsigned best_saved) {
   if (!best_saved) { // this is the first time saving best solutions in to the
-                     // pool
+    // pool
     for (int i = 0; i < POOL_SIZE; i++) {
       unsigned tx = d_scores_idx[i].thIdx;
-      float *begin = (float *)&d_population[tx * chromosome_size];
+      float* begin = (float*) &d_population[tx * chromosome_size];
       d_best_solutions[i * (chromosome_size + 1)] =
           d_scores[i]; // save the value of the chromosome
       for (int j = 1; j <= chromosome_size; j++) { // save the chromosome
@@ -1179,11 +1193,11 @@ __global__ void device_save_best_chromosomes(float *d_population,
       }
     }
   } else { // Since best solutions were already saved
-           // only save now if the i-th best current solution is better than the
-           // i-th best overall
+    // only save now if the i-th best current solution is better than the
+    // i-th best overall
     for (int i = 0; i < POOL_SIZE; i++) {
       unsigned tx = d_scores_idx[i].thIdx;
-      float *begin = (float *)&d_population[tx * chromosome_size];
+      float* begin = (float*) &d_population[tx * chromosome_size];
       if (d_scores[i] < d_best_solutions[i * (chromosome_size + 1)]) {
         d_best_solutions[i * (chromosome_size + 1)] = d_scores[i];
         for (int j = 1; j <= chromosome_size; j++) {
@@ -1249,10 +1263,10 @@ void BRKGA::global_sort_chromosomes() {
  * chromosomes fitness.
  */
 __global__ void device_next_population_coalesced(
-    float *d_population, float *d_population2, float *d_random_elite_parent,
-    float *d_random_parent, int chromosome_size, unsigned population_size,
+    float* d_population, float* d_population2, float* d_random_elite_parent,
+    float* d_random_parent, int chromosome_size, unsigned population_size,
     unsigned elite_size, unsigned mutants_size, float rhoe,
-    PopIdxThreadIdxPair *d_scores_idx, unsigned number_genes) {
+    PopIdxThreadIdxPair* d_scores_idx, unsigned number_genes) {
 
   unsigned tx =
       blockIdx.x * blockDim.x +
@@ -1277,7 +1291,7 @@ __global__ void device_next_population_coalesced(
       unsigned elite_chromosome_idx =
           d_scores_idx[chromosome_idx]
               .thIdx; // previous elite chromosome
-                      // corresponding to this chromosome
+      // corresponding to this chromosome
       d_population2[tx] =
           d_population[elite_chromosome_idx * chromosome_size + gene_idx];
     } else if (inside_pop_idx < population_size - mutants_size) {
@@ -1285,13 +1299,13 @@ __global__ void device_next_population_coalesced(
       // below are the inside population random indexes of a elite parent and
       // regular parent for crossover
       unsigned inside_parent_elite_idx =
-          (unsigned)(ceilf(d_random_elite_parent[chromosome_idx] * elite_size) -
-                     1);
+          (unsigned) (ceilf(d_random_elite_parent[chromosome_idx] * elite_size) -
+                      1);
       unsigned inside_parent_idx =
-          (unsigned)(elite_size +
-                     ceilf(d_random_parent[chromosome_idx] *
-                           (population_size - elite_size)) -
-                     1);
+          (unsigned) (elite_size +
+                      ceilf(d_random_parent[chromosome_idx] *
+                            (population_size - elite_size)) -
+                      1);
 
       unsigned elite_chromosome_idx =
           d_scores_idx[pop_idx * population_size + inside_parent_elite_idx]
@@ -1307,7 +1321,7 @@ __global__ void device_next_population_coalesced(
         d_population2[tx] =
             d_population[parent_chromosome_idx * chromosome_size + gene_idx];
     } // in the else case the thread corresponds to a mutant and nothing is
-      // done.
+    // done.
   }
 }
 
@@ -1333,10 +1347,10 @@ __global__ void device_next_population_coalesced(
  *
  */
 __global__ void device_next_population_coalesced_pipe(
-    float *d_population_pop, float *d_population_pop2,
-    float *d_random_elite_parent_pop, float *d_random_parent_pop,
+    float* d_population_pop, float* d_population_pop2,
+    float* d_random_elite_parent_pop, float* d_random_parent_pop,
     int chromosome_size, unsigned population_size, unsigned elite_size,
-    unsigned mutants_size, float rhoe, PopIdxThreadIdxPair *d_scores_idx_pop,
+    unsigned mutants_size, float rhoe, PopIdxThreadIdxPair* d_scores_idx_pop,
     unsigned number_genes) {
 
   unsigned tx =
@@ -1353,7 +1367,7 @@ __global__ void device_next_population_coalesced_pipe(
       unsigned elite_chromosome_idx =
           d_scores_idx_pop[chromosome_idx]
               .thIdx; // original elite chromosome index
-                      // corresponding to this chromosome
+      // corresponding to this chromosome
       d_population_pop2[tx] =
           d_population_pop[elite_chromosome_idx * chromosome_size + gene_idx];
     } else if (chromosome_idx < population_size - mutants_size) {
@@ -1361,14 +1375,14 @@ __global__ void device_next_population_coalesced_pipe(
       // Below are the inside population random indexes of a elite parent and
       // regular parent for crossover
       unsigned inside_parent_elite_idx =
-          (unsigned)(ceilf(d_random_elite_parent_pop[chromosome_idx] *
-                           elite_size) -
-                     1);
+          (unsigned) (ceilf(d_random_elite_parent_pop[chromosome_idx] *
+                            elite_size) -
+                      1);
       unsigned inside_parent_idx =
-          (unsigned)(elite_size +
-                     ceilf(d_random_parent_pop[chromosome_idx] *
-                           (population_size - elite_size)) -
-                     1);
+          (unsigned) (elite_size +
+                      ceilf(d_random_parent_pop[chromosome_idx] *
+                            (population_size - elite_size)) -
+                      1);
 
       unsigned elite_chromosome_idx =
           d_scores_idx_pop[inside_parent_elite_idx].thIdx;
@@ -1384,7 +1398,7 @@ __global__ void device_next_population_coalesced_pipe(
             d_population_pop[parent_chromosome_idx * chromosome_size +
                              gene_idx];
     } // in the else case the thread corresponds to a mutant and nothing is
-      // done.
+    // done.
   }
 }
 
@@ -1405,10 +1419,10 @@ __global__ void device_next_population_coalesced_pipe(
  * chromosomes fitness.
  */
 __global__ void device_next_population_coalesced_shared_mem(
-    float *d_population, float *d_population2, float *d_random_elite_parent,
-    float *d_random_parent, int chromosome_size, unsigned population_size,
+    float* d_population, float* d_population2, float* d_random_elite_parent,
+    float* d_random_parent, int chromosome_size, unsigned population_size,
     unsigned elite_size, unsigned mutants_size, float rhoe,
-    PopIdxThreadIdxPair *d_scores_idx, unsigned number_genes) {
+    PopIdxThreadIdxPair* d_scores_idx, unsigned number_genes) {
 
   __shared__ float sm[THREADS_PER_BLOCK];
 
@@ -1435,7 +1449,7 @@ __global__ void device_next_population_coalesced_shared_mem(
       unsigned elite_chromosome_idx =
           d_scores_idx[chromosome_idx]
               .thIdx; // previous elite chromosome
-                      // corresponding to this chromosome
+      // corresponding to this chromosome
       sm[threadIdx.x] =
           d_population[elite_chromosome_idx * chromosome_size + gene_idx];
       // d_population[elite_chromosome_idx * chromosome_size + gene_idx];
@@ -1444,13 +1458,13 @@ __global__ void device_next_population_coalesced_shared_mem(
       // below are the inside population random indexes of a elite parent and
       // regular parent for crossover
       unsigned inside_parent_elite_idx =
-          (unsigned)(ceilf(d_random_elite_parent[chromosome_idx] * elite_size) -
-                     1);
+          (unsigned) (ceilf(d_random_elite_parent[chromosome_idx] * elite_size) -
+                      1);
       unsigned inside_parent_idx =
-          (unsigned)(elite_size +
-                     ceilf(d_random_parent[chromosome_idx] *
-                           (population_size - elite_size)) -
-                     1);
+          (unsigned) (elite_size +
+                      ceilf(d_random_parent[chromosome_idx] *
+                            (population_size - elite_size)) -
+                      1);
 
       unsigned elite_chromosome_idx =
           d_scores_idx[pop_idx * population_size + inside_parent_elite_idx]
@@ -1462,8 +1476,8 @@ __global__ void device_next_population_coalesced_shared_mem(
         // copy allele from elite parent
         sm[threadIdx.x] =
             d_population[elite_chromosome_idx * chromosome_size + gene_idx];
-      // d_population2[tx] =
-      //    d_population[elite_chromosome_idx * chromosome_size + gene_idx];
+        // d_population2[tx] =
+        //    d_population[elite_chromosome_idx * chromosome_size + gene_idx];
       else
         // copy allele from regular parent
         sm[threadIdx.x] =
@@ -1471,7 +1485,7 @@ __global__ void device_next_population_coalesced_shared_mem(
       // d_population2[tx] =
       //    d_population[parent_chromosome_idx * chromosome_size + gene_idx];
     } // in the else case the thread corresponds to a mutant and nothing is
-      // done.
+    // done.
     if (inside_pop_idx < population_size - mutants_size) {
       __syncthreads();
       d_population2[tx] = sm[threadIdx.x];

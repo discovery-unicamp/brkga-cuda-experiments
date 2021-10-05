@@ -27,5 +27,8 @@ set(API_FILES
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wshadow -Wformat=2 -Wfloat-equal -Wconversion -Wno-sign-conversion -Wshift-overflow -Wcast-qual -Wcast-align")
+
 add_subdirectory(tsp_example)
 add_subdirectory(scp_example)
+add_subdirectory(cvrp_example)
