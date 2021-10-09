@@ -6,6 +6,8 @@
 #define _CUDA_ERROR_H
 
 #include <cuda.h>
+#include <cstdio>
+#include <iostream>
 
 #ifndef NDEBUG
 #warning "Doing Cuda Check in All Cuda Calls!"

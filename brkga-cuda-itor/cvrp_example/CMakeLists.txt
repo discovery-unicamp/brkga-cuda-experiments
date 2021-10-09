@@ -3,9 +3,8 @@ include_directories(src)
 
 add_executable(brkga-cvrp
         src/main.cpp
-        src/CvrpInstance.cpp
+        src/CvrpInstance.cu
         src/CvrpInstance.hpp
-        src/Decoder.cu
         ${API_FILES}
 )
 

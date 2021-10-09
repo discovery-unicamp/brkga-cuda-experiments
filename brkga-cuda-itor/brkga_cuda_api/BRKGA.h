@@ -11,6 +11,7 @@
 
 #include "CommonStructs.h"
 #include "ConfigFile.h"
+#include "Instance.hpp"
 
 #include <curand.h>
 #include <vector>
@@ -22,7 +23,7 @@
  */
 class BRKGA {
 public:
-  BRKGA(unsigned n, ConfigFile &conf_file, bool coalesced = false,
+  BRKGA(Instance* instance, ConfigFile &conf_file, bool coalesced = false,
         bool evolve_pipeline = false, unsigned n_pop_pipe = 0,
         unsigned RAND_SEED = 1234);
   ~BRKGA();
@@ -30,11 +31,11 @@ public:
   void evolve();
   void exchangeElite(unsigned M);
   std::vector<std::vector<float>> getkBestChromosomes(unsigned k);
-  void setInstanceInfo(void *info, long unsigned num, long unsigned size);
   void saveBestChromosomes();
   std::vector<std::vector<float>> getkBestChromosomes2(unsigned k);
 
 private:
+  Instance* instance;
   float *d_population = NULL;  /// Device populations
   float *d_population2 = NULL; /// Device populations
   float **d_population_pipe =
@@ -54,10 +55,6 @@ private:
       NULL; /// Pointer to each population device score of each chromossome
   float **h_scores_pipe =
       NULL; /// Pointer to each populatio host score of each chromossome
-
-  void *d_instance_info = NULL; /// vector of unknow type containg instance info
-                                /// used to evaluate a chromosome
-  void *h_instance_info = NULL;
 
   float *d_best_solutions = NULL; /// pool of 10 best solutions
   float *h_best_solutions = NULL;

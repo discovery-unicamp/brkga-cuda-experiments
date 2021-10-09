@@ -5,64 +5,70 @@
 #define CVRP_EXAMPLE_SRC_CVRPINSTANCE_HPP
 
 #include "Point.hpp"
+#include <BRKGA.h>
 #include <cassert>
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <Instance.hpp>
+#include <CommonStructs.h>
 
-class CvrpInstance {
+class CvrpInstance : public Instance {
 public:  // for testing purposes
 
-  static CvrpInstance fromFile(const std::string& filename) {
-    std::ifstream file(filename);
-    if (!file.is_open()) throw std::runtime_error("File is not open");
+  CvrpInstance(const CvrpInstance&) = delete;
 
-    CvrpInstance instance;
-    std::string str;
+  CvrpInstance(CvrpInstance&&) = default;
 
-    // read capacity
-    instance.capacity = -1;
-    while ((file >> str) && str != "NODE_COORD_SECTION") {
-      if (str == "CAPACITY") {
-        file >> str;  // semicolon
-        file >> instance.capacity;
-      }
-    }
+  static CvrpInstance fromFile(const std::string& filename);
 
-    // read locations
-    while ((file >> str) && str != "DEMAND_SECTION") {
-      float x, y;
-      file >> x >> y;
-      instance.locations.push_back({x, y});
-    }
-    instance.numberOfClients = (int)instance.locations.size() - 1;
+  CvrpInstance& operator=(const CvrpInstance&) = delete;
 
-    // read demand
-    while ((file >> str) && str != "DEPOT_SECTION") {
-      int d;
-      file >> d;
-      instance.demand.push_back(d);
-    }
+  CvrpInstance& operator=(CvrpInstance&&) = default;
 
-    if (instance.capacity <= 0) throw std::runtime_error("Invalid capacity");
-    if (instance.locations.size() <= 1) throw std::runtime_error("Must have locations");
-    if (instance.locations.size() != instance.demand.size()) throw std::runtime_error("Missing location or demand");
-    if (instance.demand[0] != 0) throw std::runtime_error("Depot with demand");
+  ~CvrpInstance();
 
-    const int n = instance.numberOfClients;
-    instance.distances.resize((n + 1) * (n + 1));
-    for (int i = 0; i <= n; ++i)
-      for (int j = i; j <= n; ++j)
-        instance.distances[i * (n + 1) + j] = instance.locations[i].distance(instance.locations[j]);
-
-    return instance;
+  [[nodiscard]]
+  inline unsigned chromosomeLength() const override {
+    return numberOfClients;
   }
 
-  int capacity;
-  int numberOfClients;
-  std::vector<float> distances;
-  std::vector<Point> locations;
-  std::vector<int> demand;
+  void evaluateChromosomesOnHost(
+      unsigned int,
+      const float*,
+      float*
+  ) const override {
+    std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
+    abort();
+  }
+
+  void evaluateChromosomesOnDevice(
+      unsigned int,
+      const float*,
+      float*
+  ) const override {
+    std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
+    abort();
+  }
+
+  void evaluateIndicesOnDevice(
+      unsigned numberOfChromosomes,
+      const ChromosomeGeneIdxPair* indices,
+      float* results) const override;
+
+  unsigned capacity;
+  unsigned numberOfClients;
+  float* dDistances;
+  unsigned* dDemands;
+
+private:
+
+  CvrpInstance() :
+      capacity(static_cast<unsigned>(-1)),
+      numberOfClients(static_cast<unsigned>(-1)),
+      dDistances(nullptr),
+      dDemands(nullptr) {
+  }
 };
 
 #endif //CVRP_EXAMPLE_SRC_CVRPINSTANCE_HPP
