@@ -12,7 +12,7 @@
 
 #include "BRKGA.h"
 #include "ConfigFile.h"
-#include "Decoder.h"
+#include "SetCoveringDecoder.h"
 
 
 int main(int argc, char* argv[]) {
@@ -80,10 +80,7 @@ int main(int argc, char* argv[]) {
 	ConfigFile config(par_file);
 	//population size is 10*n to use the same rule of Toso and Resende
 	config.p = 10 * decoder.getNRows();
-	BRKGA alg(decoder.getNColumns(), config, evolve_coalesced, evolve_pipeline, num_pop_pipe,
-            rand_seed);
-
-	alg.setInstanceInfo(&decoder, 0, 0);
+	BRKGA alg(&decoder, config, evolve_coalesced, evolve_pipeline, num_pop_pipe, rand_seed);
 	
 	for(int i=1; i<=config.MAX_GENS; i++){
 		alg.evolve();

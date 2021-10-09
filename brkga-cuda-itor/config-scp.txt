@@ -15,4 +15,3 @@ num_threads_omp 8
 #define HOST_DECODE 1
 #define DEVICE_DECODE 2
 #define DEVICE_DECODE_CHROMOSOME_SORTED 3
-

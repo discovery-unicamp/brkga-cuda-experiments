@@ -8,6 +8,8 @@
 #ifndef SETCOVERINGDECODER_H
 #define SETCOVERINGDECODER_H
 
+#include <Instance.hpp>
+#include <CommonStructs.h>
 #include <omp.h>
 #include <istream>
 #include <vector>
@@ -18,7 +20,7 @@
 #include "Node.h"
 #include "SetCoveringSolution.h"
 
-class SetCoveringDecoder {
+class SetCoveringDecoder : public Instance {
 	friend class SetCoveringSolution;
 
 public:
@@ -30,6 +32,23 @@ public:
 
 	unsigned getNRows() const;
 	unsigned getNColumns() const;
+
+	[[nodiscard]]
+	inline unsigned int chromosomeLength() const override {
+		return getNColumns();
+	}
+
+	void evaluateChromosomesOnHost(unsigned int, const float*, float*) const override;
+
+	void evaluateChromosomesOnDevice(unsigned int, const float*, float*) const override {
+		std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
+		abort();
+	}
+
+	void evaluateIndicesOnDevice(unsigned, const ChromosomeGeneIdxPair*, float*) const override {
+		std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
+		abort();
+	}
 
 private:
 	// Instance structure:

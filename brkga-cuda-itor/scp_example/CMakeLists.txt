@@ -3,7 +3,7 @@ include_directories(src)
 
 add_executable(brkga-scp
   src/main.cpp
-  src/Decoder.cu
+        src/SetCoveringDecoder.cu
   src/Node.cpp
   src/SetCoveringDecoder.cpp
   src/SetCoveringSolution.cpp
@@ -12,7 +12,7 @@ add_executable(brkga-scp
 
 set_target_properties(brkga-scp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(brkga-scp PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-set_property(TARGET brkga-scp PROPERTY CUDA_STANDARD 11)
+set_property(TARGET brkga-scp PROPERTY CUDA_STANDARD 17)
 set_property(TARGET brkga-scp PROPERTY CUDA_ARCHITECTURES 61)
 target_compile_options(brkga-scp PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
                        -Xcompiler
@@ -28,4 +28,3 @@ if(OpenMP_CXX_FOUND)
 else()
 	target_link_libraries(brkga-scp PUBLIC -lcurand)
 endif()
-
