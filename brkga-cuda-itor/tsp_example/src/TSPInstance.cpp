@@ -52,10 +52,28 @@ TSPInstance::TSPInstance(const std::string &instanceFile) {
     // fprintf(stderr, "%d %f %f\n",i,x,y);
   }
 
+  distances = (float *)malloc(nNodes * nNodes * sizeof(float));
+  if (distances == NULL) {
+    std::cout << "Insufficient Memory" << std::endl;
+    exit(0);
+  }
+
+  for (unsigned i = 0; i < nNodes; i++) {
+    for (unsigned j = 0; j < nNodes; j++) {
+      distances[i * nNodes + j] = getDistance(i, j);
+    }
+  }
+
+  cudaMalloc(&dDistances, nNodes * nNodes * sizeof(float));
+  CUDA_CHECK(cudaMemcpy(dDistances, distances, nNodes * nNodes * sizeof(float), cudaMemcpyHostToDevice));
+
   fclose(f);
 }
 
-TSPInstance::~TSPInstance() {}
+TSPInstance::~TSPInstance() {
+  free(distances);
+  CUDA_CHECK(cudaFree(dDistances));
+}
 
 /*unsigned TSPInstance::getDistance(unsigned i, unsigned j) const {
         const float x2 = std::pow(nodeCoords[i].getX() -
@@ -69,10 +87,7 @@ nodeCoords[j].getY(), 2.0);
 unsigned TSPInstance::getNumNodes() const { return nNodes; }
 
 float TSPInstance::getDistance(unsigned i, unsigned j) const {
-  const float x2 = std::pow(nodeCoords[i].getX() - nodeCoords[j].getX(), 2.0);
-  const float y2 = std::pow(nodeCoords[i].getY() - nodeCoords[j].getY(), 2.0);
-
-  return std::sqrt(x2 + y2);
+  return std::hypotf(nodeCoords[i].getX() - nodeCoords[j].getX(), nodeCoords[i].getY() - nodeCoords[j].getY());
 }
 
 int TSPInstance::return_dimension(char *s) {

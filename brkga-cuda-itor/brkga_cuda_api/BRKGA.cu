@@ -357,7 +357,6 @@ void BRKGA::reset_population(void) {
  *        the host_decode function provided in Decoder.cpp.
  */
 void BRKGA::evaluate_chromosomes_host() {
-  std::cerr << "Evaluating chromosomes on host\n";
   CUDA_CHECK(cudaMemcpy(h_population, d_population,
                         number_chromosomes * chromosome_size * sizeof(float),
                         cudaMemcpyDeviceToHost));
@@ -391,7 +390,6 @@ void BRKGA::evaluate_chromosomes_device() {
   // Make a copy of chromossomes to d_population2 such that they can be messed
   // up inside the decoder functions without afecting the real chromosomes on
   // d_population.
-  std::cerr << "Evaluating chromosomes on device\n";
   CUDA_CHECK(cudaMemcpy(d_population2, d_population,
                         number_chromosomes * chromosome_size * sizeof(float),
                         cudaMemcpyDeviceToDevice));

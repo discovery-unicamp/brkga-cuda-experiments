@@ -12,7 +12,6 @@
 
 #include "BRKGA.h"
 #include "ConfigFile.h"
-#include "Decoder.h"
 #include "TSPInstance.h"
 
 int main(int argc, char *argv[]) {
@@ -77,25 +76,11 @@ int main(int argc, char *argv[]) {
   std::cout << "Instance read; here's the info:"
             << "\n\tDimension: " << n << std::endl;
 
-  float *adjMatrix = (float *)malloc(n * n * sizeof(float));
-  if (adjMatrix == NULL) {
-    std::cout << "Insufficient Memory" << std::endl;
-    exit(0);
-  }
-
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      adjMatrix[i * n + j] = instance.getDistance(i, j);
-    }
-  }
-
   ConfigFile config(par_file);
-  BRKGA alg(n, config, evolve_coalesced, evolve_pipeline, num_pop_pipe,
-            rand_seed);
-  alg.setInstanceInfo(adjMatrix, n * n, sizeof(float));
+  BRKGA alg(&instance, config, evolve_coalesced, evolve_pipeline, num_pop_pipe, rand_seed);
 
   // alg.setInstanceInfo2D(adjMatrix, n,n, sizeof(float));
-  for (int i = 1; i <= config.MAX_GENS; i++) {
+  for (unsigned i = 1; i <= config.MAX_GENS; i++) {
     alg.evolve();
     std::cout << "Evolution: " << i << std::endl;
     if (i % config.X_INTVL == 0) {
@@ -122,8 +107,8 @@ int main(int argc, char *argv[]) {
   }
   printf("\n");
   printf("Value of best solution: %.2f\n", res2[0][0]);
-  printf("Value of best solution: %.2f\n",
-         host_decode(&aux[0], aux.size(), adjMatrix));
 
-  free(adjMatrix);
+  float bestSolutionValue = -1;
+  instance.evaluateChromosomesOnHost(1, aux.data(), &bestSolutionValue);
+  printf("Value of best solution: %.2f\n", bestSolutionValue);
 }

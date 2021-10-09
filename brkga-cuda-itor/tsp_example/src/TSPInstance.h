@@ -30,27 +30,52 @@
 #ifndef TSPINSTANCE_H
 #define TSPINSTANCE_H
 
+#include <Instance.hpp>
+#include <BRKGA.h>
+#include <cuda_error.cuh>
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
-#include <stdio.h>
+#include <cstdio>
 #include <string>
 #include <vector>
 
-class TSPInstance {
+class TSPInstance : public Instance {
 public:
   typedef std::runtime_error Error;
 
-  TSPInstance(const std::string &instanceFile);
+  TSPInstance(const std::string& instanceFile);
+
   virtual ~TSPInstance();
 
   // Getters:
   unsigned getNumNodes() const;
+
+  [[nodiscard]]
+  inline unsigned int chromosomeLength() const override {
+    return getNumNodes();
+  }
+
   // Returns the distance from node i to node j:
   float getDistance(unsigned i, unsigned j) const;
+
+  void evaluateChromosomesOnHost(
+      unsigned int numberOfChromosomes,
+      const float* chromosomes,
+      float* results) const override;
+
+  void evaluateChromosomesOnDevice(
+      unsigned int numberOfChromosomes,
+      const float* chromosomes,
+      float* results) const override;
+
+  void evaluateIndicesOnDevice(
+      unsigned int numberOfChromosomes,
+      const ChromosomeGeneIdxPair* indices,
+      float* results) const override;
 
 private:
   unsigned nNodes;
@@ -58,9 +83,11 @@ private:
   class Coord2D {
   public:
     Coord2D() : x(0.0), y(0.0) {}
+
     Coord2D(float _x, float _y) : x(_x), y(_y) {}
 
     float getX() const { return x; }
+
     float getY() const { return y; }
 
   private:
@@ -69,8 +96,11 @@ private:
   };
 
   std::vector<Coord2D> nodeCoords;
+  float* distances;
+  float* dDistances;
 
-  int return_dimension(char *s);
+  int return_dimension(char* s);
+
   int is_digit(char c);
 };
 

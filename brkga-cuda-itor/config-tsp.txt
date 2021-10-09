@@ -7,7 +7,7 @@ max_generations 500
 iterations_exchange_best 200
 size_best_to_exchange 2 
 reset_iterations 1001
-decode_type 1
+decode_type 3
 decode_type2 3
 num_threads_omp 8
 
@@ -15,4 +15,3 @@ num_threads_omp 8
 #define HOST_DECODE 1
 #define DEVICE_DECODE 2
 #define DEVICE_DECODE_CHROMOSOME_SORTED 3
-
