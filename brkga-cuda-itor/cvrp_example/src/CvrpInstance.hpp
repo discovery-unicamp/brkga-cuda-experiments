@@ -6,15 +6,26 @@
 
 #include "Point.hpp"
 #include <BRKGA.h>
+#include <Instance.hpp>
+#include <CommonStructs.h>
+#include <algorithm>
+#include <numeric>
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <vector>
-#include <Instance.hpp>
-#include <CommonStructs.h>
+#include <cuda_error.cuh>
 
 class CvrpInstance : public Instance {
 public:  // for testing purposes
+
+  struct Solution {
+    Solution(const CvrpInstance& instance, float newFitness, std::vector<unsigned> newTour);
+
+    const float fitness;
+    const std::vector<unsigned> tour;
+  };
 
   CvrpInstance(const CvrpInstance&) = delete;
 
@@ -33,33 +44,23 @@ public:  // for testing purposes
     return numberOfClients;
   }
 
-  void evaluateChromosomesOnHost(
-      unsigned int,
-      const float*,
-      float*
-  ) const override {
-    std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
-    abort();
-  }
+  void validateBestKnownSolution(const std::string& filename);
 
-  void evaluateChromosomesOnDevice(
-      unsigned int,
-      const float*,
-      float*
-  ) const override {
-    std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
-    abort();
-  }
+  Solution convertChromosomeToSolution(const float* chromosome) const;
 
   void evaluateIndicesOnDevice(
       unsigned numberOfChromosomes,
       const ChromosomeGeneIdxPair* indices,
-      float* results) const override;
+      float* results
+  ) const override;
 
   unsigned capacity;
   unsigned numberOfClients;
+  std::vector<float> distances;
   float* dDistances;
+  std::vector<unsigned> demands;
   unsigned* dDemands;
+  std::vector<Point> locations;
 
 private:
 

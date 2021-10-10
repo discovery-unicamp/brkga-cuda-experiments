@@ -10,7 +10,7 @@ struct Point {
   float x, y;
 
   float distance(const Point& other) const {
-    return std::hypotf(x - other.x, y - other.y);
+    return std::round(std::hypotf(x - other.x, y - other.y));
   }
 };
 

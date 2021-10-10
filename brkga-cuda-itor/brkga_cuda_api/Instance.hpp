@@ -5,6 +5,7 @@
 #define SRC_BRKGA_INSTANCE_HPP
 
 #include "CommonStructs.h"
+#include <iostream>
 
 class Instance {
 public:
@@ -15,17 +16,29 @@ public:
   virtual void evaluateChromosomesOnHost(
       unsigned numberOfChromosomes,
       const float* chromosomes,
-      float* results) const = 0;
+      float* results
+  ) const {
+    std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
+    abort();
+  }
 
   virtual void evaluateChromosomesOnDevice(
       unsigned numberOfChromosomes,
       const float* chromosomes,
-      float* results) const = 0;
+      float* results
+  ) const {
+    std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
+    abort();
+  }
 
   virtual void evaluateIndicesOnDevice(
       unsigned numberOfChromosomes,
       const ChromosomeGeneIdxPair* indices,
-      float* results) const = 0;
+      float* results
+  ) const {
+    std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
+    abort();
+  }
 };
 
 #endif //SRC_BRKGA_INSTANCE_HPP
