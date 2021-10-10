@@ -16,12 +16,12 @@
 
 extern texture<float, 2, cudaReadModeElementType> tex;
 
-__device__ void insertionSort(valueIndexPair* arr, int n);
+__device__ void insertionSort(ValueIndexPair* arr, int n);
 
 /***
   Used by host_decode
 ***/
-bool comparator(const valueIndexPair& l, const valueIndexPair& r) { return l.first < r.first; }
+bool comparator(const ValueIndexPair& l, const ValueIndexPair& r) { return l.first < r.first; }
 
 /***
 	Implement this function if you want to decode cromossomes on the host.
@@ -29,7 +29,7 @@ bool comparator(const valueIndexPair& l, const valueIndexPair& r) { return l.fir
 ***/
 float host_decode(const float* chromosome, int n, void* instance_info) {
   float score = 0;
-  valueIndexPair* valInd = (valueIndexPair*) malloc(n * sizeof(valueIndexPair));
+  ValueIndexPair* valInd = (ValueIndexPair*) malloc(n * sizeof(ValueIndexPair));
   if (valInd == NULL)
     printf("\nMemory error in host_decode!\n");
   for (int i = 0; i < n; i++) {
@@ -133,7 +133,7 @@ device_decode_chromosome_sorted_texture(ChromosomeGeneIdxPair* chromosome, int n
   Parameters are chromosome pointer, its size n, and instance information used to decode.
 ***/
 __device__ float device_decode(const float* chromosome, int n, const void* d_instance_info) {
-  valueIndexPair* valInd = (valueIndexPair*) malloc(n * sizeof(valueIndexPair));
+  ValueIndexPair* valInd = (ValueIndexPair*) malloc(n * sizeof(ValueIndexPair));
   if (valInd == NULL) {
     printf("\nMemory error: could not alloc memory in device_decode!\n");
     return 0;
@@ -146,7 +146,7 @@ __device__ float device_decode(const float* chromosome, int n, const void* d_ins
   insertionSort(valInd, n);
   //sorting with thrust on device only work with small instances
   //otherwise there are memory allocation problems
-  //thrust::device_ptr<valueIndexPair> vals(valInd);
+  //thrust::device_ptr<ValueIndexPair> vals(valInd);
   //thrust::sort(thrust::device, vals, vals+n, comparator2);
 
   float score = 0;
@@ -185,16 +185,16 @@ void TSPInstance::evaluateChromosomesOnDevice(
 }
 
 //Used with thrust sort in the device
-__device__ bool comparator2(const valueIndexPair& lhs, const valueIndexPair& rhs) {
+__device__ bool comparator2(const ValueIndexPair& lhs, const ValueIndexPair& rhs) {
   return lhs.first < rhs.first;
 }
 
 /**
  Just for the purpose of an examplo of using device_decode. This version is slow.
 **/
-__device__ void insertionSort(valueIndexPair* arr, int n) {
+__device__ void insertionSort(ValueIndexPair* arr, int n) {
   int i, j;
-  valueIndexPair key;
+  ValueIndexPair key;
   for (i = 1; i < n; i++) {
     key = arr[i];
     j = i - 1;
@@ -219,9 +219,9 @@ device_decode_chromosome_sorted_coalesced(ChromosomeGeneIdxPair* chromosomes, in
   ChromosomeGeneIdxPair* chromosome =
       chromosomes + blockIdx.x * n; //pointer to begnning of the chromosome this thread works on
 
-  //All threads in the block work toguether to decode this chromossome
+  //All threads in the block work toguether to decode this chromosome
   __shared__ float sm[THREADS_PER_BLOCK];
-  int total;//number of segments in the chromossome to be worked by the threads in this block
+  int total;//number of segments in the chromosome to be worked by the threads in this block
   if (n % THREADS_PER_BLOCK == 0)
     total = n / THREADS_PER_BLOCK;
   else

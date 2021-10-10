@@ -8,7 +8,7 @@
 
 #include "SetCoveringDecoder.h"
 
-bool comparator(const valueIndexPair& l, const valueIndexPair& r){ return l.first < r.first; }
+bool comparator(const ValueIndexPair& l, const ValueIndexPair& r){ return l.first < r.first; }
 
 /***
 	Implement this function if you want to decode cromossomes on the host.

@@ -1,6 +1,6 @@
 /**
  * \file nvtx.cuh
- * \brief NVIDIA Tools Extension (NVTX) utilitary macros.
+ * \brief NVIDIA Tools Extension (NVTX) utility macros.
  */
 #ifndef __NVTX_H__
 #define __NVTX_H__
@@ -115,13 +115,13 @@ static nvtxEventAttributes_t nvtx_attribs = {0};
 #else // USE_NVTX
 
 // Do nothing when not using NVTX.
-#define NVTX_PUSH_RANGE(label, hex)
-#define NVTX_PUSH_FUNCTION(hex)
-#define NVTX_POP_RANGE()
-#define NVTX_MARK(label, hex)
-#define NVTX_NAME_DEVICE(device, label)
-#define NVTX_NAME_THREAD(name)
-#define NVTX_NAME_STREAM(stream, label)
+#define NVTX_PUSH_RANGE(label, hex) void(nullptr)
+#define NVTX_PUSH_FUNCTION(hex) void(nullptr)
+#define NVTX_POP_RANGE() void(nullptr)
+#define NVTX_MARK(label, hex) void(nullptr)
+#define NVTX_NAME_DEVICE(device, label) void(nullptr)
+#define NVTX_NAME_THREAD(name) void(nullptr)
+#define NVTX_NAME_STREAM(stream, label) void(nullptr)
 
 #endif // USE_NVTX
 

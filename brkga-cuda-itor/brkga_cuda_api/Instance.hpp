@@ -17,28 +17,19 @@ public:
       unsigned numberOfChromosomes,
       const float* chromosomes,
       float* results
-  ) const {
-    std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
-    abort();
-  }
+  ) const = 0;
 
   virtual void evaluateChromosomesOnDevice(
       unsigned numberOfChromosomes,
       const float* chromosomes,
       float* results
-  ) const {
-    std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
-    abort();
-  }
+  ) const = 0;
 
   virtual void evaluateIndicesOnDevice(
       unsigned numberOfChromosomes,
       const ChromosomeGeneIdxPair* indices,
       float* results
-  ) const {
-    std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
-    abort();
-  }
+  ) const = 0;
 };
 
 #endif //SRC_BRKGA_INSTANCE_HPP

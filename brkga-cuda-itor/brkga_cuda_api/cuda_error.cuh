@@ -29,7 +29,7 @@
 #define CUDA_CHECK(cmd) cmd
 #define CUDA_CHECK_LAST()
 
-#endif /* defined(ENABLE_CUDA_CHECK) || defined(DEBUG) || defined(_DEBUG) */
+#endif /* NDEBUG */
 
 /**
  * \brief Check if an \a error occurred, if so, print a message and die.

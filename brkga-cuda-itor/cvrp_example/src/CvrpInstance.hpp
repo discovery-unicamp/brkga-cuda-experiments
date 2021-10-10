@@ -48,6 +48,16 @@ public:  // for testing purposes
 
   Solution convertChromosomeToSolution(const float* chromosome) const;
 
+  void evaluateChromosomesOnHost(unsigned int, const float*, float*) const override {
+    std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
+    abort();
+  }
+
+  void evaluateChromosomesOnDevice(unsigned int, const float*, float*) const override {
+    std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
+    abort();
+  }
+
   void evaluateIndicesOnDevice(
       unsigned numberOfChromosomes,
       const ChromosomeGeneIdxPair* indices,
@@ -56,10 +66,10 @@ public:  // for testing purposes
 
   unsigned capacity;
   unsigned numberOfClients;
-  std::vector<float> distances;
   float* dDistances;
-  std::vector<unsigned> demands;
   unsigned* dDemands;
+  std::vector<float> distances;
+  std::vector<unsigned> demands;
   std::vector<Point> locations;
 
 private:
