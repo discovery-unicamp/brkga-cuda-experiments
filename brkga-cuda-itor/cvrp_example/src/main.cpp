@@ -5,22 +5,33 @@
 #include <string>
 #include <iostream>
 #include <iomanip>
+#include <getopt.h>
 
-int main(int, char**) {
+int main(int argc, char** argv) {
+  int seed = -1;
+  int option;
+  while (option = getopt(argc, argv, "s:"), option != -1) {
+    if (option == 's') {
+      std::cerr << "Parsing seed: " << optarg << '\n';
+      seed = std::stoi(optarg);
+    }
+  }
+  if (seed == -1) {
+    std::cerr << "Missing seed\n";
+    abort();
+  }
+
   std::string instanceFilename = "cvrplib/set-x/X-n101-k25.vrp";
   std::cerr << "Reading instance from " << instanceFilename << '\n';
   auto instance = CvrpInstance::fromFile(instanceFilename);
 
   std::cerr << "Reading configuration\n";
   std::string configFilename = "config-cvrp.txt";
-  ConfigFile config((char*)configFilename.data());
+  ConfigFile config(configFilename.data());
   const bool useCoalesced = true;
   const bool usePipeline = false;  // currently broken
   const int pipelineSize = 3;
 
-  // FIXME change the random generator
-  srand((unsigned)time(nullptr));
-  const int seed = rand();
   BRKGA brgka(&instance, config, useCoalesced, usePipeline, pipelineSize, seed);
 
   cudaEvent_t start, stop;
@@ -28,7 +39,8 @@ int main(int, char**) {
   cudaEventCreate(&stop);
   cudaEventRecord(start);
   std::cerr << "Running\n";
-  for (int i = 1; i <= (int)config.MAX_GENS; ++i) {
+  const int numberOfGenerations = (int)config.MAX_GENS;
+  for (int i = 1; i <= numberOfGenerations; ++i) {
     // std::cerr << "Generation " << i << '\n';
     brgka.evolve();
     if (i % config.X_INTVL == 0)
@@ -44,8 +56,28 @@ int main(int, char**) {
   std::vector<std::vector<float>> kBest = brgka.getkBestChromosomes2(1);
   std::cerr << "Number of solutions: " << kBest.size() << '\n';
   std::vector<float> bestChromosome = kBest[0];
-  std::cout << std::fixed << std::setprecision(3) << bestChromosome[0] << ' ' << milliseconds / 1000 << "s\n";
-  // std::cout << " Value decoded: " << host_decode(&bestChromosome[1], bestChromosome.size(), instance.distances) << '\n';
+
+  // log all data
+  const unsigned populationSize = config.p;
+  const unsigned numberOfPopulations = config.K;
+  const float elitePercentage = config.pe;
+  const float mutantPercentage = config.pm;
+  const float rho = config.rhoe;
+  const std::string decodeType = config.decode_type == HOST_DECODE ? "cpu"
+      : config.decode_type == DEVICE_DECODE ? "gpu"
+      : config.decode_type == DEVICE_DECODE_CHROMOSOME_SORTED ? "sorted-gpu"
+      : "** UNKNOWN! **";
+
+  std::cout << std::fixed << std::setprecision(3) << bestChromosome[0] << ';'
+            << milliseconds / 1000 << ';'
+            << seed << ';'
+            << numberOfGenerations << ';'
+            << numberOfPopulations << ';'
+            << populationSize << ';'
+            << elitePercentage << ';'
+            << mutantPercentage << ';'
+            << rho << ';'
+            << decodeType << std::endl;
 
   return 0;
 }

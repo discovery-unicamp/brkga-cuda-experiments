@@ -13,7 +13,7 @@
 #include <stdio.h>
 using namespace std;
 
-ConfigFile::ConfigFile(char *instanceFile) {
+ConfigFile::ConfigFile(const char *instanceFile) {
   FILE *f = fopen(instanceFile, "r");
   //  FILE *f = fopen(FILE_NAME, "r");
 

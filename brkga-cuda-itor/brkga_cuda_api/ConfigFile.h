@@ -50,7 +50,7 @@ class ConfigFile {
 public:
   typedef std::runtime_error Error;
 
-  ConfigFile(char *instanceFile);
+  explicit ConfigFile(const char *instanceFile);
   virtual ~ConfigFile();
 
   unsigned p; /// size of population, example 256 individuals

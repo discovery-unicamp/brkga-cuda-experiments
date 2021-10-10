@@ -114,12 +114,12 @@ BRKGA::BRKGA(Instance* _instance, ConfigFile& conf_file, bool evolve_coalesced,
   this->evolve_coalesced = evolve_coalesced;
   this->n_pop_pipe = std::min(n_pop_pipe, number_populations);
   if (evolve_pipeline)
-    std::cout << "Evolving with pipeline with " << this->n_pop_pipe
+    std::cerr << "Evolving with pipeline with " << this->n_pop_pipe
               << " populations decoded on GPU !" << std::endl;
   if (evolve_coalesced)
-    std::cout << "Evolving with coalesced memory!" << std::endl;
+    std::cerr << "Evolving with coalesced memory!" << std::endl;
   if (pinned)
-    std::cout << "Evolving with pinned memory!" << std::endl;
+    std::cerr << "Evolving with pinned memory!" << std::endl;
 
   using std::range_error;
   if (chromosome_size == 0) {
@@ -140,7 +140,7 @@ BRKGA::BRKGA(Instance* _instance, ConfigFile& conf_file, bool evolve_coalesced,
 
   size_t total_memory = allocate_data();
 
-  std::cout << "Total Memory Used In GPU " << total_memory << " bytes ("
+  std::cerr << "Total Memory Used In GPU " << total_memory << " bytes ("
             << total_memory / 1000000 << " Mbytes)" << std::endl;
 
   this->dimBlock.x = THREADS_PER_BLOCK;
