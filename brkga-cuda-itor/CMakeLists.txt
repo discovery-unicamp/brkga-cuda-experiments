@@ -24,6 +24,7 @@ set(API_FILES
   ../brkga_cuda_api/Instance.hpp
   ../brkga_cuda_api/BRKGA.cu
   ../brkga_cuda_api/ConfigFile.cpp
+  ../brkga_cuda_api/MathUtils.h
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/)

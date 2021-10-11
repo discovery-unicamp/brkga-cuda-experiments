@@ -12,6 +12,7 @@
 #include "CommonStructs.h"
 #include "ConfigFile.h"
 #include "Instance.hpp"
+#include "MathUtils.h"
 
 #include <curand.h>
 #include <vector>
@@ -127,7 +128,7 @@ private:
       0; // number of populations to be decoded on GPU when using pipelining
 
   size_t allocate_data();
-  void initialize_population(int p);
+  void initialize_population(float* population);
   void global_sort_chromosomes();
   void sort_chromosomes();
   void sort_chromosomes_genes();

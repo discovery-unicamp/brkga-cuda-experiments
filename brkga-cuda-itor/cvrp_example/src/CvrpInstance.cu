@@ -179,7 +179,7 @@ __global__ void cvrpEvaluateIndicesOnDevice(
     unsigned v = chromosome[i].geneIdx + 1;
     if (filled + demands[v] > capacity) {
       fitness += distances[u];  // go back to the depot
-      fitness += distances[v];  // and then to the client
+      u = 0;
       filled = 0;
     }
 

@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
     std::cerr << "Generation " << i << " best = " << bestChromosome[0] << '\n';
     auto best = instance.convertChromosomeToSolution(bestChromosome.data() + 1);
     std::cerr << "Expected best = " << best.fitness << '\n';
-    // assert(std::abs(bestChromosome[0] - best.fitness) < 1e-3);
+    assert(std::abs(bestChromosome[0] - best.fitness) < 1e-3);
 #endif // NDEBUG
   }
   cudaEventRecord(stop);

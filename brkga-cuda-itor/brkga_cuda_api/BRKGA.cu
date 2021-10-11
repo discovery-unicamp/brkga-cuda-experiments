@@ -15,7 +15,6 @@
 #include <algorithm>
 #include <exception>
 #include <iostream>
-#include <cstdio>
 #include <vector>
 
 #include <curand.h>
@@ -110,28 +109,23 @@ BRKGA::BRKGA(Instance* _instance, ConfigFile& conf_file, bool evolve_coalesced,
   this->n_pop_pipe = std::min(n_pop_pipe, number_populations);
   if (evolve_pipeline)
     std::cerr << "Evolving with pipeline with " << this->n_pop_pipe
-              << " populations decoded on GPU !" << std::endl;
+              << " populations decoded on GPU!" << std::endl;
   if (evolve_coalesced)
     std::cerr << "Evolving with coalesced memory!" << std::endl;
   if (pinned)
     std::cerr << "Evolving with pinned memory!" << std::endl;
 
   using std::range_error;
-  if (chromosome_size == 0) {
+  if (chromosome_size == 0)
     throw range_error("Chromosome size equals zero.");
-  }
-  if (population_size == 0) {
+  if (population_size == 0)
     throw range_error("Population size equals zero.");
-  }
-  if (elite_size == 0) {
+  if (elite_size == 0)
     throw range_error("Elite-set size equals zero.");
-  }
-  if (elite_size + mutants_size > population_size) {
+  if (elite_size + mutants_size > population_size)
     throw range_error("elite + mutant sets greater than population size (p).");
-  }
-  if (number_populations == 0) {
+  if (number_populations == 0)
     throw range_error("Number of parallel populations cannot be zero.");
-  }
 
   size_t total_memory = allocate_data();
 
@@ -141,25 +135,17 @@ BRKGA::BRKGA(Instance* _instance, ConfigFile& conf_file, bool evolve_coalesced,
   this->dimBlock.x = THREADS_PER_BLOCK;
 
   // Grid dimension when having one thread per chromosome
-  if (number_chromosomes % THREADS_PER_BLOCK == 0)
-    this->dimGrid.x = number_chromosomes / THREADS_PER_BLOCK;
-  else
-    this->dimGrid.x = (number_chromosomes / THREADS_PER_BLOCK) + 1;
+  this->dimGrid.x = ceilDiv(number_chromosomes, THREADS_PER_BLOCK);
 
   // Grid dimension when having one thread per gene
-  if (number_genes % THREADS_PER_BLOCK == 0)
-    this->dimGrid_gene.x = number_genes / THREADS_PER_BLOCK;
-  else
-    this->dimGrid_gene.x = (number_genes / THREADS_PER_BLOCK) + 1;
+  this->dimGrid_gene.x = ceilDiv(number_genes, THREADS_PER_BLOCK);
 
-  if (evolve_pipeline) {
+  if (evolve_pipeline)
     initialize_pipeline_parameters();
-  }
 
   // Create pseudo-random number generator
   gen = nullptr;
   curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
-  // Set seed
   curandSetPseudoRandomGeneratorSeed(gen, RAND_SEED);
   // Initialize population with random alleles with generated random floats on
   // device
@@ -175,12 +161,7 @@ void BRKGA::initialize_pipeline_parameters() {
   // One thread per chromosome of 1 population
   this->dimGrid_pipe.x = (population_size) / THREADS_PER_BLOCK;
   // One thread per gene of 1 population
-  if ((chromosome_size * population_size) % THREADS_PER_BLOCK == 0)
-    this->dimGrid_gene_pipe.x =
-        (chromosome_size * population_size) / THREADS_PER_BLOCK;
-  else
-    this->dimGrid_gene_pipe.x =
-        (chromosome_size * population_size) / THREADS_PER_BLOCK + 1;
+  this->dimGrid_gene_pipe.x = ceilDiv(chromosome_size * population_size, THREADS_PER_BLOCK);
 
   // Allocate one stream for each population
   this->pop_stream =
@@ -196,9 +177,9 @@ void BRKGA::initialize_pipeline_parameters() {
   d_scores_pipe = (float**)malloc(number_populations * sizeof(float*));
   h_scores_pipe = (float**)malloc(number_populations * sizeof(float*));
   d_chromosome_gene_idx_pipe = (ChromosomeGeneIdxPair**)malloc(
-      number_populations * sizeof(ChromosomeGeneIdxPair*));
+      number_populations * sizeof(ChromosomeGeneIdxPair*));  // NOLINT(bugprone-sizeof-expression)
   d_scores_idx_pipe = (PopIdxThreadIdxPair**)malloc(
-      number_populations * sizeof(PopIdxThreadIdxPair*));
+      number_populations * sizeof(PopIdxThreadIdxPair*));  // NOLINT(bugprone-sizeof-expression)
   d_random_elite_parent_pipe =
       (float**)malloc(number_populations * sizeof(float*));
   d_random_parent_pipe = (float**)malloc(number_populations * sizeof(float*));
@@ -232,8 +213,6 @@ size_t BRKGA::allocate_data() {
     h_population =
         (float*)malloc(number_chromosomes * chromosome_size * sizeof(float));
   } else {
-    printf(" ---> %d %d %d -- %d\n", number_chromosomes, chromosome_size, (int)sizeof(float),
-           number_chromosomes * chromosome_size * (int)sizeof(float));
     CUDA_CHECK(
         cudaMallocHost((void**)&h_population,
                        number_chromosomes * chromosome_size * sizeof(float)));
@@ -686,7 +665,7 @@ void BRKGA::evolve() {
   // with random values. So mutants are already build. For the non mutants we
   // use the random values generated here to perform the crossover on the
   // current population d_population.
-  initialize_population(2);
+  initialize_population(d_population2);
 
   // generate random numbers to index parents used for crossover
   curandGenerateUniform(gen, d_random_elite_parent, number_chromosomes);
@@ -707,9 +686,8 @@ void BRKGA::evolve() {
         chromosome_size, population_size, elite_size, mutants_size, rhoe,
         d_scores_idx, number_genes);
   }
-  float* aux = d_population2;
-  d_population2 = d_population;
-  d_population = aux;
+
+  std::swap(d_population, d_population2);
 }
 
 /**
@@ -732,7 +710,7 @@ void BRKGA::evolve_pipe() {
   // d_population2 with random values. So mutants are already build.
   // For the non mutants we use the random values generated here to
   // perform the crossover on the current population d_population.
-  initialize_population(2);
+  initialize_population(d_population2);
   cudaDeviceSynchronize();
 
   NVTX_POP_RANGE(); // Initialization
@@ -791,15 +769,10 @@ void BRKGA::evolve_pipe() {
         population_size, elite_size, mutants_size, rhoe, d_scores_idx_pipe[p],
         num_genes);
 
-    float* aux = d_population_pipe2[p];
-    d_population_pipe2[p] = d_population_pipe[p];
-    d_population_pipe[p] = aux;
+    std::swap(d_population_pipe[p], d_population_pipe2[p]);
   }                 // end of for
   NVTX_POP_RANGE(); // next population
-  float* aux = d_population2;
-  d_population2 = d_population;
-  d_population = aux;
-
+  std::swap(d_population, d_population2);
   NVTX_POP_RANGE(); // FUNCTION
 }
 
@@ -807,13 +780,8 @@ void BRKGA::evolve_pipe() {
  * \brief initializes all chromosomes in all populations with random values.
  * \param p is used to decide to initialize d_population or d_population2.
  */
-void BRKGA::initialize_population(int p) {
-  if (p == 1)
-    curandGenerateUniform(gen, d_population,
-                          number_chromosomes * chromosome_size);
-  if (p == 2)
-    curandGenerateUniform(gen, d_population2,
-                          number_chromosomes * chromosome_size);
+void BRKGA::initialize_population(float* population) {
+  curandGenerateUniform(gen, population, number_chromosomes * chromosome_size);
 }
 
 /**
