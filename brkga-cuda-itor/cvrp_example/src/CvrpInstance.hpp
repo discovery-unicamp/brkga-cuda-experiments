@@ -40,6 +40,11 @@ public:  // for testing purposes
   ~CvrpInstance();
 
   [[nodiscard]]
+  inline const std::string& getName() const {
+    return name;
+  }
+
+  [[nodiscard]]
   inline unsigned chromosomeLength() const override {
     return numberOfClients;
   }
@@ -71,6 +76,7 @@ public:  // for testing purposes
   std::vector<float> distances;
   std::vector<unsigned> demands;
   std::vector<Point> locations;
+  std::string name;
 
 private:
 

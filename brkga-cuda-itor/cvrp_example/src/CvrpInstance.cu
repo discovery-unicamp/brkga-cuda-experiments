@@ -57,6 +57,8 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
     } else if (str == "DIMENSION") {
       file >> str >> instance.numberOfClients;
       --instance.numberOfClients;
+    } else if (str == "NAME") {
+      file >> str >> instance.name;
     }
   }
 
@@ -78,6 +80,7 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
   CUDA_CHECK(cudaMalloc(&instance.dDemands, demandsSize));
   CUDA_CHECK(cudaMemcpy(instance.dDemands, instance.demands.data(), demandsSize, cudaMemcpyHostToDevice));
 
+  assert(!instance.name.empty());
   assert(instance.numberOfClients != static_cast<unsigned>(-1));  // no dimension
   assert(instance.capacity != static_cast<unsigned>(-1));  // no capacity
   assert(instance.locations.size() > 1);  // no client provided
