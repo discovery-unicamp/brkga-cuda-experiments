@@ -140,7 +140,7 @@ private:
   void evaluate_chromosomes_host_pipe(unsigned pop_id);
   void evolve_pipe();
   void sort_chromosomes_pipe(unsigned pop_id);
-  void initialize_population_pipe(int p, unsigned pop_id);
+
   void sort_chromosomes_genes_pipe(unsigned pop_id);
   void evaluate_chromosomes_sorted_device_pipe(unsigned pop_id);
   void initialize_pipeline_parameters();
