@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
   std::string configFilename = "config-cvrp.txt";
   ConfigFile config(configFilename.data());
   const bool useCoalesced = true;
-  const bool usePipeline = false;  // currently broken
+  const bool usePipeline = true;
   const int pipelineSize = 3;
 
   const int numberOfGenerations = (int)config.MAX_GENS;

@@ -335,7 +335,7 @@ void BRKGA::evaluate_chromosomes_host() {
   CUDA_CHECK(cudaMemcpy(h_population, d_population,
                         number_chromosomes * chromosome_size * sizeof(float),
                         cudaMemcpyDeviceToHost));
-  instance->evaluateChromosomesOnHost(number_chromosomes, h_population, h_scores);
+  instance->evaluateChromosomesOnHost(default_stream, number_chromosomes, h_population, h_scores);
   CUDA_CHECK(cudaMemcpy(d_scores, h_scores, number_chromosomes * sizeof(float), cudaMemcpyHostToDevice));
 }
 
@@ -352,7 +352,8 @@ void BRKGA::evaluate_chromosomes_host_pipe(unsigned pop_id) {
                              population_size * chromosome_size * sizeof(float),
                              cudaMemcpyDeviceToHost, pop_stream[pop_id]));
 
-  instance->evaluateChromosomesOnHost(population_size, h_population_pipe[pop_id], h_scores_pipe[pop_id]);
+  instance->evaluateChromosomesOnHost(pop_stream[pop_id], population_size, h_population_pipe[pop_id],
+                                      h_scores_pipe[pop_id]);
   CUDA_CHECK(cudaMemcpyAsync(d_scores_pipe[pop_id], h_scores_pipe[pop_id], population_size * sizeof(float),
                              cudaMemcpyHostToDevice, pop_stream[pop_id]));
 }
@@ -363,12 +364,12 @@ void BRKGA::evaluate_chromosomes_host_pipe(unsigned pop_id) {
  ***/
 void BRKGA::evaluate_chromosomes_device() {
   // Make a copy of chromosomes to d_population2 such that they can be messed
-  // up inside the decoder functions without afecting the real chromosomes on
+  // up inside the decoder functions without affecting the real chromosomes on
   // d_population.
   CUDA_CHECK(cudaMemcpy(d_population2, d_population,
                         number_chromosomes * chromosome_size * sizeof(float),
                         cudaMemcpyDeviceToDevice));
-  instance->evaluateChromosomesOnDevice(number_chromosomes, d_population2, d_scores);
+  instance->evaluateChromosomesOnDevice(default_stream, number_chromosomes, d_population2, d_scores);
 }
 
 /***
@@ -377,43 +378,13 @@ void BRKGA::evaluate_chromosomes_device() {
  ***/
 void BRKGA::evaluate_chromosomes_device_pipe(unsigned pop_id) {
   // Make a copy of chromosomes to d_population2 such that they can be messed
-  // up inside the decoder functions without afecting the real chromosomes on
+  // up inside the decoder functions without affecting the real chromosomes on
   // d_population.
   CUDA_CHECK(
       cudaMemcpyAsync(d_population2, d_population,
                       number_chromosomes * chromosome_size * sizeof(float),
                       cudaMemcpyDeviceToDevice, pop_stream[pop_id]));
-  instance->evaluateChromosomesOnDevice(number_chromosomes, d_population2, d_scores);
-}
-
-/**
-* \brief If DEVICE_DECODE_CHROMOSOME_SORTED toguether with pipeline
-* then this kernel function
-* decodes each cromosome with the device_decode_chromosome_sorted function
-provided
-* in Decoder.cpp. We use one thread per cromosome to process them.
-*
-* Notice that we use the struct ChromosomeGeneIdxPair since the cromosome
-* is given already sorted to the function, and so it has a field with the
-original
-* index of each gene in the original cromosome.
-* \param d_scores_pop is a pointer to d_scores where this population starts.
-Contains the score of each chromosome in the population. It will be updated.
-* \param d_chromosome_gene_idx_pop is a pointer to d_chromosome_gene_idx where
-this population starts. It saves for each gene in a chromosome its original
-* position in the chromosome, since now the genes are ordered by their values.
-* \param chromosome_size is the size of each chromosome.
-* \param d_instance_info is the information necessary to decode the chromosomes.
-*/
-// FIXME add stream to the decode method
-__global__ void decode_chromosomes_sorted_pipe(
-    float* d_scores_pop, ChromosomeGeneIdxPair* d_chromosome_gene_idx_pop,
-    int chromosome_size, void* d_instance_info, unsigned population_size) {
-  // unsigned tx = blockIdx.x * blockDim.x + threadIdx.x;
-  // if (tx < population_size)
-  //   d_scores_pop[tx] = device_decode_chromosome_sorted(
-  //       d_chromosome_gene_idx_pop + tx * chromosome_size, chromosome_size,
-  //       d_instance_info);
+  instance->evaluateChromosomesOnDevice(pop_stream[pop_id], number_chromosomes, d_population2, d_scores);
 }
 
 /**
@@ -423,9 +394,8 @@ __global__ void decode_chromosomes_sorted_pipe(
  * in the struct ChromosomeGeneIdxPair d_chromosome_gene_idx.
  */
 void BRKGA::evaluate_chromosomes_sorted_device() {
-  // std::cerr << "Sorting chromosomes to evaluate on device\n";
   sort_chromosomes_genes();
-  instance->evaluateIndicesOnDevice(number_chromosomes, d_chromosome_gene_idx, d_scores);
+  instance->evaluateIndicesOnDevice(default_stream, number_chromosomes, d_chromosome_gene_idx, d_scores);
 }
 
 /**
@@ -436,13 +406,9 @@ void BRKGA::evaluate_chromosomes_sorted_device() {
  * \param pop_id is the index of the population to be processed
  */
 void BRKGA::evaluate_chromosomes_sorted_device_pipe(unsigned pop_id) {
-  std::cerr << std::string(__FUNCTION__) + " is broken" << '\n';
-  abort();
-  // sort_chromosomes_genes_pipe(pop_id);
-  // decode_chromosomes_sorted_pipe<<<dimGrid_pipe, dimBlock, 0,
-  // pop_stream[pop_id]>>>(
-  //     d_scores_pipe[pop_id], d_chromosome_gene_idx_pipe[pop_id],
-  //     chromosome_size, d_instance_info, population_size);
+  sort_chromosomes_genes_pipe(pop_id);
+  instance->evaluateIndicesOnDevice(pop_stream[pop_id], population_size, d_chromosome_gene_idx_pipe[pop_id],
+                                    d_scores_pipe[pop_id]);
 }
 
 /**
@@ -539,7 +505,6 @@ void BRKGA::sort_chromosomes_genes() {
  * by their values.
  * \param pop_id is the index of the population to be sorted
  */
-// FIXME broken code
 void BRKGA::sort_chromosomes_genes_pipe(unsigned pop_id) {
   // First set for each gene, its chromosome index and its original index in the
   // chromosome

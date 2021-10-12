@@ -197,12 +197,13 @@ __global__ void cvrpEvaluateIndicesOnDevice(
 }
 
 void CvrpInstance::evaluateIndicesOnDevice(
+    cudaStream_t stream,
     unsigned numberOfChromosomes,
     const ChromosomeGeneIdxPair* indices,
     float* results
 ) const {
   const unsigned block = THREADS_PER_BLOCK;
   const unsigned grid = (numberOfChromosomes + block + 1) / block;
-  cvrpEvaluateIndicesOnDevice<<<grid, block>>>(indices, numberOfChromosomes,
-                                               chromosomeLength(), capacity, dDistances, dDemands, results);
+  cvrpEvaluateIndicesOnDevice<<<grid, block, 0, stream>>>(indices, numberOfChromosomes,
+                                                          chromosomeLength(), capacity, dDistances, dDemands, results);
 }

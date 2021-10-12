@@ -5,6 +5,7 @@ add_executable(brkga-cvrp
         src/main.cpp
         src/CvrpInstance.cu
         src/CvrpInstance.hpp
+        src/Point.hpp
         ${API_FILES}
 )
 

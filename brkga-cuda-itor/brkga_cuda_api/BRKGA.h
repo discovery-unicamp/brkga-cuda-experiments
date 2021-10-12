@@ -127,6 +127,8 @@ private:
   unsigned n_pop_pipe =
       0; // number of populations to be decoded on GPU when using pipelining
 
+  static constexpr cudaStream_t default_stream = nullptr;
+
   size_t allocate_data();
   void initialize_population(float* population);
   void global_sort_chromosomes();

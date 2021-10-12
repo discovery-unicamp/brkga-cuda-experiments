@@ -6,6 +6,7 @@
 
 #include "CommonStructs.h"
 #include <iostream>
+#include <cuda_runtime.h>
 
 class Instance {
 public:
@@ -14,18 +15,21 @@ public:
   virtual unsigned chromosomeLength() const = 0;
 
   virtual void evaluateChromosomesOnHost(
+      cudaStream_t stream,
       unsigned numberOfChromosomes,
       const float* chromosomes,
       float* results
   ) const = 0;
 
   virtual void evaluateChromosomesOnDevice(
+      cudaStream_t stream,
       unsigned numberOfChromosomes,
       const float* chromosomes,
       float* results
   ) const = 0;
 
   virtual void evaluateIndicesOnDevice(
+      cudaStream_t stream,
       unsigned numberOfChromosomes,
       const ChromosomeGeneIdxPair* indices,
       float* results

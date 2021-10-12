@@ -53,17 +53,18 @@ public:  // for testing purposes
 
   Solution convertChromosomeToSolution(const float* chromosome) const;
 
-  void evaluateChromosomesOnHost(unsigned int, const float*, float*) const override {
+  inline void evaluateChromosomesOnHost(cudaStream_t, unsigned int, const float*, float*) const override {
     std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
     abort();
   }
 
-  void evaluateChromosomesOnDevice(unsigned int, const float*, float*) const override {
+  inline void evaluateChromosomesOnDevice(cudaStream_t, unsigned int, const float*, float*) const override {
     std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
     abort();
   }
 
   void evaluateIndicesOnDevice(
+      cudaStream_t stream,
       unsigned numberOfChromosomes,
       const ChromosomeGeneIdxPair* indices,
       float* results
