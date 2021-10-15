@@ -323,20 +323,20 @@ void BRKGA::reset_population() {
 }
 
 /**
- * \brief If HOST_DECODE is used then this function decodes each cromosome with
+ * \brief If HOST_DECODE is used then this function decodes each chromosome with
  *        the host_decode function provided in Decoder.cpp.
  */
 void BRKGA::evaluate_chromosomes_host() {
   CUDA_CHECK(cudaMemcpy(h_population, d_population,
                         number_chromosomes * chromosome_size * sizeof(float),
                         cudaMemcpyDeviceToHost));
-  instance->evaluateChromosomesOnHost(default_stream, number_chromosomes, h_population, h_scores);
+  instance->evaluateChromosomesOnHost(number_chromosomes, h_population, h_scores);
   CUDA_CHECK(cudaMemcpy(d_scores, h_scores, number_chromosomes * sizeof(float), cudaMemcpyHostToDevice));
 }
 
 /**
  * \brief If pipeline decoding is used then HOST_DECODE must be used.
- * This function decodes each cromosome with the host_decode function provided
+ * This function decodes each chromosome with the host_decode function provided
  * in Decoder.cpp. One population specific population is decoded.
  * \param pop_id
  * is the index of the population to be decoded.
@@ -346,15 +346,13 @@ void BRKGA::evaluate_chromosomes_host_pipe(unsigned pop_id) {
                              d_population_pipe[pop_id],
                              population_size * chromosome_size * sizeof(float),
                              cudaMemcpyDeviceToHost, pop_stream[pop_id]));
-
-  instance->evaluateChromosomesOnHost(pop_stream[pop_id], population_size, h_population_pipe[pop_id],
-                                      h_scores_pipe[pop_id]);
+  instance->evaluateChromosomesOnHost(population_size, h_population_pipe[pop_id], h_scores_pipe[pop_id]);
   CUDA_CHECK(cudaMemcpyAsync(d_scores_pipe[pop_id], h_scores_pipe[pop_id], population_size * sizeof(float),
                              cudaMemcpyHostToDevice, pop_stream[pop_id]));
 }
 
 /***
- * \brief If DEVICE_DECODE is used then this function decodes each cromosome
+ * \brief If DEVICE_DECODE is used then this function decodes each chromosome
  * with the kernel function decode above.
  ***/
 void BRKGA::evaluate_chromosomes_device() {
@@ -368,7 +366,7 @@ void BRKGA::evaluate_chromosomes_device() {
 }
 
 /***
- * \brief If DEVICE_DECODE is used then this function decodes each cromosome
+ * \brief If DEVICE_DECODE is used then this function decodes each chromosome
  *with the kernel function decode above.
  ***/
 void BRKGA::evaluate_chromosomes_device_pipe(unsigned pop_id) {
@@ -384,7 +382,7 @@ void BRKGA::evaluate_chromosomes_device_pipe(unsigned pop_id) {
 
 /**
  * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used then this function decodes
- * each cromosome with the kernel function decode_chromosomes_sorted above. But
+ * each chromosome with the kernel function decode_chromosomes_sorted above. But
  * first we sort each chromosome by its genes values. We save this information
  * in the struct ChromosomeGeneIdxPair d_chromosome_gene_idx.
  */
@@ -395,14 +393,17 @@ void BRKGA::evaluate_chromosomes_sorted_device() {
 
 /**
  * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used then this function decodes
- * each cromosome with the kernel function decode_chromosomes_sorted above. But
+ * each chromosome with the kernel function decode_chromosomes_sorted above. But
  * first we sort each chromosome by its genes values. We save this information
  * in the struct ChromosomeGeneIdxPair d_chromosome_gene_idx.
  * \param pop_id is the index of the population to be processed
  */
 void BRKGA::evaluate_chromosomes_sorted_device_pipe(unsigned pop_id) {
   sort_chromosomes_genes_pipe(pop_id);
-  instance->evaluateIndicesOnDevice(pop_stream[pop_id], population_size, d_chromosome_gene_idx_pipe[pop_id],
+  assert(d_population_pipe[pop_id] - d_population ==
+         pop_id * population_size * chromosome_size);  // wrong pair of pointers
+  instance->evaluateIndicesOnDevice(pop_stream[pop_id], population_size,
+                                    d_chromosome_gene_idx_pipe[pop_id],
                                     d_scores_pipe[pop_id]);
 }
 
@@ -511,8 +512,7 @@ void BRKGA::sort_chromosomes_genes_pipe(unsigned pop_id) {
                              cudaMemcpyDeviceToDevice, pop_stream[pop_id]));
 
   thrust::device_ptr<float> keys(d_population_pipe2[pop_id]);
-  thrust::device_ptr<ChromosomeGeneIdxPair> vals(
-      d_chromosome_gene_idx_pipe[pop_id]);
+  thrust::device_ptr<ChromosomeGeneIdxPair> vals(d_chromosome_gene_idx_pipe[pop_id]);
   // stable sort both d_population2 and d_chromosome_gene_idx by all the genes
   // values
   thrust::stable_sort_by_key(thrust::cuda::par.on(pop_stream[pop_id]), keys,
@@ -562,6 +562,8 @@ __global__ void device_next_population(
     // regular parent for crossover
     auto parent_elite_idx = (unsigned)((1 - d_random_elite_parent[tx]) * elite_size);
     auto parent_idx = (unsigned)(elite_size + (1 - d_random_parent[tx]) * (population_size - elite_size));
+    assert(parent_elite_idx < elite_size);
+    assert(elite_size <= parent_idx && parent_idx < population_size);
 
     // if inside_pop_idx < elite_size then thread is elite, so we copy elite
     // chromosome to the next population
@@ -624,7 +626,7 @@ void BRKGA::evolve() {
   // with random values. So mutants are already build. For the non mutants we
   // use the random values generated here to perform the crossover on the
   // current population d_population.
-  initialize_population(d_population2);
+  curandGenerateUniform(gen, d_population2, number_chromosomes * chromosome_size);
 
   // generate random numbers to index parents used for crossover
   curandGenerateUniform(gen, d_random_elite_parent, number_chromosomes);
@@ -662,20 +664,14 @@ void BRKGA::evolve_pipe() {
   NVTX_NAME_THREAD("Main thread");
 
   // generate random numbers to index parents used for crossover
-  // we already initialize ramdom numbers for all populations
+  // we already initialize random numbers for all populations
   curandGenerateUniform(gen, d_random_elite_parent, number_chromosomes);
   curandGenerateUniform(gen, d_random_parent, number_chromosomes);
-  // This next call initialize the whole area of the next population
-  // d_population2 with random values. So mutants are already build.
-  // For the non mutants we use the random values generated here to
-  // perform the crossover on the current population d_population.
-  initialize_population(d_population2);
-  CUDA_CHECK(cudaDeviceSynchronize());
 
   NVTX_POP_RANGE(); // Initialization
 
   NVTX_PUSH_RANGE("evaluate all", MY_PINK);
-#pragma omp parallel for num_threads(number_populations)
+#pragma omp parallel for
   for (int p = 0; p < number_populations; p++) {
 
     if (p < n_pop_pipe) {
@@ -708,14 +704,26 @@ void BRKGA::evolve_pipe() {
 
   NVTX_PUSH_RANGE("next population", MY_GREEN);
 
-#pragma omp parallel for num_threads(number_populations)
+#pragma omp parallel for
   for (int p = 0; p < number_populations; p++) {
     NVTX_PUSH_RANGE("sort chromosomes", GREEN);
     // After this call the vector d_scores_idx_pop
     // has all chromosomes sorted by score
     sort_chromosomes_pipe(p);
     NVTX_POP_RANGE(); // sort chromosomes
+  }
 
+  // generate population here since sort chromosomes uses the temporary population
+
+  // This next call initialize the whole area of the next population
+  // d_population2 with random values. So mutants are already build.
+  // For the non mutants we use the random values generated here to
+  // perform the crossover on the current population d_population.
+  // FIXME create a random generator for each population
+  curandGenerateUniform(gen, d_population2, number_chromosomes * chromosome_size);
+
+#pragma omp parallel for
+  for (int p = 0; p < number_populations; p++) {
     // Kernel function, where each thread process one chromosome of the
     // next population.
     unsigned num_genes =
@@ -735,15 +743,7 @@ void BRKGA::evolve_pipe() {
 }
 
 /**
- * \brief initializes all chromosomes in all populations with random values.
- * \param p is used to decide to initialize d_population or d_population2.
- */
-void BRKGA::initialize_population(float* population) {
-  curandGenerateUniform(gen, population, number_chromosomes * chromosome_size);
-}
-
-/**
- * \brief Kernel function that sets for each cromosome its global index (among
+ * \brief Kernel function that sets for each chromosome its global index (among
  * all populations) and its population index.
  * \param d_scores_idx is the struct
  * where chromosome index and its population index is saved.
@@ -760,7 +760,7 @@ __global__ void device_set_idx(PopIdxThreadIdxPair* d_scores_idx,
 }
 
 /**
- * \brief Kernel function that sets for each cromosome its global index (among
+ * \brief Kernel function that sets for each chromosome its global index (among
  * all populations) and its population index.
  * \param d_scores_idx_pop is the struct
  * where chromosome index and its population index is saved.
@@ -1108,6 +1108,8 @@ __global__ void device_next_population_coalesced(
       auto inside_parent_elite_idx = (unsigned)((1 - d_random_elite_parent[chromosome_idx]) * elite_size);
       auto inside_parent_idx = (unsigned)(elite_size +
                                           (1 - d_random_parent[chromosome_idx]) * (population_size - elite_size));
+      assert(inside_parent_elite_idx < elite_size);
+      assert(elite_size <= inside_parent_idx && inside_parent_idx < population_size);
 
       unsigned elite_chromosome_idx =
           d_scores_idx[pop_idx * population_size + inside_parent_elite_idx]
@@ -1185,6 +1187,8 @@ __global__ void device_next_population_coalesced_pipe(
       auto inside_parent_elite_idx = (unsigned)((1 - d_random_elite_parent_pop[chromosome_idx]) * elite_size);
       auto inside_parent_idx = (unsigned)(elite_size +
                                           (1 - d_random_parent_pop[chromosome_idx]) * (population_size - elite_size));
+      assert(inside_parent_elite_idx < elite_size);
+      assert(elite_size <= inside_parent_idx && inside_parent_idx < population_size);
 
       unsigned elite_chromosome_idx =
           d_scores_idx_pop[inside_parent_elite_idx].thIdx;

@@ -53,10 +53,12 @@ public:  // for testing purposes
 
   Solution convertChromosomeToSolution(const float* chromosome) const;
 
-  inline void evaluateChromosomesOnHost(cudaStream_t, unsigned int, const float*, float*) const override {
-    std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
-    abort();
-  }
+  // for debugging purposes
+  void evaluateChromosomesOnHost(
+      unsigned int numberOfChromosomes,
+      const float* chromosomes,
+      float* results
+  ) const override;
 
   inline void evaluateChromosomesOnDevice(cudaStream_t, unsigned int, const float*, float*) const override {
     std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
@@ -66,8 +68,8 @@ public:  // for testing purposes
   void evaluateIndicesOnDevice(
       cudaStream_t stream,
       unsigned numberOfChromosomes,
-      const ChromosomeGeneIdxPair* indices,
-      float* results
+      const ChromosomeGeneIdxPair* dIndices,
+      float* dResults
   ) const override;
 
   unsigned capacity;

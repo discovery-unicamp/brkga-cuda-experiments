@@ -2,9 +2,10 @@
 #include "ConfigFile.h"
 #include "CvrpInstance.hpp"
 
-#include <string>
 #include <iostream>
 #include <iomanip>
+#include <set>
+#include <string>
 #include <getopt.h>
 
 int main(int argc, char** argv) {
@@ -80,18 +81,24 @@ int main(int argc, char** argv) {
     cudaEventCreate(&stop);
     cudaEventRecord(start);
     std::cerr << "Test " << test << '\n';
-    for (int i = 1; i <= numberOfGenerations; ++i) {
+    for (int generation = 1; generation <= numberOfGenerations; ++generation) {
+      // std::cerr << "Generation " << generation << '\n';
       brgka.evolve();
-      if (i % config.X_INTVL == 0)
+      // std::cerr << "Evolved\n";
+      if (generation % config.X_INTVL == 0)
         brgka.exchangeElite(config.X_NUMBER);
 
 #ifndef NDEBUG
-      std::vector<std::vector<float>> kBest = brgka.getkBestChromosomes2(1);
+      std::vector<std::vector<float>> kBest = brgka.getkBestChromosomes2(10);
+      for (unsigned i = 1; i < kBest.size(); ++i)
+        assert(kBest[i - 1][0] <= kBest[i][0]);
+
       std::vector<float> bestChromosome = kBest[0];
-      std::cerr << "Generation " << i << " best = " << bestChromosome[0] << '\n';
+      std::cerr << "Generation " << generation << " best = " << bestChromosome[0] << '\n';
       auto best = instance.convertChromosomeToSolution(bestChromosome.data() + 1);
-      std::cerr << "Expected best = " << best.fitness << '\n';
+      // std::cerr << "Expected best = " << best.fitness << '\n';
       assert(std::abs(bestChromosome[0] - best.fitness) < 1e-3);
+      assert(std::set(bestChromosome.begin() + 1, bestChromosome.end()).size() >= instance.chromosomeLength() * 2 / 3);
 #endif // NDEBUG
     }
     cudaEventRecord(stop);
@@ -100,7 +107,8 @@ int main(int argc, char** argv) {
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
 
-    auto best = instance.convertChromosomeToSolution(brgka.getkBestChromosomes2(1)[0].data() + 1);
+    auto kBest = brgka.getkBestChromosomes2(1);
+    auto best = instance.convertChromosomeToSolution(kBest[0].data() + 1);
 
     fitness.push_back(best.fitness);
     elapsed.push_back(milliseconds / 1000);

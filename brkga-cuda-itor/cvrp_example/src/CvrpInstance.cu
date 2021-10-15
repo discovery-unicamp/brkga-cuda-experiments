@@ -161,6 +161,17 @@ CvrpInstance::Solution CvrpInstance::convertChromosomeToSolution(const float* ch
   return Solution(*this, fitness, tour);
 }
 
+void CvrpInstance::evaluateChromosomesOnHost(
+    unsigned int numberOfChromosomes,
+    const float* chromosomes,
+    float* results
+) const {
+  for (unsigned i = 0; i < numberOfChromosomes; ++i) {
+    const float* chromosome = chromosomes + i * chromosomeLength();
+    results[i] = convertChromosomeToSolution(chromosome).fitness;
+  }
+}
+
 __global__ void cvrpEvaluateIndicesOnDevice(
     const ChromosomeGeneIdxPair* allIndices,
     const unsigned numberOfChromosomes,
@@ -173,13 +184,26 @@ __global__ void cvrpEvaluateIndicesOnDevice(
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= numberOfChromosomes) return;
 
-  const auto* chromosome = allIndices + tid * chromosomeLength;
+  const auto* indices = allIndices + tid * chromosomeLength;
+
+#ifndef NDEBUG
+  bool* seen = (bool*)malloc(chromosomeLength * sizeof(bool));
+  for (int i = 0; i < chromosomeLength; ++i)
+    seen[i] = false;
+  for (int i = 0; i < chromosomeLength; ++i) {
+    assert(tid == indices[i].chromosomeIdx);
+    assert(indices[i].geneIdx < chromosomeLength);
+    assert(!seen[indices[i].geneIdx]);
+    seen[indices[i].geneIdx] = true;
+  }
+  free(seen);
+#endif //NDEBUG
 
   unsigned u = 0;  // start in the depot
   float fitness = 0;
   unsigned filled = 0;
   for (unsigned i = 0; i < chromosomeLength; ++i) {
-    unsigned v = chromosome[i].geneIdx + 1;
+    unsigned v = indices[i].geneIdx + 1;
     if (filled + demands[v] > capacity) {
       fitness += distances[u];  // go back to the depot
       u = 0;
@@ -199,11 +223,11 @@ __global__ void cvrpEvaluateIndicesOnDevice(
 void CvrpInstance::evaluateIndicesOnDevice(
     cudaStream_t stream,
     unsigned numberOfChromosomes,
-    const ChromosomeGeneIdxPair* indices,
-    float* results
+    const ChromosomeGeneIdxPair* dIndices,
+    float* dResults
 ) const {
   const unsigned block = THREADS_PER_BLOCK;
-  const unsigned grid = (numberOfChromosomes + block + 1) / block;
-  cvrpEvaluateIndicesOnDevice<<<grid, block, 0, stream>>>(indices, numberOfChromosomes,
-                                                          chromosomeLength(), capacity, dDistances, dDemands, results);
+  const unsigned grid = ceilDiv(numberOfChromosomes, block);
+  cvrpEvaluateIndicesOnDevice<<<grid, block, 0, stream>>>(dIndices, numberOfChromosomes,
+                                                          chromosomeLength(), capacity, dDistances, dDemands, dResults);
 }

@@ -101,7 +101,7 @@ private:
   unsigned number_populations;
   float rhoe;
 
-  curandGenerator_t gen; /// cuda ramdom number generator
+  curandGenerator_t gen; /// cuda random number generator
   dim3 dimBlock;
   dim3 dimGrid;       /// Grid dimension when having one thread per chromosome
   dim3 dimGrid_gene;  /// Grid dimension when we have one thread per gene
@@ -127,10 +127,9 @@ private:
   unsigned n_pop_pipe =
       0; // number of populations to be decoded on GPU when using pipelining
 
-  static constexpr cudaStream_t default_stream = nullptr;
+  static constexpr cudaStream_t default_stream = nullptr;  // NOLINT(misc-misplaced-const)
 
   size_t allocate_data();
-  void initialize_population(float* population);
   void global_sort_chromosomes();
   void sort_chromosomes();
   void sort_chromosomes_genes();

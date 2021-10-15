@@ -15,7 +15,6 @@ public:
   virtual unsigned chromosomeLength() const = 0;
 
   virtual void evaluateChromosomesOnHost(
-      cudaStream_t stream,
       unsigned numberOfChromosomes,
       const float* chromosomes,
       float* results
@@ -24,15 +23,15 @@ public:
   virtual void evaluateChromosomesOnDevice(
       cudaStream_t stream,
       unsigned numberOfChromosomes,
-      const float* chromosomes,
-      float* results
+      const float* dChromosomes,
+      float* dResults
   ) const = 0;
 
   virtual void evaluateIndicesOnDevice(
       cudaStream_t stream,
       unsigned numberOfChromosomes,
-      const ChromosomeGeneIdxPair* indices,
-      float* results
+      const ChromosomeGeneIdxPair* dIndices,
+      float* dResults
   ) const = 0;
 };
 
