@@ -213,7 +213,7 @@ __device__ void insertionSort(ValueIndexPair* arr, int n) {
 ***/
 __global__ void
 device_decode_chromosome_sorted_coalesced(ChromosomeGeneIdxPair* chromosomes, int n, void* d_instance_info,
-                                          float* d_scores) {
+                                          float* m_scores) {
   unsigned tx = threadIdx.x;
   float* adjMatrix = (float*) d_instance_info;
   ChromosomeGeneIdxPair* chromosome =
@@ -251,7 +251,7 @@ device_decode_chromosome_sorted_coalesced(ChromosomeGeneIdxPair* chromosomes, in
 
   // write result for this block to global mem
   if (tx == 0) {
-    d_scores[blockIdx.x] = sm[0];
+    m_scores[blockIdx.x] = sm[0];
   }
 }
 

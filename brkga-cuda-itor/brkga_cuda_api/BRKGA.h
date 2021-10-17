@@ -37,39 +37,20 @@ public:
 
 private:
   Instance* instance;
-  float *d_population = nullptr;  /// Device populations
-  float *d_population2 = nullptr; /// Device populations
-  float **d_population_pipe =
-      nullptr; /// Device populations using evolve_pipeline. One pointer is used to
-            /// each population.
-  float **d_population_pipe2 =
-      nullptr; /// Device populations using evolve_pipeline. One pointer is used to
-            /// each population.
-  float *h_population = nullptr; /// Host populations.
-  float **h_population_pipe =
-      nullptr; /// Device populations using evolve_pipeline. One
-            /// pointer is used to each population.
 
-  float *d_scores = nullptr; /// Device score of each chromosome
-  float *h_scores = nullptr; /// Host score of each chromosome
-  float **d_scores_pipe =
-      nullptr; /// Pointer to each population device score of each chromosome
-  float **h_scores_pipe =
-      nullptr; /// Pointer to each population host score of each chromosome
+  float* m_population;
+  float* m_population_temp;
+  float** m_population_pipe = nullptr; /// Device populations using evolve_pipeline. One pointer is used to each population.
+  float** m_population_pipe_temp = nullptr; /// Device populations using evolve_pipeline. One pointer is used to each population.
 
-  float *d_best_solutions = nullptr; /// pool of 10 best solutions
-  float *h_best_solutions = nullptr;
+  float* m_scores = nullptr;
+  PopIdxThreadIdxPair* m_scores_idx = nullptr;
+  float** m_scores_pipe = nullptr; /// Pointer to each population device score of each chromosome
+  PopIdxThreadIdxPair** d_scores_idx_pipe = nullptr;
+
+  float *m_best_solutions = nullptr; /// pool of 10 best solutions
   unsigned best_saved =
       0; /// indicate whether best solutions were already saved or not
-
-  PopIdxThreadIdxPair *d_scores_idx =
-      nullptr; /// table with indices of each chromosome score on device
-  PopIdxThreadIdxPair **d_scores_idx_pipe =
-      nullptr; /// Pointer for each population for its table with indices of each
-            /// chromosome score on device
-
-  PopIdxThreadIdxPair *h_scores_idx =
-      nullptr; /// table with indices of each chromosome score on host
 
   ChromosomeGeneIdxPair *d_chromosome_gene_idx =
       nullptr; /// Table with indices for all chromosomes and each of its gene on
@@ -112,9 +93,6 @@ private:
                            /// (coalesced used)
 
   unsigned decode_type;  /// How to decode each chromosome
-  unsigned decode_type2; /// How to decode chromosomes when pipeline is used. A
-                         /// minor part of populations are decoded with this
-                         /// other option
 
   bool evolve_coalesced =
       false; /// use one thread per gene to compute a next population
@@ -124,8 +102,6 @@ private:
 
   cudaStream_t *pop_stream =
       nullptr; // use one stream per population when doing pipelined version
-  unsigned n_pop_pipe =
-      0; // number of populations to be decoded on GPU when using pipelining
 
   static constexpr cudaStream_t default_stream = nullptr;  // NOLINT(misc-misplaced-const)
 
