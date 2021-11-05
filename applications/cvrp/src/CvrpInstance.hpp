@@ -17,9 +17,8 @@
 #include <vector>
 #include "Point.hpp"
 
-class CvrpInstance : public Instance {
+class CvrpInstance {
 public:  // for testing purposes
-
   struct Solution {
     Solution(const CvrpInstance& instance, float newFitness, std::vector<unsigned> newTour);
 
@@ -39,38 +38,25 @@ public:  // for testing purposes
 
   ~CvrpInstance();
 
-  [[nodiscard]]
-  inline const std::string& getName() const {
-    return name;
-  }
-
-  [[nodiscard]]
-  inline unsigned chromosomeLength() const override {
-    return numberOfClients;
-  }
+  [[nodiscard]] inline const std::string& getName() const { return name; }
 
   void validateBestKnownSolution(const std::string& filename);
 
   Solution convertChromosomeToSolution(const float* chromosome) const;
 
-  // for debugging purposes
-  void evaluateChromosomesOnHost(
-      unsigned int numberOfChromosomes,
-      const float* chromosomes,
-      float* results
-  ) const override;
+  [[nodiscard]] unsigned chromosomeLength() const { return numberOfClients; }
 
-  inline void evaluateChromosomesOnDevice(cudaStream_t, unsigned int, const float*, float*) const override {
+  void evaluateChromosomesOnHost(unsigned int numberOfChromosomes, const float* chromosomes, float* results) const;
+
+  inline void evaluateChromosomesOnDevice(cudaStream_t, unsigned int, const float*, float*) const {
     std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
     abort();
   }
 
-  void evaluateIndicesOnDevice(
-      cudaStream_t stream,
-      unsigned numberOfChromosomes,
-      const ChromosomeGeneIdxPair* dIndices,
-      float* dResults
-  ) const override;
+  void evaluateIndicesOnDevice(cudaStream_t stream,
+                               unsigned numberOfChromosomes,
+                               const ChromosomeGeneIdxPair* dIndices,
+                               float* dResults) const;
 
   unsigned capacity;
   unsigned numberOfClients;
@@ -82,13 +68,11 @@ public:  // for testing purposes
   std::string name;
 
 private:
-
-  CvrpInstance() :
-      capacity(static_cast<unsigned>(-1)),
-      numberOfClients(static_cast<unsigned>(-1)),
-      dDistances(nullptr),
-      dDemands(nullptr) {
-  }
+  CvrpInstance()
+      : capacity(static_cast<unsigned>(-1)),
+        numberOfClients(static_cast<unsigned>(-1)),
+        dDistances(nullptr),
+        dDemands(nullptr) {}
 };
 
-#endif //CVRP_EXAMPLE_SRC_CVRPINSTANCE_HPP
+#endif  // CVRP_EXAMPLE_SRC_CVRPINSTANCE_HPP

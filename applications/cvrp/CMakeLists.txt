@@ -12,6 +12,9 @@ add_executable(brkga-cvrp
         src/CvrpInstance.cu
         src/CvrpInstance.hpp
         src/Point.hpp
+        src/brkga/BaseBrkga.hpp
+        src/brkga/BrkgaCuda.cpp
+        src/brkga/BrkgaCuda.hpp
 )
 
 set_target_properties(brkga-cvrp PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -33,5 +36,5 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(brkga-cvrp PUBLIC OpenMP::OpenMP_CXX PUBLIC -lcurand -fopenmp)
   endif()
 else()
-	target_link_libraries(brkga-cvrp PUBLIC -lcurand)
+  target_link_libraries(brkga-cvrp PUBLIC -lcurand)
 endif()
