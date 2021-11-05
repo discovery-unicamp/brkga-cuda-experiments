@@ -1,4 +1,11 @@
+# ide
 .idea
+.vscode
 
+# generated
 *build*
 *.o
+prof.txt
+
+# from https://sites.google.com/site/nogueirabruno/software
+GPU-BRKGA

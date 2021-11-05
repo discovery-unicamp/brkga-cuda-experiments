@@ -12,25 +12,20 @@ if(USE_NVTX)
  add_definitions(-DUSE_NVTX)
  find_library(LIBNVTOOLSEXT nvToolsExt PATHS ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
 endif()
- 
-file(GLOB
-  CHECK_SOURCE_FILES
-  brkga_cuda_api/*.cpp brkga_cuda_api/*.cu brkga_cuda_api/*.h brkga_cuda_api/*.cuh
-  tsp_example/src/*.cpp tsp_example/src/*.h
+
+# file(GLOB
+#   CHECK_SOURCE_FILES
+#   brkga_cuda_api/*.cpp brkga_cuda_api/*.cu brkga_cuda_api/*.h brkga_cuda_api/*.cuh
+#   tsp_example/src/*.cpp tsp_example/src/*.h
+# )
+# include("cmake/ClangFormat.cmake")
+
+add_library(brkga-cuda
+  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/Instance.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BRKGA.cu
+  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/ConfigFile.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/MathUtils.h
 )
-include("cmake/ClangFormat.cmake")
 
-set(API_FILES
-  ../brkga_cuda_api/Instance.hpp
-  ../brkga_cuda_api/BRKGA.cu
-  ../brkga_cuda_api/ConfigFile.cpp
-  ../brkga_cuda_api/MathUtils.h
-)
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/)
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wshadow -Wformat=2 -Wfloat-equal -Wconversion -Wno-sign-conversion -Wshift-overflow -Wcast-qual -Wcast-align")
-
-add_subdirectory(tsp_example)
-add_subdirectory(scp_example)
-add_subdirectory(cvrp_example)
+target_compile_features(brkga-cuda PUBLIC cxx_std_11)
+set_target_properties(brkga-cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
