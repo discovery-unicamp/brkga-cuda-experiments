@@ -10,8 +10,6 @@ namespace Algorithm {
 class BaseBrkga {
 public:
   BaseBrkga() : config("config.txt") {
-    bestFitness = (float)1e50;
-    timeElapsedMs = -1;
     numberOfGenerations = config.MAX_GENS;
     generationsExchangeBest = config.X_INTVL;
     exchangeBestCount = config.X_NUMBER;
@@ -36,12 +34,11 @@ public:
 
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
+
+    float timeElapsedMs;
     cudaEventElapsedTime(&timeElapsedMs, start, stop);
 
-    bestFitness = getBestFitness();
-  }
-
-  inline void outputResults() {
+    float bestFitness = getBestFitness();
     std::cout << std::fixed << std::setprecision(3) << bestFitness << ' ' << timeElapsedMs / 1000 << ' '
               << numberOfGenerations << ' ' << numberOfPopulations << ' ' << populationSize << ' ' << elitePercentage
               << ' ' << mutantPercentage << ' ' << rho << ' ' << decodeType << '\n';
@@ -52,8 +49,6 @@ protected:
 
   virtual float getBestFitness() = 0;
 
-  float bestFitness;
-  float timeElapsedMs;
   unsigned numberOfGenerations;
   unsigned generationsExchangeBest;
   unsigned exchangeBestCount;

@@ -53,7 +53,6 @@ int main(int argc, char** argv) {
 #endif
 
   brkga.run();
-  brkga.outputResults();
 
   return 0;
 }
