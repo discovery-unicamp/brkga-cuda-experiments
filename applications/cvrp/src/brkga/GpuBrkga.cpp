@@ -4,16 +4,15 @@
 Algorithm::GpuBrkga::GpuBrkga(CvrpInstance* cvrpInstance, unsigned seed, unsigned chromosomeLength)
     : BaseBrkga(),
       instance(cvrpInstance, numberOfPopulations * populationSize),
-      algorithm(
-          new GPUBRKGA<CvrpInstanceWrapper>(chromosomeLength,
-                                            populationSize,
-                                            elitePercentage,
-                                            mutantPercentage,
-                                            rho,
-                                            CvrpInstanceWrapper(cvrpInstance, numberOfPopulations * populationSize),
-                                            seed,
-                                            true,
-                                            numberOfPopulations)) {
+      algorithm(new GPUBRKGA<CvrpInstanceWrapper>(chromosomeLength,
+                                                  populationSize,
+                                                  elitePercentage,
+                                                  mutantPercentage,
+                                                  rho,
+                                                  instance,
+                                                  seed,
+                                                  true,
+                                                  numberOfPopulations)) {
   if (chromosomeLength > max_t)
     std::cerr << "Warning: Thread limit exceed (" << chromosomeLength << " > " << max_t
               << "); the algorithm may fail to run";

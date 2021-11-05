@@ -179,6 +179,82 @@ void CvrpInstance::evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
   }
 }
 
+__global__ void initAlleleIndices(const float* chromosomes,
+                                  const unsigned numberOfChromosomes,
+                                  const unsigned chromosomeLength,
+                                  CvrpInstance::Gene* dest,
+                                  int* segments) {
+  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid >= numberOfChromosomes)
+    return;
+  for (int i = 0; i < chromosomeLength; ++i) {
+    dest[tid * chromosomeLength + i].value = chromosomes[tid * chromosomeLength + i];
+    dest[tid * chromosomeLength + i].index = i;
+    segments[tid * chromosomeLength + i] = tid;
+  }
+}
+
+__global__ void cvrpEvaluateChromosomesOnDevice(const CvrpInstance::Gene* allIndices,
+                                                const unsigned numberOfChromosomes,
+                                                const unsigned chromosomeLength,
+                                                const unsigned capacity,
+                                                const float* distances,
+                                                const unsigned* demands,
+                                                float* results) {
+  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid >= numberOfChromosomes)
+    return;
+
+  const auto* indices = allIndices + tid * chromosomeLength;
+
+  unsigned u = 0;  // start in the depot
+  float fitness = 0;
+  unsigned filled = 0;
+  for (unsigned i = 0; i < chromosomeLength; ++i) {
+    unsigned v = indices[i].index + 1;
+    if (filled + demands[v] > capacity) {
+      fitness += distances[u];  // go back to the depot
+      u = 0;
+      filled = 0;
+    }
+
+    fitness += distances[u * (chromosomeLength + 1) + v];
+    filled += demands[v];
+    u = v;
+  }
+
+  fitness += distances[u];  // go back to the depot
+  results[tid] = fitness;
+}
+
+void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
+                                               unsigned numberOfChromosomes,
+                                               const float* dChromosomes,
+                                               float* dResults) const {
+  const unsigned block = THREADS_PER_BLOCK;
+  const unsigned grid = ceilDiv(numberOfChromosomes, block);
+
+  CvrpInstance::Gene* dGenes;
+  CUDA_CHECK(cudaMalloc(&dGenes, numberOfChromosomes * chromosomeLength() * sizeof(CvrpInstance::Gene)));
+  int* dSegments;
+  CUDA_CHECK(cudaMalloc(&dSegments, numberOfChromosomes * chromosomeLength() * sizeof(int)));
+
+  thrust::device_ptr<CvrpInstance::Gene> genesPtr(dGenes);
+  thrust::device_ptr<int> segmentsPtr(dSegments);
+
+  initAlleleIndices<<<grid, block, 0, stream>>>(dChromosomes, numberOfChromosomes, chromosomeLength(), dGenes,
+                                                dSegments);
+
+  thrust::sort_by_key(genesPtr, genesPtr + numberOfChromosomes, segmentsPtr);
+  thrust::sort_by_key(segmentsPtr, segmentsPtr + numberOfChromosomes, genesPtr);
+
+  cvrpEvaluateChromosomesOnDevice<<<grid, block, 0, stream>>>(dGenes, numberOfChromosomes, chromosomeLength(), capacity,
+                                                              dDistances, dDemands, dResults);
+
+  CUDA_CHECK(cudaFree(dGenes));
+  CUDA_CHECK(cudaFree(dSegments));
+}
+
 __global__ void cvrpEvaluateIndicesOnDevice(const ChromosomeGeneIdxPair* allIndices,
                                             const unsigned numberOfChromosomes,
                                             const unsigned chromosomeLength,

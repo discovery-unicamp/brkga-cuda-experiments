@@ -8,7 +8,7 @@ include_directories("${CMAKE_CURRENT_LIST_DIR}/../../brkga-cuda-itor")
 
 # gpu-brkga
 include("${CMAKE_CURRENT_LIST_DIR}/../../GPU-BRKGA/CMakeLists.txt")
-include_directories("${CMAKE_CURRENT_LIST_DIR}/../../GPU-BRKGA")
+include_directories(SYSTEM "${CMAKE_CURRENT_LIST_DIR}/../../GPU-BRKGA")
 
 add_compile_definitions(RUN_GPU_BRKGA)
 add_compile_options(-Wall -Wextra -Wshadow -Wformat=2 -Wfloat-equal -Wconversion -Wno-sign-conversion -Wshift-overflow -Wcast-qual -Wcast-align)

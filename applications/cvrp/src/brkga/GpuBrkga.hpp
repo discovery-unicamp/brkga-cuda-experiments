@@ -31,10 +31,7 @@ private:
     CvrpInstanceWrapper(CvrpInstance* cvrpInstance, unsigned totalNumberOfChromosomes)
         : instance(cvrpInstance), totalChromosomes(totalNumberOfChromosomes) {}
 
-    CvrpInstanceWrapper(const CvrpInstanceWrapper&) = delete;
-    CvrpInstanceWrapper(CvrpInstanceWrapper&&) = delete;
-    CvrpInstanceWrapper& operator=(const CvrpInstanceWrapper&) = delete;
-    CvrpInstanceWrapper& operator=(CvrpInstanceWrapper&&) = delete;
+    ~CvrpInstanceWrapper() {}
 
     inline void Init() const {}
 

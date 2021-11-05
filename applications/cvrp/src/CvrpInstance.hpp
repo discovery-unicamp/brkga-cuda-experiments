@@ -6,6 +6,8 @@
 
 #include <brkga_cuda_api/BRKGA.h>
 #include <brkga_cuda_api/CommonStructs.h>
+#include <thrust/device_ptr.h>
+#include <thrust/sort.h>
 #include <algorithm>
 #include <brkga_cuda_api/Instance.hpp>
 #include <brkga_cuda_api/cuda_error.cuh>
@@ -19,6 +21,13 @@
 
 class CvrpInstance {
 public:  // for testing purposes
+  struct Gene {
+    float value;
+    int index;
+
+    __host__ __device__ bool operator<(const Gene& other) const { return value < other.value; }
+  };
+
   struct Solution {
     Solution(const CvrpInstance& instance, float newFitness, std::vector<unsigned> newTour);
 
@@ -48,13 +57,10 @@ public:  // for testing purposes
 
   void evaluateChromosomesOnHost(unsigned int numberOfChromosomes, const float* chromosomes, float* results) const;
 
-  inline void evaluateChromosomesOnDevice(cudaStream_t stream,
-                                          unsigned numberOfChromosomes,
-                                          const float* dChromosomes,
-                                          float* dResults) const {
-    std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
-    abort();
-  }
+  void evaluateChromosomesOnDevice(cudaStream_t stream,
+                                   unsigned numberOfChromosomes,
+                                   const float* dChromosomes,
+                                   float* dResults) const;
 
   void evaluateIndicesOnDevice(cudaStream_t stream,
                                unsigned numberOfChromosomes,
