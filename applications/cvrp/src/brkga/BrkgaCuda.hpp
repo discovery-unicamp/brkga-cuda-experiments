@@ -16,7 +16,7 @@ public:
 protected:
   void runGenerations() override;
 
-  inline float getBestFitness() override;
+  float getBestFitness() override;
 
 private:
   struct CvrpInstanceWrapper : public Instance {
@@ -49,7 +49,6 @@ private:
   };
 
   CvrpInstanceWrapper instance;
-  ConfigFile config;
   BRKGA brkga;
 };
 }  // namespace Algorithm

@@ -1,22 +1,7 @@
 #include "BrkgaCuda.hpp"
 
 Algorithm::BrkgaCuda::BrkgaCuda(CvrpInstance* cvrpInstance, unsigned seed)
-    : instance(cvrpInstance), config("config.txt"), brkga(&instance, config, true, true, config.p, seed) {
-  bestFitness = (float)1e50;
-  timeElapsedMs = -1;
-  numberOfGenerations = config.MAX_GENS;
-  generationsExchangeBest = config.X_INTVL;
-  exchangeBestCount = config.X_NUMBER;
-  numberOfPopulations = config.K;
-  populationSize = config.p;
-  elitePercentage = config.pe;
-  mutantPercentage = config.pm;
-  rho = config.rhoe;
-  decodeType = config.decode_type == HOST_DECODE                       ? "cpu"
-               : config.decode_type == DEVICE_DECODE                   ? "gpu"
-               : config.decode_type == DEVICE_DECODE_CHROMOSOME_SORTED ? "sorted-gpu"
-                                                                       : "** UNKNOWN! **";
-}
+    : BaseBrkga(), instance(cvrpInstance), brkga(&instance, config, true, true, numberOfPopulations, seed) {}
 
 void Algorithm::BrkgaCuda::runGenerations() {
   for (size_t generation = 1; generation <= numberOfGenerations; ++generation) {

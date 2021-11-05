@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(brkga_cuda)
+project(brkga_cuda LANGUAGES CUDA CXX)
 
 find_package(OpenMP)
 find_package(CUDA REQUIRED)
@@ -13,13 +13,6 @@ if(USE_NVTX)
  find_library(LIBNVTOOLSEXT nvToolsExt PATHS ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
 endif()
 
-# file(GLOB
-#   CHECK_SOURCE_FILES
-#   brkga_cuda_api/*.cpp brkga_cuda_api/*.cu brkga_cuda_api/*.h brkga_cuda_api/*.cuh
-#   tsp_example/src/*.cpp tsp_example/src/*.h
-# )
-# include("cmake/ClangFormat.cmake")
-
 add_library(brkga-cuda
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/Instance.hpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BRKGA.cu
@@ -27,5 +20,10 @@ add_library(brkga-cuda
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/MathUtils.h
 )
 
-target_compile_features(brkga-cuda PUBLIC cxx_std_11)
+set_target_properties(brkga-cuda PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(brkga-cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_property(TARGET brkga-cuda PROPERTY CUDA_STANDARD 17)
+set_property(TARGET brkga-cuda PROPERTY CUDA_ARCHITECTURES 61)
+target_compile_options(brkga-cuda PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -fopenmp>)
+
 set_target_properties(brkga-cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

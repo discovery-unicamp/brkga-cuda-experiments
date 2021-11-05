@@ -9,6 +9,23 @@
 namespace Algorithm {
 class BaseBrkga {
 public:
+  BaseBrkga() : config("config.txt") {
+    bestFitness = (float)1e50;
+    timeElapsedMs = -1;
+    numberOfGenerations = config.MAX_GENS;
+    generationsExchangeBest = config.X_INTVL;
+    exchangeBestCount = config.X_NUMBER;
+    numberOfPopulations = config.K;
+    populationSize = config.p;
+    elitePercentage = config.pe;
+    mutantPercentage = config.pm;
+    rho = config.rhoe;
+    decodeType = config.decode_type == HOST_DECODE                       ? "cpu"
+                 : config.decode_type == DEVICE_DECODE                   ? "gpu"
+                 : config.decode_type == DEVICE_DECODE_CHROMOSOME_SORTED ? "sorted-gpu"
+                                                                         : "** UNKNOWN! **";
+  }
+
   void run() {
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
@@ -46,6 +63,8 @@ protected:
   float mutantPercentage;
   float rho;
   std::string decodeType;
+
+  ConfigFile config;
 };
 }  // namespace Algorithm
 

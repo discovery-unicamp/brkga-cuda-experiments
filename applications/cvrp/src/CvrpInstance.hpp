@@ -48,7 +48,10 @@ public:  // for testing purposes
 
   void evaluateChromosomesOnHost(unsigned int numberOfChromosomes, const float* chromosomes, float* results) const;
 
-  inline void evaluateChromosomesOnDevice(cudaStream_t, unsigned int, const float*, float*) const {
+  inline void evaluateChromosomesOnDevice(cudaStream_t stream,
+                                          unsigned numberOfChromosomes,
+                                          const float* dChromosomes,
+                                          float* dResults) const {
     std::cerr << std::string(__FUNCTION__) + " not implemented" << '\n';
     abort();
   }

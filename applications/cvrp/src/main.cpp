@@ -1,4 +1,5 @@
 #include "brkga/BrkgaCuda.hpp"
+#include "brkga/GpuBrkga.hpp"
 
 #include <getopt.h>
 #include <iomanip>
@@ -43,7 +44,14 @@ int main(int argc, char** argv) {
   if (!bksFilename.empty())
     instance.validateBestKnownSolution(bksFilename);
 
+#if defined RUN_BRKGA_CUDA
   Algorithm::BrkgaCuda brkga(&instance, seed);
+#elif defined RUN_GPU_BRKGA
+  Algorithm::GpuBrkga brkga(&instance, seed, instance.chromosomeLength());
+#else
+#error No algorithm specified
+#endif
+
   brkga.run();
   brkga.outputResults();
 
