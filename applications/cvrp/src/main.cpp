@@ -63,6 +63,7 @@ int main(int argc, char** argv) {
   }
 
   brkga->run();
+  delete brkga;
 
   return 0;
 }
