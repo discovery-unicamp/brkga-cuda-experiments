@@ -9,16 +9,24 @@
 
 int main(int argc, char** argv) {
   int seed = -1;
+  std::string algorithm;
   std::string instanceFilename;
   int option;
-  while (option = getopt(argc, argv, "i:s:"), option != -1) {
-    if (option == 'i') {
+  while (option = getopt(argc, argv, "a:i:s:"), option != -1) {
+    if (option == 'a') {
+      std::cerr << "Algorithm: " << optarg << '\n';
+      algorithm = optarg;
+    } else if (option == 'i') {
       std::cerr << "Instance file: " << optarg << '\n';
       instanceFilename = optarg;
     } else if (option == 's') {
       std::cerr << "Parsing seed: " << optarg << '\n';
       seed = std::stoi(optarg);
     }
+  }
+  if (algorithm.empty()) {
+    std::cerr << "No algorithm provided\n";
+    abort();
   }
   if (instanceFilename.empty()) {
     std::cerr << "No instance provided\n";
@@ -44,15 +52,17 @@ int main(int argc, char** argv) {
   if (!bksFilename.empty())
     instance.validateBestKnownSolution(bksFilename);
 
-#if defined RUN_BRKGA_CUDA
-  Algorithm::BrkgaCuda brkga(&instance, seed);
-#elif defined RUN_GPU_BRKGA
-  Algorithm::GpuBrkga brkga(&instance, seed, instance.chromosomeLength());
-#else
-#error No algorithm specified
-#endif
+  Algorithm::BaseBrkga* brkga = nullptr;
+  if (algorithm == "brkga-cuda") {
+    brkga = new Algorithm::BrkgaCuda(&instance, seed);
+  } else if (algorithm == "gpu-brkga") {
+    brkga = new Algorithm::GpuBrkga(&instance, seed, instance.chromosomeLength());
+  } else {
+    std::cerr << "Invalid algorithm: " << algorithm << '\n';
+    abort();
+  }
 
-  brkga.run();
+  brkga->run();
 
   return 0;
 }
