@@ -16,6 +16,9 @@ Algorithm::GpuBrkga::GpuBrkga(CvrpInstance* cvrpInstance, unsigned seed, unsigne
   if (chromosomeLength > max_t)
     std::cerr << "Warning: Thread limit exceed (" << chromosomeLength << " > " << max_t
               << "); the algorithm may fail to run";
+
+  // only these values are supported
+  decodeType = "gpu";
 }
 
 Algorithm::GpuBrkga::~GpuBrkga() {
@@ -23,8 +26,12 @@ Algorithm::GpuBrkga::~GpuBrkga() {
 }
 
 void Algorithm::GpuBrkga::runGenerations() {
-  for (size_t generation = 1; generation <= numberOfGenerations; ++generation)
+  const bool hasToExchangeBest = generationsExchangeBest != 0 && exchangeBestCount != 0;
+  for (size_t generation = 1; generation <= numberOfGenerations; ++generation) {
     algorithm->evolve();
+    if (hasToExchangeBest && generation % generationsExchangeBest == 0)
+      algorithm->exchangeElite(exchangeBestCount);
+  }
 }
 
 float Algorithm::GpuBrkga::getBestFitness() {

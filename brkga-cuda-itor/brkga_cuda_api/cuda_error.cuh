@@ -10,7 +10,6 @@
 #include <iostream>
 
 #ifndef NDEBUG
-#warning "Doing Cuda Check in All Cuda Calls!"
 /**
  * \brief Check if a CUDA error was raised.
  * \param cmd command return value.
