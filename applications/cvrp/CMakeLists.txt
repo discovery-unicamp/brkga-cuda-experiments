@@ -2,16 +2,11 @@ cmake_minimum_required(VERSION 3.10)
 project(brkga-cvrp LANGUAGES CUDA CXX)
 set(CMAKE_CXX_STANDARD 17)
 
-# brkga-cuda
-include("${CMAKE_CURRENT_LIST_DIR}/../../brkga-cuda-itor/CMakeLists.txt")
-include_directories("${CMAKE_CURRENT_LIST_DIR}/../../brkga-cuda-itor")
-
-# gpu-brkga
-include("${CMAKE_CURRENT_LIST_DIR}/../../GPU-BRKGA/CMakeLists.txt")
-include_directories(SYSTEM "${CMAKE_CURRENT_LIST_DIR}/../../GPU-BRKGA")
-
-add_compile_definitions(RUN_GPU_BRKGA)
+add_compile_definitions(RUN_BRKGA_CUDA)
 add_compile_options(-Wall -Wextra -Wshadow -Wformat=2 -Wfloat-equal -Wconversion -Wno-sign-conversion -Wshift-overflow -Wcast-qual -Wcast-align)
+
+set(BRKGA_CUDA_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../brkga-cuda-itor")
+set(GPU_BRKGA_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../GPU-BRKGA/")
 
 add_executable(brkga-cvrp
         src/main.cpp
@@ -34,7 +29,14 @@ set_property(TARGET brkga-cvrp PROPERTY CUDA_STANDARD 17)
 set_property(TARGET brkga-cvrp PROPERTY CUDA_ARCHITECTURES 61)
 target_compile_options(brkga-cvrp PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -fopenmp>)
 
+# brkga-cuda
+include("${BRKGA_CUDA_ROOT}/CMakeLists.txt")
+include_directories(${BRKGA_CUDA_ROOT})
 target_link_libraries(brkga-cvrp LINK_PUBLIC brkga-cuda)
+
+# gpu-brkga
+include("${GPU_BRKGA_ROOT}/CMakeLists.txt")
+include_directories(SYSTEM ${GPU_BRKGA_ROOT})
 target_link_libraries(brkga-cvrp LINK_PUBLIC gpu-brkga)
 
 # FIXME não funciona sem open mp

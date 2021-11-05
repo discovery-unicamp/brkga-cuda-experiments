@@ -1,0 +1,13 @@
+# all
+*
+
+# except this
+!.gitignore
+
+# their notices
+!*.md
+
+# and the sources
+!CMakeLists.txt
+!GPU-BRKGA/
+!GPU-BRKGA/*
