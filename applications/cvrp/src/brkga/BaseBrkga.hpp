@@ -24,6 +24,8 @@ public:
                                                                          : "** UNKNOWN! **";
   }
 
+  virtual ~BaseBrkga() = default;
+
   void run() {
     cudaEvent_t start, stop;
     cudaEventCreate(&start);

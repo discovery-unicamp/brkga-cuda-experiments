@@ -6,7 +6,10 @@
 
 #include <brkga_cuda_api/BRKGA.h>
 #include <brkga_cuda_api/CommonStructs.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
 #include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
 #include <thrust/sort.h>
 #include <algorithm>
 #include <brkga_cuda_api/Instance.hpp>
@@ -23,9 +26,13 @@ class CvrpInstance {
 public:  // for testing purposes
   struct Gene {
     float value;
-    int index;
+    int chromosomeIndex;
 
-    __host__ __device__ bool operator<(const Gene& other) const { return value < other.value; }
+    __host__ __device__ bool operator<(const Gene& other) const {
+      if (chromosomeIndex != other.chromosomeIndex)
+        return chromosomeIndex < other.chromosomeIndex;
+      return value < other.value;
+    }
   };
 
   struct Solution {

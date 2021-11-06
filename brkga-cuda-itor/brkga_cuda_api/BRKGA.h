@@ -53,9 +53,7 @@ private:
       0; /// indicate whether best solutions were already saved or not
 
   ChromosomeGeneIdxPair *d_chromosome_gene_idx =
-      nullptr; /// Table with indices for all chromosomes and each of its gene on
-            /// device
-            /// host
+      nullptr; /// Table with indices for all chromosomes and each of its gene on device
   ChromosomeGeneIdxPair **d_chromosome_gene_idx_pipe =
       nullptr; /// Pointer for each population for its table with indices for all
             /// chromosomes in the population and each of its gene on device

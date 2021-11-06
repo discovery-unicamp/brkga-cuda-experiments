@@ -8,9 +8,9 @@ enable_language(CUDA)
 include_directories(SYSTEM "${CUDA_INCLUDE_DIRS}")
 
 if(USE_NVTX)
- message("Compiling to use NVTX!")
- add_definitions(-DUSE_NVTX)
- find_library(LIBNVTOOLSEXT nvToolsExt PATHS ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+  message("Compiling to use NVTX!")
+  add_definitions(-DUSE_NVTX)
+  find_library(LIBNVTOOLSEXT nvToolsExt PATHS ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
 endif()
 
 add_library(brkga-cuda
@@ -25,3 +25,14 @@ set_target_properties(brkga-cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set_property(TARGET brkga-cuda PROPERTY CUDA_STANDARD 17)
 set_property(TARGET brkga-cuda PROPERTY CUDA_ARCHITECTURES 61)
 target_compile_options(brkga-cuda PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -fopenmp>)
+
+# FIXME doesn't work without OpenMP
+if(OpenMP_CXX_FOUND)
+  if(USE_NVTX)
+    target_link_libraries(brkga-cuda PUBLIC OpenMP::OpenMP_CXX PUBLIC ${LIBNVTOOLSEXT} -lcurand -fopenmp)
+  else()
+    target_link_libraries(brkga-cuda PUBLIC OpenMP::OpenMP_CXX PUBLIC -lcurand -fopenmp)
+  endif()
+else()
+  target_link_libraries(brkga-cuda PUBLIC -lcurand)
+endif()
