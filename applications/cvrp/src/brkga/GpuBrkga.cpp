@@ -18,7 +18,10 @@ Algorithm::GpuBrkga::GpuBrkga(CvrpInstance* cvrpInstance, unsigned seed, unsigne
               << "); the algorithm may fail to run";
 
   // only these values are supported
-  decodeType = "gpu";
+  if (decodeType != "gpu") {
+    std::cerr << "Decode type `" << decodeType << "` not supported; use gpu instead\n";
+    abort();
+  }
 }
 
 Algorithm::GpuBrkga::~GpuBrkga() {

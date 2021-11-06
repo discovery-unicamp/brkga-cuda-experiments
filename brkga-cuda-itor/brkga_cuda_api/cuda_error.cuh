@@ -14,19 +14,21 @@
  * \brief Check if a CUDA error was raised.
  * \param cmd command return value.
  */
-#define CUDA_CHECK(cmd) check_cuda_error(cmd, __FILE__, __LINE__)
+#define CUDA_CHECK_1(cmd) check_cuda_error(nullptr, cmd, __FILE__, __LINE__);
+#define CUDA_CHECK_2(stream, cmd) check_cuda_error(stream, cmd, __FILE__, __LINE__)
+#define CUDA_CHECK_N(p1, p2, macro, ...) macro
+#define CUDA_CHECK(...) CUDA_CHECK_N(__VA_ARGS__, CUDA_CHECK_2(__VA_ARGS__), CUDA_CHECK_1(__VA_ARGS__))
 
 /**
  * \brief Check if a CUDA error was raised during the previous operation.
  */
-#define CUDA_CHECK_LAST()                                                      \
-  check_cuda_error(cudaPeekAtLastError(), __FILE__, __LINE__)
+#define CUDA_CHECK_LAST(stream) check_cuda_error(stream, cudaPeekAtLastError(), __FILE__, __LINE__)
 
 #else
 
 // Do nothing
 #define CUDA_CHECK(cmd) cmd
-#define CUDA_CHECK_LAST()
+#define CUDA_CHECK_LAST(stream) void(nullptr)
 
 #endif /* NDEBUG */
 
@@ -40,12 +42,16 @@
  * \param file file where the error was raised.
  * \param line line where the error was raised.
  */
-static inline void check_cuda_error(cudaError_t error, const char *file,
-                                    const int line) {
+static inline void check_cuda_error(cudaStream_t stream, cudaError_t error, const char* file, const int line) {
   if (error != cudaSuccess) {
-    fprintf(stderr, "Error: %s:%d: %s\n", file, line,
-            cudaGetErrorString(error));
-    exit(EXIT_FAILURE);
+    fprintf(stderr, "%s:%d: %s\n", file, line, cudaGetErrorString(error));
+    exit(error);
+  }
+
+  error = (stream == nullptr ? cudaDeviceSynchronize() : cudaStreamSynchronize(stream));
+  if (error != cudaSuccess) {
+    fprintf(stderr, "%s:%d: %s\n", file, line, cudaGetErrorString(error));
+    exit(error);
   }
 }
 
