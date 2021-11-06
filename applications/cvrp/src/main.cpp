@@ -1,4 +1,5 @@
 #include "brkga/BrkgaCuda.hpp"
+#include "brkga/BrkgaOpenCL.hpp"
 #include "brkga/GpuBrkga.hpp"
 
 #include <getopt.h>
@@ -57,6 +58,13 @@ int main(int argc, char** argv) {
     brkga = new Algorithm::BrkgaCuda(&instance, seed);
   } else if (algorithm == "gpu-brkga") {
     brkga = new Algorithm::GpuBrkga(&instance, seed, instance.chromosomeLength());
+  } else if (algorithm == "brkga-opencl") {
+#ifdef BRKGA_OPENCL_ENABLED
+    brkga = new Algorithm::BrkgaOpenCL(&instance, Configuration::fromFile("config-opencl.txt"));
+#else
+    std::cerr << "BRKGA OpenCL is disabled by CMake\n";
+    abort();
+#endif
   } else {
     std::cerr << "Invalid algorithm: " << algorithm << '\n';
     abort();

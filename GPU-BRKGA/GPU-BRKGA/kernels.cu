@@ -86,8 +86,7 @@ __global__ void offspring(float* d_current,
     unsigned int pidx = threadIdx.x + pblk * n;
     // printf(" --> %d %d ## %d %d %d - %d\n", pblk, pidx, bidx, n, bidx + n, offset);
     for (; idx < bidx + n; idx += offset, pidx += offset) d_next[idx] = d_current[pidx];
-  }
-  else if (blockIdx.x < P - PM) {
+  } else if (blockIdx.x < P - PM) {
     __shared__ unsigned int eliteParent;
     __shared__ unsigned int nonEliteParent;
 
@@ -105,8 +104,7 @@ __global__ void offspring(float* d_current,
       sp = prob < rhoe ? epidx : pidx;
       d_next[idx] = d_current[sp];
     }
-  }
-  else if (blockIdx.x < P) {
+  } else if (blockIdx.x < P) {
     for (; idx < bidx + n; idx += offset) d_next[idx] = RNG_real(curand(&d_crossStates[auxidx]));
   }
 

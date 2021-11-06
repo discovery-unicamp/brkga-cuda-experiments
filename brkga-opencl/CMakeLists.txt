@@ -10,7 +10,7 @@ add_compile_definitions(eps=1e-6)
 
 # ===== Dependencies =====
 find_package(OpenCL REQUIRED)
-include_directories(${OpenCL_INCLUDE_DIR})
+include_directories(SYSTEM ${OpenCL_INCLUDE_DIR})
 add_compile_definitions(CL_HPP_ENABLE_EXCEPTIONS)
 add_compile_definitions(CL_HPP_TARGET_OPENCL_VERSION=210)
 
@@ -31,28 +31,21 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-sani
 
 # ===== Code warnings =====
 add_compile_options(-Wall -Wextra -Wshadow -Wformat=2 -Wfloat-equal -Wconversion -Wno-sign-conversion -Wshift-overflow -Wcast-qual -Wcast-align)
-set(CMAKE_CXX_CLANG_TIDY clang-tidy)
+# set(CMAKE_CXX_CLANG_TIDY clang-tidy)
 
 
 # ===== The targets =====
-add_library(brkga
-        src/brkga/Brkga.cpp
-        src/brkga/Brkga.hpp
-        src/brkga/BrkgaOpenCL.hpp
-        src/brkga/Problem.hpp
-        src/brkga/IO.hpp
-        src/brkga/IO.cpp
-        src/brkga/Configuration.cpp
-        src/brkga/Configuration.hpp
-        src/brkga/OpenCL.cpp
-        src/brkga/OpenCL.hpp
+add_library(brkga-opencl
+        ${CMAKE_CURRENT_LIST_DIR}/brkga-opencl/Brkga.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/brkga-opencl/Brkga.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/brkga-opencl/BrkgaOpenCL.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/brkga-opencl/Configuration.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/brkga-opencl/Configuration.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/brkga-opencl/IO.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/brkga-opencl/IO.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/brkga-opencl/OpenCL.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/brkga-opencl/OpenCL.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/brkga-opencl/Problem.hpp
 )
-target_link_libraries(brkga ${OpenCL_LIBRARY})
 
-add_executable(tsp
-        src/tsp/main.cpp
-        src/tsp/Point.hpp
-        src/tsp/TspProblem.cpp
-        src/tsp/TspProblem.hpp
-)
-target_link_libraries(tsp LINK_PUBLIC brkga)
+target_link_libraries(brkga-opencl ${OpenCL_LIBRARY})

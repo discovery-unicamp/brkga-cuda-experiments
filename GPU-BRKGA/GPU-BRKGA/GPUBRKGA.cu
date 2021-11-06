@@ -17,28 +17,27 @@ Maceió, Alagoas, Brasil.
 
 #define max_t (unsigned)1024
 
+#include "Individual.h"
+#include "cuda_errorchecking.h"
+#include "kernels.h"
+
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <curand.h>
 #include <curand_kernel.h>
 #include <omp.h>
+
 #include <algorithm>
 #include <exception>
 #include <numeric>
 #include <stdexcept>
 #include <vector>
-#include "Individual.h"
-#include "cuda_errorchecking.h"
-#include "kernels.h"
-
-#include <thrust/device_ptr.h>
-#include <thrust/fill.h>
 
 #define throw(e)
 
 template <class Decoder>
 class GPUBRKGA {
- public:
+public:
   /*
   Default constructor
    Required parameters:
@@ -95,7 +94,7 @@ class GPUBRKGA {
   float* getHostFitnessKeys() const;
   int* getHostFitnessValues() const;
 
- private:
+private:
   // parameters:
   const unsigned n;  // number of genes in the chromosome
   const unsigned p;  // number of elements in the population

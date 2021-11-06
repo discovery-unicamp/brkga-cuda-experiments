@@ -20,7 +20,7 @@ Maceió, Alagoas, Brasil.
 #include <vector>
 
 class Individual {
- public:
+public:
   float* aleles;
   std::pair<float, int> fitness;
 
@@ -31,11 +31,7 @@ class Individual {
 
   ~Individual() { free(aleles); }
 
-  void ToString() {
-    std::cout << "Individual: " << fitness.second << "Fitness: " << fitness.first << std::endl << "Aleles: ";
-    // for(int i = 0; i < 128; i++) std::cout << aleles[i] << " ";
-    std::cout << std::endl;
-  }
+  void ToString() { std::cout << "Individual: " << fitness.second << "Fitness: " << fitness.first << std::endl; }
 };
 
-#endif
+#endif  // INDIVIDUAL_H

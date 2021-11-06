@@ -1,11 +1,10 @@
 #ifndef KERNELS_H
 #define KERNELS_H
 
+#include <cub/cub.cuh>
 #include <cuda.h>
 #include <cuda_runtime.h>
-
 #include <curand_kernel.h>
-#include <cub/cub.cuh>
 
 // CURAND RNG
 

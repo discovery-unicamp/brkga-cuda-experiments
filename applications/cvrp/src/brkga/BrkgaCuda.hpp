@@ -1,12 +1,13 @@
 #ifndef CVRP_BRKGA_CUDA
 #define CVRP_BRKGA_CUDA
 
+#include "../CvrpInstance.hpp"
+#include "BaseBrkga.hpp"
+
 #include <brkga_cuda_api/BRKGA.h>
 #include <brkga_cuda_api/CommonStructs.h>
 #include <brkga_cuda_api/Instance.hpp>
 #include <brkga_cuda_api/cuda_error.cuh>
-#include "../CvrpInstance.hpp"
-#include "BaseBrkga.hpp"
 
 namespace Algorithm {
 class BrkgaCuda : public BaseBrkga {
