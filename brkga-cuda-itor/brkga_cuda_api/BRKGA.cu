@@ -105,6 +105,7 @@ BRKGA::BRKGA(Instance* _instance,
              bool evolve_pipeline,
              unsigned n_pop_pipe,
              unsigned RAND_SEED) {
+  CUDA_CHECK_LAST(0);
   omp_set_nested(1);
   this->instance = _instance;
   this->pinned = false;
@@ -160,6 +161,7 @@ BRKGA::BRKGA(Instance* _instance,
   // Initialize population with random alleles with generated random floats on
   // device
   reset_population();
+  CUDA_CHECK_LAST(0);
 }
 
 /**
@@ -244,6 +246,8 @@ size_t BRKGA::allocate_data() {
  */
 
 BRKGA::~BRKGA() {
+  CUDA_CHECK_LAST(0);
+
   // Cleanup
   curandDestroyGenerator(gen);
 
@@ -261,9 +265,8 @@ BRKGA::~BRKGA() {
   CUDA_CHECK(cudaFree(m_best_solutions));
 
   if (evolve_pipeline) {
-    for (unsigned p = 0; p < number_populations; p++) {
+    for (unsigned p = 0; p < number_populations; p++)
       CUDA_CHECK(cudaStreamDestroy(pop_stream[p]));
-    }
     free(pop_stream);
     free(m_population_pipe);
     free(m_population_pipe_temp);
@@ -281,6 +284,7 @@ BRKGA::~BRKGA() {
  */
 void BRKGA::reset_population() {
   curandGenerateUniform(gen, m_population, number_chromosomes * chromosome_size);
+  CUDA_CHECK_LAST(0);
 }
 
 /**
@@ -565,6 +569,7 @@ void BRKGA::evolve() {
   // generate random numbers to index parents used for crossover
   curandGenerateUniform(gen, d_random_elite_parent, number_chromosomes);
   curandGenerateUniform(gen, d_random_parent, number_chromosomes);
+  CUDA_CHECK_LAST(0);
 
   // Kernel function, where each thread process one chromosome of the next
   // population.
@@ -625,6 +630,7 @@ void BRKGA::evolve_pipe() {
   // we already initialize random numbers for all populations
   curandGenerateUniform(gen, d_random_elite_parent, number_chromosomes);
   curandGenerateUniform(gen, d_random_parent, number_chromosomes);
+  CUDA_CHECK_LAST(0);
 
   for (unsigned p = 0; p < number_populations; p++) {
     // Kernel function, where each thread process one chromosome of the
@@ -896,6 +902,9 @@ void BRKGA::saveBestChromosomes() {
                                          best_saved);
   CUDA_CHECK_LAST(0);
   best_saved = 1;
+
+  // synchronize here to avoid an issue where the result is not saved
+  CUDA_CHECK(cudaDeviceSynchronize());
 }
 
 /**
