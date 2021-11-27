@@ -2,7 +2,15 @@
 .idea
 .vscode
 
+# ignore for while
+results/
+.clang*
+Makefile
+*.json
+*.sh
+*.txt
+
 # generated
 *build*
-*.o
 prof.txt
+*.qdrep

@@ -394,10 +394,10 @@ __global__ void device_set_chromosome_gene_idx_pipe(ChromosomeGeneIdxPair* d_chr
                                                     unsigned chromosome_size,
                                                     unsigned population_size) {
   auto tx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tx < population_size) {
-    for (int i = 0; i < chromosome_size; i++) {
-      d_chromosome_gene_idx_pop[tx * chromosome_size + i].chromosomeIdx = tx;
-      d_chromosome_gene_idx_pop[tx * chromosome_size + i].geneIdx = i;
+  if (tx < chromosome_size) {
+    for (int i = 0; i < population_size; i++) {
+      d_chromosome_gene_idx_pop[i * chromosome_size + tx].chromosomeIdx = i;
+      d_chromosome_gene_idx_pop[i * chromosome_size + tx].geneIdx = tx;
     }
   }
 }
@@ -450,7 +450,8 @@ void BRKGA::sort_chromosomes_genes() {
 void BRKGA::sort_chromosomes_genes_pipe(unsigned pop_id) {
   // First set for each gene, its chromosome index and its original index in the
   // chromosome
-  device_set_chromosome_gene_idx_pipe<<<dimGrid_pipe, dimBlock, 0, pop_stream[pop_id]>>>(
+  const auto blocks = ceilDiv(chromosome_size, dimBlock.x);
+  device_set_chromosome_gene_idx_pipe<<<blocks, dimBlock, 0, pop_stream[pop_id]>>>(
       d_chromosome_gene_idx_pipe[pop_id], chromosome_size, population_size);
   CUDA_CHECK_LAST(pop_stream[pop_id]);
   // we use d_population2 to sort all genes by their values

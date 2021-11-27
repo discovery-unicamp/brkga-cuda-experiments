@@ -196,6 +196,7 @@ __global__ void initAlleleIndices(const float* chromosomes,
   }
 }
 
+#ifndef NDEBUG
 __global__ void checkGenesSortedCorrectly(const unsigned numberOfChromosomes,
                                           const unsigned chromosomeLength,
                                           const float* chromosomes,
@@ -221,6 +222,7 @@ __global__ void checkGenesSortedCorrectly(const unsigned numberOfChromosomes,
 
   free(seen);
 }
+#endif // NDEBUG
 
 __global__ void cvrpEvaluateChromosomesOnDevice(const unsigned* allIndices,
                                                 const unsigned numberOfChromosomes,
@@ -275,8 +277,11 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
   thrust::device_ptr<CvrpInstance::Gene> genesPtr(dGenes);
   thrust::device_ptr<unsigned> indicesPtr(dIndices);
   thrust::stable_sort_by_key(thrust::cuda::par.on(stream), genesPtr, genesPtr + totalGenes, indicesPtr);
+
+#ifndef NDEBUG
   checkGenesSortedCorrectly<<<grid, block, 0, stream>>>(numberOfChromosomes, chromosomeLength(), dChromosomes, dGenes,
                                                         dIndices);
+#endif // NDEBUG
 
   cvrpEvaluateChromosomesOnDevice<<<grid, block, 0, stream>>>(dIndices, numberOfChromosomes, chromosomeLength(),
                                                               capacity, dDistances, dDemands, dResults);

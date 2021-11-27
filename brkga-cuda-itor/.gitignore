@@ -1,6 +1,0 @@
-cmake-build*
-results
-
-# ignore them for now
-*.sh
-Makefile
