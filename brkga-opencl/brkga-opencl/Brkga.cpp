@@ -1,6 +1,3 @@
-// Copyright (c) 2021 Bruno Almêda de Oliveira. All rights reserved.
-// Released under the GNU General Public License version 2 or later.
-
 #include "Brkga.hpp"
 
 Brkga::Brkga(const cl::Device& device, Problem* _problem, const Configuration& config) :
