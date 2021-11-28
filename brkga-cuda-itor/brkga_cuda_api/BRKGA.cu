@@ -624,7 +624,6 @@ void BRKGA::evolve_pipe() {
   // d_population2 with random values. So mutants are already build.
   // For the non mutants we use the random values generated here to
   // perform the crossover on the current population d_population.
-  // FIXME create a random generator for each population
   curandGenerateUniform(gen, m_population_temp, number_chromosomes * chromosome_size);
 
   // generate random numbers to index parents used for crossover
@@ -648,9 +647,6 @@ void BRKGA::evolve_pipe() {
 
   std::swap(m_population, m_population_temp);
 
-  // TODO create a generator for each population
-  // synchronize here to avoid issues with the generator
-  CUDA_CHECK(cudaDeviceSynchronize());
   for (unsigned p = 0; p < number_populations; ++p)
     CUDA_CHECK(cudaStreamSynchronize(pop_stream[p]));
 }
