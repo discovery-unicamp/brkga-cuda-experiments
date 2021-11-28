@@ -5,19 +5,14 @@
 
 CvrpInstance::Solution::Solution(const CvrpInstance& instance, float newFitness, std::vector<unsigned> newTour)
     : fitness(newFitness), tour(std::move(newTour)) {
-  if (tour.empty())
-    throw std::runtime_error("Tour is empty");
-  if (tour[0] != 0)
-    throw std::runtime_error("Tour should start at depot (0)");
-  if (tour.back() != 0)
-    throw std::runtime_error("Tour should finish at depot (0)");
+  if (tour.empty()) throw std::runtime_error("Tour is empty");
+  if (tour[0] != 0) throw std::runtime_error("Tour should start at depot (0)");
+  if (tour.back() != 0) throw std::runtime_error("Tour should finish at depot (0)");
 
   std::vector<bool> visited(instance.numberOfClients + 1);
   for (unsigned u : tour) {
-    if (u > instance.numberOfClients)
-      throw std::runtime_error("Invalid client in the tour");
-    if (u != 0 && visited[u])
-      throw std::runtime_error("Client was visited twice");
+    if (u > instance.numberOfClients) throw std::runtime_error("Invalid client in the tour");
+    if (u != 0 && visited[u]) throw std::runtime_error("Client was visited twice");
     visited[u] = true;
   }
   if (!std::all_of(visited.begin(), visited.end(), [](bool x) { return x; })) {
@@ -25,8 +20,7 @@ CvrpInstance::Solution::Solution(const CvrpInstance& instance, float newFitness,
   }
 
   for (unsigned i = 1; i < tour.size(); ++i) {
-    if (tour[i - 1] == tour[i])
-      throw std::runtime_error("Found an empty tour");
+    if (tour[i - 1] == tour[i]) throw std::runtime_error("Found an empty tour");
   }
 
   unsigned filled = 0;
@@ -35,8 +29,7 @@ CvrpInstance::Solution::Solution(const CvrpInstance& instance, float newFitness,
       filled = 0;
     } else {
       filled += instance.demands[u];
-      if (filled > instance.capacity)
-        throw std::runtime_error("Capacity exceeded");
+      if (filled > instance.capacity) throw std::runtime_error("Capacity exceeded");
     }
   }
 
@@ -46,14 +39,12 @@ CvrpInstance::Solution::Solution(const CvrpInstance& instance, float newFitness,
     unsigned v = tour[i];
     expectedFitness += instance.distances[u * (instance.numberOfClients + 1) + v];
   }
-  if (std::abs(fitness - expectedFitness) > 1e-3)
-    throw std::runtime_error("Invalid fitness");
+  if (std::abs(fitness - expectedFitness) > 1e-3) throw std::runtime_error("Invalid fitness");
 }
 
 CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
   std::ifstream file(filename);
-  if (!file.is_open())
-    throw std::runtime_error("Failed to open file " + filename);
+  if (!file.is_open()) throw std::runtime_error("Failed to open file " + filename);
 
   CvrpInstance instance;
   std::string str;
@@ -89,12 +80,12 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
   CUDA_CHECK(cudaMemcpy(instance.dDemands, instance.demands.data(), demandsSize, cudaMemcpyHostToDevice));
 
   assert(!instance.name.empty());
-  assert(instance.numberOfClients != static_cast<unsigned>(-1));      // no dimension
-  assert(instance.capacity != static_cast<unsigned>(-1));             // no capacity
-  assert(instance.locations.size() > 1);                              // no client provided
+  assert(instance.numberOfClients != static_cast<unsigned>(-1));  // no dimension
+  assert(instance.capacity != static_cast<unsigned>(-1));  // no capacity
+  assert(instance.locations.size() > 1);  // no client provided
   assert(instance.locations.size() == instance.numberOfClients + 1);  // missing location
-  assert(instance.demands.size() == instance.numberOfClients + 1);    // missing demand
-  assert(instance.demands[0] == 0);                                   // depot has demand
+  assert(instance.demands.size() == instance.numberOfClients + 1);  // missing demand
+  assert(instance.demands[0] == 0);  // depot has demand
   assert(std::all_of(instance.demands.begin() + 1, instance.demands.end(),
                      [](int d) { return d > 0; }));  // client wo/ demand
 
@@ -131,8 +122,7 @@ void CvrpInstance::validateBestKnownSolution(const std::string& filename) {
     ss >> tmp >> tmp;
 
     unsigned u;
-    while (ss >> u)
-      tour.push_back(u);
+    while (ss >> u) tour.push_back(u);
     tour.push_back(0);  // return to the depot
   }
 
@@ -164,8 +154,7 @@ CvrpInstance::Solution CvrpInstance::convertChromosomeToSolution(const float* ch
   tour.push_back(0);  // go back to the depot
 
   float fitness = 0;
-  for (unsigned i = 1; i < tour.size(); ++i)
-    fitness += distances[tour[i - 1] * (clen + 1) + tour[i]];
+  for (unsigned i = 1; i < tour.size(); ++i) fitness += distances[tour[i - 1] * (clen + 1) + tour[i]];
 
   return Solution(*this, fitness, tour);
 }
@@ -184,15 +173,15 @@ __global__ void initAlleleIndices(const float* chromosomes,
                                   const unsigned chromosomeLength,
                                   CvrpInstance::Gene* dest,
                                   unsigned* indices) {
-  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid >= numberOfChromosomes)
-    return;
+  // TODO verificar uma forma melhor de lançar esses kernels; o chromosome pode ser curto ou longo
+  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid >= chromosomeLength) return;
 
-  const auto offset = tid * chromosomeLength;
-  for (unsigned i = 0; i < chromosomeLength; ++i) {
-    dest[offset + i].value = chromosomes[offset + i];
-    dest[offset + i].chromosomeIndex = tid;
-    indices[offset + i] = i;
+  for (unsigned i = 0; i < numberOfChromosomes; ++i) {
+    const auto idx = i * chromosomeLength + tid;
+    dest[idx].value = chromosomes[idx];
+    dest[idx].chromosomeIndex = i;
+    indices[idx] = tid;
   }
 }
 
@@ -203,12 +192,10 @@ __global__ void checkGenesSortedCorrectly(const unsigned numberOfChromosomes,
                                           const CvrpInstance::Gene* genes,
                                           const unsigned* indices) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid >= numberOfChromosomes)
-    return;
+  if (tid >= numberOfChromosomes) return;
 
   bool* seen = (bool*)malloc(chromosomeLength * sizeof(bool));
-  for (int i = 0; i < chromosomeLength; ++i)
-    seen[i] = false;
+  for (int i = 0; i < chromosomeLength; ++i) seen[i] = false;
 
   const auto offset = tid * chromosomeLength;
   for (unsigned i = 0; i < chromosomeLength; ++i) {
@@ -222,7 +209,7 @@ __global__ void checkGenesSortedCorrectly(const unsigned numberOfChromosomes,
 
   free(seen);
 }
-#endif // NDEBUG
+#endif  // NDEBUG
 
 __global__ void cvrpEvaluateChromosomesOnDevice(const unsigned* allIndices,
                                                 const unsigned numberOfChromosomes,
@@ -232,8 +219,7 @@ __global__ void cvrpEvaluateChromosomesOnDevice(const unsigned* allIndices,
                                                 const unsigned* demands,
                                                 float* results) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid >= numberOfChromosomes)
-    return;
+  if (tid >= numberOfChromosomes) return;
 
   const auto* indices = allIndices + tid * chromosomeLength;
 
@@ -271,8 +257,8 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
   CUDA_CHECK(cudaMalloc(&dGenes, totalGenes * sizeof(CvrpInstance::Gene)));
   CUDA_CHECK(cudaMalloc(&dIndices, totalGenes * sizeof(unsigned)));
 
-  initAlleleIndices<<<grid, block, 0, stream>>>(dChromosomes, numberOfChromosomes, chromosomeLength(), dGenes,
-                                                dIndices);
+  initAlleleIndices<<<ceilDiv(chromosomeLength(), THREADS_PER_BLOCK), THREADS_PER_BLOCK, 0, stream>>>(
+      dChromosomes, numberOfChromosomes, chromosomeLength(), dGenes, dIndices);
 
   thrust::device_ptr<CvrpInstance::Gene> genesPtr(dGenes);
   thrust::device_ptr<unsigned> indicesPtr(dIndices);
@@ -281,7 +267,7 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
 #ifndef NDEBUG
   checkGenesSortedCorrectly<<<grid, block, 0, stream>>>(numberOfChromosomes, chromosomeLength(), dChromosomes, dGenes,
                                                         dIndices);
-#endif // NDEBUG
+#endif  // NDEBUG
 
   cvrpEvaluateChromosomesOnDevice<<<grid, block, 0, stream>>>(dIndices, numberOfChromosomes, chromosomeLength(),
                                                               capacity, dDistances, dDemands, dResults);
@@ -298,15 +284,13 @@ __global__ void cvrpEvaluateIndicesOnDevice(const ChromosomeGeneIdxPair* allIndi
                                             const unsigned* demands,
                                             float* results) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid >= numberOfChromosomes)
-    return;
+  if (tid >= numberOfChromosomes) return;
 
   const auto* indices = allIndices + tid * chromosomeLength;
 
 #ifndef NDEBUG
   bool* seen = (bool*)malloc(chromosomeLength * sizeof(bool));
-  for (int i = 0; i < chromosomeLength; ++i)
-    seen[i] = false;
+  for (int i = 0; i < chromosomeLength; ++i) seen[i] = false;
   for (int i = 0; i < chromosomeLength; ++i) {
     assert(tid == indices[i].chromosomeIdx);
     assert(indices[i].geneIdx < chromosomeLength);
