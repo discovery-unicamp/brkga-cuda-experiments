@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
-
 project(brkga_cuda LANGUAGES CUDA CXX)
+
+set(BB_SEGSORT_ROOT "${CMAKE_CURRENT_LIST_DIR}/bb_segsort")
+include("${BB_SEGSORT_ROOT}/CMakeLists.txt")
+include_directories(SYSTEM "${BB_SEGSORT_ROOT}")
 
 find_package(OpenMP)
 find_package(CUDA REQUIRED)
@@ -24,7 +27,10 @@ set_target_properties(brkga-cuda PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(brkga-cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set_property(TARGET brkga-cuda PROPERTY CUDA_STANDARD 17)
 set_property(TARGET brkga-cuda PROPERTY CUDA_ARCHITECTURES 61)
+
 target_compile_options(brkga-cuda PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -fopenmp>)
+target_link_libraries(brkga-cuda PRIVATE bb_segsort)
+# target_include_directories(brkga-cuda PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/bb_segsort")
 
 # FIXME doesn't work without OpenMP
 if(OpenMP_CXX_FOUND)

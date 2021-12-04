@@ -64,7 +64,7 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
     file >> x >> y;
     instance.locations.push_back({x, y});
   }
-  instance.numberOfClients = instance.locations.size() - 1;
+  instance.numberOfClients = (unsigned)(instance.locations.size() - 1);
 
   // read demands
   while ((file >> str) && str != "DEPOT_SECTION") {
@@ -284,18 +284,6 @@ __global__ void cvrpEvaluateIndicesOnDevice(const ChromosomeGeneIdxPair* allIndi
   if (tid >= numberOfChromosomes) return;
 
   const auto* indices = allIndices + tid * chromosomeLength;
-
-#ifndef NDEBUG
-  bool* seen = (bool*)malloc(chromosomeLength * sizeof(bool));
-  for (int i = 0; i < chromosomeLength; ++i) seen[i] = false;
-  for (int i = 0; i < chromosomeLength; ++i) {
-    assert(tid == indices[i].chromosomeIdx);
-    assert(indices[i].geneIdx < chromosomeLength);
-    assert(!seen[indices[i].geneIdx]);
-    seen[indices[i].geneIdx] = true;
-  }
-  free(seen);
-#endif  // NDEBUG
 
   unsigned u = 0;  // start in the depot
   float fitness = 0;

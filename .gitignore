@@ -9,6 +9,7 @@ Makefile
 *.json
 *.sh
 *.txt
+!CMakeLists.txt
 
 # generated
 *build*
