@@ -29,8 +29,7 @@ set_property(TARGET brkga-cuda PROPERTY CUDA_STANDARD 17)
 set_property(TARGET brkga-cuda PROPERTY CUDA_ARCHITECTURES 61)
 
 target_compile_options(brkga-cuda PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -fopenmp>)
-target_link_libraries(brkga-cuda PRIVATE bb_segsort)
-# target_include_directories(brkga-cuda PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/bb_segsort")
+target_link_libraries(brkga-cuda PUBLIC bb_segsort)
 
 # FIXME doesn't work without OpenMP
 if(OpenMP_CXX_FOUND)

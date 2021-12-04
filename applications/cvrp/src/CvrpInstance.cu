@@ -1,3 +1,6 @@
+#include <bb_segsort.h>
+#undef CUDA_CHECK
+
 #include "CvrpInstance.hpp"
 
 CvrpInstance::Solution::Solution(const CvrpInstance& instance, float newFitness, std::vector<unsigned> newTour)
@@ -168,7 +171,7 @@ void CvrpInstance::evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
 __global__ void initAlleleIndices(const float* chromosomes,
                                   const unsigned numberOfChromosomes,
                                   const unsigned chromosomeLength,
-                                  CvrpInstance::Gene* dest,
+                                  float* keys,
                                   unsigned* indices) {
   // TODO verificar uma forma melhor de lançar esses kernels; o chromosome pode ser curto ou longo
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -176,8 +179,7 @@ __global__ void initAlleleIndices(const float* chromosomes,
 
   for (unsigned i = 0; i < numberOfChromosomes; ++i) {
     const auto idx = i * chromosomeLength + tid;
-    dest[idx].value = chromosomes[idx];
-    dest[idx].chromosomeIndex = i;
+    keys[idx] = chromosomes[idx];
     indices[idx] = tid;
   }
 }
@@ -186,7 +188,7 @@ __global__ void initAlleleIndices(const float* chromosomes,
 __global__ void checkGenesSortedCorrectly(const unsigned numberOfChromosomes,
                                           const unsigned chromosomeLength,
                                           const float* chromosomes,
-                                          const CvrpInstance::Gene* genes,
+                                          const float* genes,
                                           const unsigned* indices) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= numberOfChromosomes) return;
@@ -194,14 +196,13 @@ __global__ void checkGenesSortedCorrectly(const unsigned numberOfChromosomes,
   bool* seen = (bool*)malloc(chromosomeLength * sizeof(bool));
   for (int i = 0; i < chromosomeLength; ++i) seen[i] = false;
 
-  const auto offset = tid * chromosomeLength;
+  const auto k = tid * chromosomeLength;
   for (unsigned i = 0; i < chromosomeLength; ++i) {
-    assert(i == 0 || genes[offset + i - 1].value <= genes[offset + i].value);
-    assert(genes[offset + i].chromosomeIndex == tid);
-    assert(genes[offset + i].value == chromosomes[offset + indices[offset + i]]);
-    assert(indices[offset + i] < chromosomeLength);
-    assert(!seen[indices[offset + i]]);
-    seen[indices[offset + i]] = true;
+    assert(i == 0 || genes[k + i - 1] <= genes[k + i]);
+    assert(genes[k + i] == chromosomes[k + indices[k + i]]);
+    assert(indices[k + i] < chromosomeLength);
+    assert(!seen[indices[k + i]]);
+    seen[indices[k + i]] = true;
   }
 
   free(seen);
@@ -245,29 +246,41 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
                                                unsigned numberOfChromosomes,
                                                const float* dChromosomes,
                                                float* dResults) const {
-  const unsigned block = THREADS_PER_BLOCK;
-  const unsigned grid = ceilDiv(numberOfChromosomes, block);
-  const unsigned totalGenes = numberOfChromosomes * chromosomeLength();
-
-  CvrpInstance::Gene* dGenes = nullptr;
+  float* dGenes = nullptr;
   unsigned* dIndices = nullptr;
-  CUDA_CHECK(cudaMalloc(&dGenes, totalGenes * sizeof(CvrpInstance::Gene)));
+  const auto totalGenes = numberOfChromosomes * chromosomeLength();
+  CUDA_CHECK(cudaMalloc(&dGenes, totalGenes * sizeof(float)));
   CUDA_CHECK(cudaMalloc(&dIndices, totalGenes * sizeof(unsigned)));
 
-  initAlleleIndices<<<ceilDiv(chromosomeLength(), THREADS_PER_BLOCK), THREADS_PER_BLOCK, 0, stream>>>(
-      dChromosomes, numberOfChromosomes, chromosomeLength(), dGenes, dIndices);
+  initAlleleIndices<<<1, chromosomeLength(), 0, stream>>>(dChromosomes, numberOfChromosomes, chromosomeLength(), dGenes,
+                                                          dIndices);
 
-  thrust::device_ptr<CvrpInstance::Gene> genesPtr(dGenes);
-  thrust::device_ptr<unsigned> indicesPtr(dIndices);
-  thrust::stable_sort_by_key(thrust::cuda::par.on(stream), genesPtr, genesPtr + totalGenes, indicesPtr);
+  std::vector<int> segs(numberOfChromosomes);
+  for (unsigned i = 0; i < numberOfChromosomes; ++i) segs[i] = i * chromosomeLength();
+
+  int* d_segs = nullptr;
+  CUDA_CHECK(cudaMalloc(&d_segs, segs.size() * sizeof(int)));
+  CUDA_CHECK(cudaMemcpy(d_segs, segs.data(), segs.size() * sizeof(int), cudaMemcpyHostToDevice));
+
+  auto status =
+      bb_segsort(dGenes, dIndices, (int)(numberOfChromosomes * chromosomeLength()), d_segs, (int)numberOfChromosomes);
+  assert(status == 0);
+  CUDA_CHECK_LAST(0);
+
+  const auto threads = THREADS_PER_BLOCK;
+  const auto blocks = ceilDiv(numberOfChromosomes, threads);
 
 #ifndef NDEBUG
-  checkGenesSortedCorrectly<<<grid, block, 0, stream>>>(numberOfChromosomes, chromosomeLength(), dChromosomes, dGenes,
-                                                        dIndices);
+  checkGenesSortedCorrectly<<<blocks, threads, 0, stream>>>(numberOfChromosomes, chromosomeLength(), dChromosomes,
+                                                            dGenes, dIndices);
+  CUDA_CHECK_LAST(0);
 #endif  // NDEBUG
 
-  cvrpEvaluateChromosomesOnDevice<<<grid, block, 0, stream>>>(dIndices, numberOfChromosomes, chromosomeLength(),
-                                                              capacity, dDistances, dDemands, dResults);
+  CUDA_CHECK(cudaFree(d_segs));
+
+  cvrpEvaluateChromosomesOnDevice<<<blocks, threads, 0, stream>>>(dIndices, numberOfChromosomes, chromosomeLength(),
+                                                                  capacity, dDistances, dDemands, dResults);
+  CUDA_CHECK_LAST(0);
 
   CUDA_CHECK(cudaFree(dGenes));
   CUDA_CHECK(cudaFree(dIndices));

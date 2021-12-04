@@ -407,6 +407,7 @@ __device__ bool operator<(const ChromosomeGeneIdxPair& lhs, const ChromosomeGene
   return lhs.chromosomeIdx < rhs.chromosomeIdx;
 }
 
+#ifndef NDEBUG
 __global__ void assert_indices(unsigned number_of_chromosomes,
                                unsigned chromosome_length,
                                const ChromosomeGeneIdxPair* indices) {
@@ -419,7 +420,9 @@ __global__ void assert_indices(unsigned number_of_chromosomes,
     assert(indices[k + tid].chromosomeIdx == i);
   }
 }
+#endif //NDEBUG
 
+#ifndef NDEBUG
 __global__ void assert_is_sorted(unsigned number_of_chromosomes,
                                  unsigned chromosome_length,
                                  const ChromosomeGeneIdxPair* indices,
@@ -445,6 +448,7 @@ __global__ void assert_is_sorted(unsigned number_of_chromosomes,
     __syncthreads();
   }
 }
+#endif //NDEBUG
 
 /**
  * \brief If DEVICE_DECODE_CHROMOSOME_SORTED, then we
@@ -650,13 +654,12 @@ void BRKGA::evolve() {
 void BRKGA::evolve_pipe() {
   using std::domain_error;
 
-  // FIXME
-  sort_chromosomes_genes();
-
   for (unsigned p = 0; p < number_populations; p++) {
     if (decode_type == DEVICE_DECODE) {
       evaluate_chromosomes_device_pipe(p);
     } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
+      // FIXME
+      sort_chromosomes_genes();
       evaluate_chromosomes_sorted_device_pipe(p);
     } else if (decode_type == HOST_DECODE) {
       evaluate_chromosomes_host_pipe(p);
