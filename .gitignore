@@ -8,8 +8,7 @@ results/
 Makefile
 *.json
 *.sh
-*.txt
-!CMakeLists.txt
+config.txt
 
 # generated
 *build*
