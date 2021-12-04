@@ -1,23 +1,26 @@
 #ifndef CVRP_EXAMPLE_SRC_CVRPINSTANCE_HPP
 #define CVRP_EXAMPLE_SRC_CVRPINSTANCE_HPP
 
+#include "Point.hpp"
 #include <brkga_cuda_api/BRKGA.h>
 #include <brkga_cuda_api/CommonStructs.h>
+#include <brkga_cuda_api/Instance.hpp>
+#include <brkga_cuda_api/cuda_error.cuh>
+
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
+
 #include <algorithm>
-#include <brkga_cuda_api/Instance.hpp>
-#include <brkga_cuda_api/cuda_error.cuh>
 #include <cassert>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <numeric>
 #include <sstream>
 #include <vector>
-#include "Point.hpp"
 
 class CvrpInstance {
 public:  // for testing purposes
@@ -26,8 +29,7 @@ public:  // for testing purposes
     int chromosomeIndex;
 
     __host__ __device__ bool operator<(const Gene& other) const {
-      if (chromosomeIndex != other.chromosomeIndex)
-        return chromosomeIndex < other.chromosomeIndex;
+      if (chromosomeIndex != other.chromosomeIndex) return chromosomeIndex < other.chromosomeIndex;
       return value < other.value;
     }
   };
