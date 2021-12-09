@@ -40,7 +40,7 @@ private:
 
     void evaluateIndicesOnDevice(cudaStream_t stream,
                                  unsigned numberOfChromosomes,
-                                 const ChromosomeGeneIdxPair* dIndices,
+                                 const unsigned* dIndices,
                                  float* dResults) const override {
       instance->evaluateIndicesOnDevice(stream, numberOfChromosomes, dIndices, dResults);
     }

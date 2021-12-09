@@ -176,8 +176,8 @@ void BRKGA::initialize_pipeline_parameters() {
   m_population_pipe = (float**)malloc(number_populations * sizeof(float*));
   m_population_pipe_temp = (float**)malloc(number_populations * sizeof(float*));
   m_scores_pipe = (float**)malloc(number_populations * sizeof(float*));
-  d_chromosome_gene_idx_pipe = (ChromosomeGeneIdxPair**)malloc(
-      number_populations * sizeof(ChromosomeGeneIdxPair*));  // NOLINT(bugprone-sizeof-expression)
+  d_chromosome_gene_idx_pipe =
+      (unsigned**)malloc(number_populations * sizeof(unsigned*));  // NOLINT(bugprone-sizeof-expression)
   d_scores_idx_pipe = (PopIdxThreadIdxPair**)malloc(
       number_populations * sizeof(PopIdxThreadIdxPair*));  // NOLINT(bugprone-sizeof-expression)
   d_random_elite_parent_pipe = (float**)malloc(number_populations * sizeof(float*));
@@ -214,11 +214,10 @@ size_t BRKGA::allocate_data() {
   total_memory += number_chromosomes * sizeof(PopIdxThreadIdxPair);
   CUDA_CHECK(cudaMallocManaged(&m_scores_idx, number_chromosomes * sizeof(PopIdxThreadIdxPair)));
 
-  total_memory += number_chromosomes * chromosome_size * sizeof(ChromosomeGeneIdxPair);
+  total_memory += number_chromosomes * chromosome_size * sizeof(unsigned);
   // Allocate an array representing the indices of each gene of each chromosome
   // on host and device
-  CUDA_CHECK(
-      cudaMalloc((void**)&d_chromosome_gene_idx, number_chromosomes * chromosome_size * sizeof(ChromosomeGeneIdxPair)));
+  CUDA_CHECK(cudaMalloc((void**)&d_chromosome_gene_idx, number_chromosomes * chromosome_size * sizeof(unsigned)));
 
   total_memory += number_chromosomes * sizeof(float);
   CUDA_CHECK(cudaMalloc((void**)&d_random_elite_parent, number_chromosomes * sizeof(float)));
@@ -365,13 +364,7 @@ void BRKGA::evaluate_chromosomes_sorted_device_pipe(unsigned pop_id) {
 __global__ void device_set_chromosome_gene_idx(ChromosomeGeneIdxPair* d_chromosome_gene_idx,
                                                unsigned chromosome_size,
                                                unsigned number_chromosomes) {
-  auto tx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tx < number_chromosomes) {
-    for (unsigned i = 0; i < chromosome_size; i++) {
-      d_chromosome_gene_idx[tx * chromosome_size + i].chromosomeIdx = tx;
-      d_chromosome_gene_idx[tx * chromosome_size + i].geneIdx = i;
-    }
-  }
+  assert(0);
 }
 
 /**
@@ -384,71 +377,43 @@ __global__ void device_set_chromosome_gene_idx(ChromosomeGeneIdxPair* d_chromoso
  * \param chromosome_size is the size of each chromosome.
  * \param pop_id is the index of the population to work on.
  */
-__global__ void device_set_chromosome_gene_idx_pipe(ChromosomeGeneIdxPair* d_chromosome_gene_idx_pop,
-                                                    unsigned chromosome_size,
-                                                    unsigned population_size) {
+__global__ void device_set_chromosome_gene_idx_pipe(unsigned* indices,
+                                                    const unsigned chromosome_size,
+                                                    const unsigned population_size) {
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid >= chromosome_size) return;
-
-  for (int i = 0; i < population_size; i++) {
-    d_chromosome_gene_idx_pop[i * chromosome_size + tid].chromosomeIdx = i;
-    d_chromosome_gene_idx_pop[i * chromosome_size + tid].geneIdx = tid;
-  }
+  if (tid < chromosome_size * population_size) indices[tid] = tid % chromosome_size;
 }
-
-/**
- * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used, then
- * this comparator is used when sorting genes of all chromosomes.
- * After sorting by gene we need to reagroup genes by their chromosomes so
- * we stable sort now using chromosomes indexes which were
- * saved in the field chromosomeIdx.
- */
-__device__ bool operator<(const ChromosomeGeneIdxPair& lhs, const ChromosomeGeneIdxPair& rhs) {
-  return lhs.chromosomeIdx < rhs.chromosomeIdx;
-}
-
-#ifndef NDEBUG
-__global__ void assert_indices(unsigned number_of_chromosomes,
-                               unsigned chromosome_length,
-                               const ChromosomeGeneIdxPair* indices) {
-  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid >= chromosome_length) return;
-
-  for (unsigned i = 0; i < number_of_chromosomes; ++i) {
-    unsigned k = i * chromosome_length;
-    assert(indices[k + tid].geneIdx == tid);
-    assert(indices[k + tid].chromosomeIdx == i);
-  }
-}
-#endif //NDEBUG
 
 #ifndef NDEBUG
 __global__ void assert_is_sorted(unsigned number_of_chromosomes,
                                  unsigned chromosome_length,
-                                 const ChromosomeGeneIdxPair* indices,
-                                 const float* chromosomes) {
+                                 const unsigned* indices,
+                                 const float* chromosomes,
+                                 const float* originalChromosomes) {
   const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= chromosome_length) return;
 
   __shared__ bool seen[2000];
   for (unsigned i = 0; i < number_of_chromosomes; ++i) {
+    unsigned k = i * chromosome_length;
+
+    assert(indices[k + tid] < chromosome_length);
+
     seen[tid] = false;
     __syncthreads();
 
-    unsigned k = i * chromosome_length;
-    if (tid != 0) assert(chromosomes[k + tid - 1] <= chromosomes[k + tid]);
-    assert(indices[k + tid].geneIdx < chromosome_length);
-    assert(indices[k + tid].chromosomeIdx == i);
-
-    const auto gene = indices[k + tid].geneIdx;
+    const auto gene = indices[k + tid];
     seen[gene] = true;
     __syncthreads();
 
-    assert(seen[tid]);  // missing some index
+    assert(seen[tid]);  // checks if some index is missing
     __syncthreads();
+
+    if (tid != 0) assert(chromosomes[k + tid - 1] <= chromosomes[k + tid]);
+    assert(chromosomes[k + tid] == originalChromosomes[k + indices[k + tid]]);
   }
 }
-#endif //NDEBUG
+#endif  // NDEBUG
 
 /**
  * \brief If DEVICE_DECODE_CHROMOSOME_SORTED, then we
@@ -459,14 +424,10 @@ __global__ void assert_is_sorted(unsigned number_of_chromosomes,
  */
 void BRKGA::sort_chromosomes_genes() {
   // First set for each gene, its chromosome index and its original index in the chromosome
-  device_set_chromosome_gene_idx_pipe<<<1, chromosome_size>>>(d_chromosome_gene_idx, chromosome_size,
-                                                              number_chromosomes);
+  const auto threads = THREADS_PER_BLOCK;
+  const auto blocks = ceilDiv(number_chromosomes * chromosome_size, threads);
+  device_set_chromosome_gene_idx_pipe<<<blocks, threads>>>(d_chromosome_gene_idx, chromosome_size, number_chromosomes);
   CUDA_CHECK_LAST(0);
-
-#ifndef NDEBUG
-  assert_indices<<<1, chromosome_size>>>(number_chromosomes, chromosome_size, d_chromosome_gene_idx);
-  CUDA_CHECK_LAST(0);
-#endif  // NDEBUG
 
   // we use d_population2 to sort all genes by their values
   CUDA_CHECK(cudaMemcpy(m_population_temp, m_population, number_chromosomes * chromosome_size * sizeof(float),
@@ -481,48 +442,20 @@ void BRKGA::sort_chromosomes_genes() {
 
   auto status = bb_segsort(m_population_temp, d_chromosome_gene_idx, (int)(number_chromosomes * chromosome_size),
                            d_segs, (int)number_chromosomes);
-  assert(status == 0);
   CUDA_CHECK_LAST(0);
+  if (status != 0) throw std::runtime_error("bb_segsort exited with status " + std::to_string(status));
 
 #ifndef NDEBUG
   assert_is_sorted<<<1, chromosome_size>>>(number_chromosomes, chromosome_size, d_chromosome_gene_idx,
-                                           m_population_temp);
+                                           m_population_temp, m_population);
   CUDA_CHECK_LAST(0);
 #endif  // NDEBUG
 
   CUDA_CHECK(cudaFree(d_segs));
 }
 
-/**
- * \brief If DEVICE_DECODE_CHROMOSOME_SORTED, then we
- * we perform 2 stable_sort sorts: first we sort all genes of all
- * chromosomes by their values, and then we sort by the chromosomes index, and
- * since stable_sort is used, for each chromosome we will have its genes sorted
- * by their values.
- * \param pop_id is the index of the population to be sorted
- */
-void BRKGA::sort_chromosomes_genes_pipe(unsigned pop_id) {
-  // First set for each gene, its chromosome index and its original index in the
-  // chromosome
-  const auto blocks = ceilDiv(chromosome_size, dimBlock.x);
-  device_set_chromosome_gene_idx_pipe<<<blocks, dimBlock, 0, pop_stream[pop_id]>>>(d_chromosome_gene_idx_pipe[pop_id],
-                                                                                   chromosome_size, population_size);
-  CUDA_CHECK_LAST(pop_stream[pop_id]);
-  // we use d_population2 to sort all genes by their values
-  CUDA_CHECK(pop_stream[pop_id], cudaMemcpyAsync(m_population_pipe_temp[pop_id], m_population_pipe[pop_id],
-                                                 population_size * chromosome_size * sizeof(float),
-                                                 cudaMemcpyDeviceToDevice, pop_stream[pop_id]));
-
-  thrust::device_ptr<float> keys(m_population_pipe_temp[pop_id]);
-  thrust::device_ptr<ChromosomeGeneIdxPair> vals(d_chromosome_gene_idx_pipe[pop_id]);
-  // stable sort both d_population2 and d_chromosome_gene_idx by all the genes
-  // values
-  thrust::stable_sort_by_key(thrust::cuda::par.on(pop_stream[pop_id]), keys, keys + population_size * chromosome_size,
-                             vals);
-  // stable sort both d_population2 and d_chromosome_gene_idx by the chromosome
-  // index values
-  thrust::stable_sort_by_key(thrust::cuda::par.on(pop_stream[pop_id]), vals, vals + population_size * chromosome_size,
-                             keys);
+void BRKGA::sort_chromosomes_genes_pipe(unsigned) {
+  throw std::runtime_error(__FUNCTION__ + std::string(" is not supported"));
 }
 
 /**
@@ -600,6 +533,7 @@ void BRKGA::evolve() {
     evolve_pipe();
     return;
   }
+  assert(0);
 
   if (decode_type == DEVICE_DECODE) {
     evaluate_chromosomes_device();

@@ -70,7 +70,7 @@ public:  // for testing purposes
 
   void evaluateIndicesOnDevice(cudaStream_t stream,
                                unsigned numberOfChromosomes,
-                               const ChromosomeGeneIdxPair* dIndices,
+                               const unsigned* dIndices,
                                float* dResults) const;
 
   unsigned capacity;

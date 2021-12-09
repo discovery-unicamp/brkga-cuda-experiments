@@ -288,7 +288,7 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
   CUDA_CHECK(cudaFree(dIndices));
 }
 
-__global__ void cvrpEvaluateIndicesOnDevice(const ChromosomeGeneIdxPair* allIndices,
+__global__ void cvrpEvaluateIndicesOnDevice(const unsigned* allIndices,
                                             const unsigned numberOfChromosomes,
                                             const unsigned chromosomeLength,
                                             const unsigned capacity,
@@ -304,7 +304,7 @@ __global__ void cvrpEvaluateIndicesOnDevice(const ChromosomeGeneIdxPair* allIndi
   float fitness = 0;
   unsigned filled = 0;
   for (unsigned i = 0; i < chromosomeLength; ++i) {
-    unsigned v = indices[i].geneIdx + 1;
+    unsigned v = indices[i] + 1;
     if (filled + demands[v] > capacity) {
       fitness += distances[u];  // go back to the depot
       u = 0;
@@ -323,7 +323,7 @@ __global__ void cvrpEvaluateIndicesOnDevice(const ChromosomeGeneIdxPair* allIndi
 
 void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
                                            unsigned numberOfChromosomes,
-                                           const ChromosomeGeneIdxPair* dIndices,
+                                           const unsigned* dIndices,
                                            float* dResults) const {
   const unsigned block = THREADS_PER_BLOCK;
   const unsigned grid = ceilDiv(numberOfChromosomes, block);
