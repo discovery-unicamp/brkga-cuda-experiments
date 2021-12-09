@@ -214,9 +214,9 @@ size_t BRKGA::allocate_data() {
   total_memory += number_chromosomes * sizeof(PopIdxThreadIdxPair);
   CUDA_CHECK(cudaMallocManaged(&m_scores_idx, number_chromosomes * sizeof(PopIdxThreadIdxPair)));
 
-  total_memory += number_chromosomes * chromosome_size * sizeof(unsigned);
   // Allocate an array representing the indices of each gene of each chromosome
   // on host and device
+  total_memory += number_chromosomes * chromosome_size * sizeof(unsigned);
   CUDA_CHECK(cudaMalloc((void**)&d_chromosome_gene_idx, number_chromosomes * chromosome_size * sizeof(unsigned)));
 
   total_memory += number_chromosomes * sizeof(float);
@@ -227,6 +227,7 @@ size_t BRKGA::allocate_data() {
 
   // Allocate a poll to save the POOL_SIZE best solutions, where the first value
   // in each chromosome is the chromosome score
+  total_memory += POOL_SIZE * (chromosome_size + 1) * sizeof(float);
   CUDA_CHECK(cudaMallocManaged(&m_best_solutions, POOL_SIZE * (chromosome_size + 1) * sizeof(float)));
 
   return total_memory;
@@ -533,7 +534,7 @@ void BRKGA::evolve() {
     evolve_pipe();
     return;
   }
-  assert(0);
+  throw std::runtime_error(__FUNCTION__ + std::string(" is not supported"));
 
   if (decode_type == DEVICE_DECODE) {
     evaluate_chromosomes_device();
@@ -793,18 +794,8 @@ void BRKGA::exchangeElite(unsigned M) {
  * chromosome_size the aleles values of the chromosome.
  * \param k is the number of chromosomes to return. The best k are returned.
  */
-std::vector<std::vector<float>> BRKGA::getkBestChromosomes(unsigned k) {
-  std::vector<std::vector<float>> ret(k, std::vector<float>(chromosome_size + 1));
-
-  global_sort_chromosomes();
-
-  for (unsigned i = 0; i < k; i++) {
-    unsigned tx = m_scores_idx[i].thIdx;
-    float* begin = &m_population[tx * chromosome_size];
-    ret[i][0] = m_scores[i];
-    for (unsigned u = 1; u <= chromosome_size; u++) { ret[i][u] = begin[u - 1]; }
-  }
-  return ret;
+std::vector<std::vector<float>> BRKGA::getkBestChromosomes(unsigned) {
+  throw std::runtime_error(__FUNCTION__ + std::string(" is not supported"));
 }
 
 /**
@@ -942,41 +933,7 @@ __global__ void device_next_population_coalesced(const float* d_population,
                                                  float rhoe,
                                                  PopIdxThreadIdxPair* d_scores_idx,
                                                  unsigned number_genes) {
-  unsigned tx = blockIdx.x * blockDim.x + threadIdx.x;  // global thread index pointing to some gene of some chromosome
-  if (tx < number_genes) {
-    unsigned chromosome_idx = tx / chromosome_size;  // global chromosome index having this gene
-    unsigned gene_idx = tx % chromosome_size;  // the index of this gene in this chromosome
-
-    unsigned pop_idx = chromosome_idx / population_size;  // the population index of this chromosome
-    unsigned inside_pop_idx = chromosome_idx % population_size;  // the chromosome index inside this population
-
-    // if inside_pop_idx < elite_size then the chromosome is elite, so we copy
-    // elite gene
-    if (inside_pop_idx < elite_size) {
-      unsigned elite_chromosome_idx = d_scores_idx[chromosome_idx].thIdx;  // previous elite chromosome
-      // corresponding to this chromosome
-      d_population2[tx] = d_population[elite_chromosome_idx * chromosome_size + gene_idx];
-    } else if (inside_pop_idx < population_size - mutants_size) {
-      // thread is responsible to crossover of this gene of this chromosome_idx
-      // below are the inside population random indexes of a elite parent and
-      // regular parent for crossover
-      auto inside_parent_elite_idx = (unsigned)((1 - d_random_elite_parent[chromosome_idx]) * elite_size);
-      auto inside_parent_idx =
-          (unsigned)(elite_size + (1 - d_random_parent[chromosome_idx]) * (population_size - elite_size));
-      assert(inside_parent_elite_idx < elite_size);
-      assert(elite_size <= inside_parent_idx && inside_parent_idx < population_size);
-
-      unsigned elite_chromosome_idx = d_scores_idx[pop_idx * population_size + inside_parent_elite_idx].thIdx;
-      unsigned parent_chromosome_idx = d_scores_idx[pop_idx * population_size + inside_parent_idx].thIdx;
-      if (d_population2[tx] <= rhoe)
-        // copy allele from elite parent
-        d_population2[tx] = d_population[elite_chromosome_idx * chromosome_size + gene_idx];
-      else
-        // copy allele from regular parent
-        d_population2[tx] = d_population[parent_chromosome_idx * chromosome_size + gene_idx];
-    }  // in the else case the thread corresponds to a mutant and nothing is
-    // done.
-  }
+  assert(0);
 }
 
 /**
