@@ -5,6 +5,7 @@ Algorithm::BrkgaCuda::BrkgaCuda(CvrpInstance* cvrpInstance, unsigned seed)
 
 void Algorithm::BrkgaCuda::runGenerations() {
   for (size_t generation = 1; generation <= numberOfGenerations; ++generation) {
+    std::cerr << "Generation " << generation << '\n';
     brkga.evolve();
     if (generation % generationsExchangeBest == 0)
       brkga.exchangeElite(exchangeBestCount);
@@ -12,8 +13,8 @@ void Algorithm::BrkgaCuda::runGenerations() {
 }
 
 float Algorithm::BrkgaCuda::getBestFitness() {
-  auto kBest = brkga.getkBestChromosomes2(1);
-  float best = -1;
-  instance.evaluateChromosomesOnHost(1, kBest[0].data() + 1, &best);
-  return best;
+  auto best = brkga.getkBestChromosomes2(1)[0];
+  std::cerr << "Validating the best solution\n";
+  instance.validateChromosome(std::vector(best.begin() + 1, best.begin() + instance.chromosomeLength() + 1), best[0]);
+  return best[0];
 }

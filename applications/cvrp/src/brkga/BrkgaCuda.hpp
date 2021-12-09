@@ -45,6 +45,10 @@ private:
       instance->evaluateIndicesOnDevice(stream, numberOfChromosomes, dIndices, dResults);
     }
 
+    void validateChromosome(const std::vector<float>& chromosome, const float fitness) const {
+      instance->validateChromosome(chromosome, fitness);
+    }
+
   private:
     CvrpInstance* instance;
   };

@@ -40,6 +40,7 @@ public:
     float timeElapsedMs;
     cudaEventElapsedTime(&timeElapsedMs, start, stop);
 
+    std::cerr << "Optimization finished\n";
     float bestFitness = getBestFitness();
     std::cout << std::fixed << std::setprecision(3) << bestFitness << ' ' << timeElapsedMs / 1000 << ' '
               << numberOfGenerations << ' ' << numberOfPopulations << ' ' << populationSize << ' ' << elitePercentage

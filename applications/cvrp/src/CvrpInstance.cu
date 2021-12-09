@@ -3,45 +3,6 @@
 
 #include "CvrpInstance.hpp"
 
-CvrpInstance::Solution::Solution(const CvrpInstance& instance, float newFitness, std::vector<unsigned> newTour)
-    : fitness(newFitness), tour(std::move(newTour)) {
-  if (tour.empty()) throw std::runtime_error("Tour is empty");
-  if (tour[0] != 0) throw std::runtime_error("Tour should start at depot (0)");
-  if (tour.back() != 0) throw std::runtime_error("Tour should finish at depot (0)");
-
-  std::vector<bool> visited(instance.numberOfClients + 1);
-  for (unsigned u : tour) {
-    if (u > instance.numberOfClients) throw std::runtime_error("Invalid client in the tour");
-    if (u != 0 && visited[u]) throw std::runtime_error("Client was visited twice");
-    visited[u] = true;
-  }
-  if (!std::all_of(visited.begin(), visited.end(), [](bool x) { return x; })) {
-    throw std::runtime_error("Missing clients in the tour");
-  }
-
-  for (unsigned i = 1; i < tour.size(); ++i) {
-    if (tour[i - 1] == tour[i]) throw std::runtime_error("Found an empty tour");
-  }
-
-  unsigned filled = 0;
-  for (unsigned u : tour) {
-    if (u == 0) {
-      filled = 0;
-    } else {
-      filled += instance.demands[u];
-      if (filled > instance.capacity) throw std::runtime_error("Capacity exceeded");
-    }
-  }
-
-  float expectedFitness = 0;
-  for (unsigned i = 1; i < tour.size(); ++i) {
-    unsigned u = tour[i - 1];
-    unsigned v = tour[i];
-    expectedFitness += instance.distances[u * (instance.numberOfClients + 1) + v];
-  }
-  if (std::abs(fitness - expectedFitness) > 1e-3) throw std::runtime_error("Invalid fitness");
-}
-
 CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
   std::ifstream file(filename);
   if (!file.is_open()) throw std::runtime_error("Failed to open file " + filename);
@@ -129,42 +90,131 @@ void CvrpInstance::validateBestKnownSolution(const std::string& filename) {
   assert(line.rfind("Cost") == 0);
   float fitness = std::stof(line.substr(5));
 
-  Solution(*this, fitness, tour);
+  validateSolution(tour, fitness, true);
+  std::cerr << "Best known solution is valid!\n";
 }
 
-CvrpInstance::Solution CvrpInstance::convertChromosomeToSolution(const float* chromosome) const {
-  const auto clen = chromosomeLength();
-  std::vector<unsigned> indices(clen);
-  std::iota(indices.begin(), indices.end(), 0);
-  std::sort(indices.begin(), indices.end(), [&](int a, int b) { return chromosome[a] < chromosome[b]; });
+template <class... Args>
+void _throw_assert_fail(const std::string& condition,
+                        const std::string& file,
+                        int line,
+                        const std::string& func,
+                        const char* msgFormat,
+                        const Args&... args) {
+  char msgBuf[2048];
+  sprintf(msgBuf, msgFormat, args...);
+
+  std::string log = "Assertion `" + condition + "` failed\n";
+  log += file + ":" + std::to_string(line) + ": on " + func + ": ";
+  log += msgBuf;
+  throw std::logic_error(log);
+}
+
+#define throw_assert(cond, ...) \
+  if (!static_cast<bool>(cond)) _throw_assert_fail(#cond, __FILE__, __LINE__, __PRETTY_FUNCTION__, __VA_ARGS__)
+
+void CvrpInstance::validateSolution(const std::vector<unsigned>& tour, const float fitness, bool hasDepot) const {
+  throw_assert(!tour.empty(), "Tour is empty");
+  if (hasDepot) {
+    throw_assert(tour[0] == 0 && tour.back() == 0, "Tour should start and finish at depot");
+    for (unsigned i = 1; i < tour.size(); ++i) throw_assert(tour[i - 1] != tour[i], "Found an empty route");
+  }
+
+  throw_assert(*std::min_element(tour.begin(), tour.end()) == 0, "Invalid range of clients");
+  throw_assert(*std::max_element(tour.begin(), tour.end()) == numberOfClients - (int)!hasDepot,
+               "Invalid range of clients");
+
+  std::set<unsigned> alreadyVisited;
+  for (unsigned v : tour) {
+    throw_assert(alreadyVisited.count(v) == 0 || (hasDepot && v == 0), "Client %u was visited twice", v);
+    alreadyVisited.insert(v);
+  }
+  throw_assert(alreadyVisited.size() == numberOfClients + (int)hasDepot, "Wrong number of clients: %u != %u",
+               alreadyVisited.size(), numberOfClients + (int)hasDepot);
 
   unsigned filled = 0;
-  std::vector<unsigned> tour;
-  tour.push_back(0);  // start in the depot
-  for (unsigned k = 0; k < clen; ++k) {
-    unsigned v = indices[k] + 1;
-    if (filled + demands[v] > capacity) {
-      tour.push_back(0);  // truck is full: go to depot
-      filled = 0;
+  float expectedFitness = 0;
+  unsigned u = 0;  // start in the depot
+  for (unsigned v : tour) {
+    if (!hasDepot) {
+      ++v;  // add 1 since it starts from 0
+      if (filled + demands[v] > capacity) {
+        // truck is full: go back to depot before visiting v
+        expectedFitness += distances[u * (numberOfClients + 1) + 0];
+        u = 0;
+        filled = 0;
+      }
     }
-    tour.push_back(v);
-    filled += demands[v];
-    assert(filled <= capacity);
+
+    expectedFitness += distances[u * (numberOfClients + 1) + v];
+    if (hasDepot && v == 0) {
+      filled = 0;
+    } else {
+      filled += demands[v];
+    }
+    throw_assert(filled <= capacity, "Truck capacity exceeded: %u > %u", filled, capacity);
+
+    u = v;
   }
-  tour.push_back(0);  // go back to the depot
 
-  float fitness = 0;
-  for (unsigned i = 1; i < tour.size(); ++i) fitness += distances[tour[i - 1] * (clen + 1) + tour[i]];
+  if (!hasDepot) expectedFitness += distances[u * (numberOfClients + 1) + 0];  // go back to the depot
+  throw_assert(std::abs(fitness - expectedFitness) < 1e-6, "Wrong fitness evaluation: %f != %f", fitness,
+               expectedFitness);
+}
 
-  return Solution(*this, fitness, tour);
+void CvrpInstance::validateDeviceSolutions(const unsigned* dIndices, const float* dFitness, unsigned n) const {
+  std::vector<unsigned> hIndices(n * numberOfClients);
+  CUDA_CHECK(cudaMemcpy(hIndices.data(), dIndices, hIndices.size() * sizeof(unsigned), cudaMemcpyDeviceToHost));
+
+  std::vector<float> hFitness(n);
+  CUDA_CHECK(cudaMemcpy(hFitness.data(), dFitness, hFitness.size() * sizeof(float), cudaMemcpyDeviceToHost));
+
+  for (unsigned i = 0; i < n; ++i) {
+    const auto k = i * numberOfClients;
+    std::vector<unsigned> tour(hIndices.begin() + k, hIndices.begin() + k + numberOfClients);
+    validateSolution(tour, hFitness[i]);
+  }
+}
+
+void CvrpInstance::validateChromosome(const std::vector<float>& chromosome, const float fitness) const {
+  std::vector<unsigned> indices(numberOfClients);
+  std::iota(indices.begin(), indices.end(), 0);
+  std::sort(indices.begin(), indices.end(), [&](int a, int b) { return chromosome[a] < chromosome[b]; });
+  validateSolution(indices, fitness);
 }
 
 void CvrpInstance::evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
                                              const float* chromosomes,
                                              float* results) const {
+  std::vector<unsigned> indices(numberOfClients);
   for (unsigned i = 0; i < numberOfChromosomes; ++i) {
-    const float* chromosome = chromosomes + i * chromosomeLength();
-    results[i] = convertChromosomeToSolution(chromosome).fitness;
+    const float* chromosome = chromosomes + i * numberOfClients;
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.end(), [&](int a, int b) { return chromosome[a] < chromosome[b]; });
+
+    unsigned filled = 0;
+    float fitness = 0;
+    unsigned u = 0;  // start in the depot
+    for (unsigned k = 0; k < numberOfClients; ++k) {
+      unsigned v = indices[k] + 1;
+      if (filled + demands[v] > capacity) {
+        // truck is full: go back to depot before visiting v
+        fitness += distances[u * (numberOfClients + 1) + 0];
+        u = 0;
+        filled = 0;
+      }
+
+      fitness += distances[u * (numberOfClients + 1) + v];
+      filled += demands[v];
+      assert(filled <= capacity);
+    }
+
+    fitness += distances[u * (numberOfClients + 1) + 0];  // go back to the depot
+    results[i] = fitness;
+
+#ifndef NDEBUG
+    validateSolution(indices, fitness);
+#endif  // NDEBUG
   }
 }
 
@@ -173,7 +223,7 @@ __global__ void initAlleleIndices(const float* chromosomes,
                                   const unsigned chromosomeLength,
                                   float* keys,
                                   unsigned* indices) {
-  // TODO verificar uma forma melhor de lançar esses kernels; o chromosome pode ser curto ou longo
+  // TODO verificar uma forma melhor de lançar esses kernels; o cromosomo pode ser curto ou longo
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= chromosomeLength) return;
 
@@ -284,6 +334,10 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
                                                                   capacity, dDistances, dDemands, dResults);
   CUDA_CHECK_LAST(0);
 
+#ifndef NDEBUG
+  validateDeviceSolutions(dIndices, dResults, numberOfChromosomes);
+#endif  // NDEBUG
+
   CUDA_CHECK(cudaFree(dGenes));
   CUDA_CHECK(cudaFree(dIndices));
 }
@@ -329,4 +383,8 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
   const unsigned grid = ceilDiv(numberOfChromosomes, block);
   cvrpEvaluateIndicesOnDevice<<<grid, block, 0, stream>>>(dIndices, numberOfChromosomes, chromosomeLength(), capacity,
                                                           dDistances, dDemands, dResults);
+
+#ifndef NDEBUG
+  validateDeviceSolutions(dIndices, dResults, numberOfChromosomes);
+#endif  // NDEBUG
 }

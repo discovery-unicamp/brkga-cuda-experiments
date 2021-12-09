@@ -19,47 +19,32 @@
 #include <iomanip>
 #include <iostream>
 #include <numeric>
+#include <set>
 #include <sstream>
 #include <vector>
 
 class CvrpInstance {
 public:  // for testing purposes
-  struct Gene {
-    float value;
-    int chromosomeIndex;
-
-    __host__ __device__ bool operator<(const Gene& other) const {
-      if (chromosomeIndex != other.chromosomeIndex) return chromosomeIndex < other.chromosomeIndex;
-      return value < other.value;
-    }
-  };
-
-  struct Solution {
-    Solution(const CvrpInstance& instance, float newFitness, std::vector<unsigned> newTour);
-
-    const float fitness;
-    const std::vector<unsigned> tour;
-  };
-
-  CvrpInstance(const CvrpInstance&) = delete;
-
-  CvrpInstance(CvrpInstance&&) = default;
-
   static CvrpInstance fromFile(const std::string& filename);
 
+  CvrpInstance(const CvrpInstance&) = delete;
+  CvrpInstance(CvrpInstance&&) = default;
   CvrpInstance& operator=(const CvrpInstance&) = delete;
-
   CvrpInstance& operator=(CvrpInstance&&) = default;
 
   ~CvrpInstance();
 
   [[nodiscard]] inline const std::string& getName() const { return name; }
 
+  [[nodiscard]] unsigned chromosomeLength() const { return numberOfClients; }
+
   void validateBestKnownSolution(const std::string& filename);
 
-  Solution convertChromosomeToSolution(const float* chromosome) const;
+  void validateSolution(const std::vector<unsigned>& tour, const float fitness, bool hasDepot = false) const;
 
-  [[nodiscard]] unsigned chromosomeLength() const { return numberOfClients; }
+  void validateChromosome(const std::vector<float>& chromosome, const float fitness) const;
+
+  void validateDeviceSolutions(const unsigned* dIndices, const float* dFitness, unsigned n) const;
 
   void evaluateChromosomesOnHost(unsigned int numberOfChromosomes, const float* chromosomes, float* results) const;
 
