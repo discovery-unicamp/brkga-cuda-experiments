@@ -5,11 +5,12 @@ Algorithm::BrkgaCuda::BrkgaCuda(CvrpInstance* cvrpInstance, unsigned seed)
 
 void Algorithm::BrkgaCuda::runGenerations() {
   for (size_t generation = 1; generation <= numberOfGenerations; ++generation) {
-    std::cerr << "Generation " << generation << '\n';
+    std::cerr << "Generation " << generation << '\r';
     brkga.evolve();
     if (generation % generationsExchangeBest == 0)
       brkga.exchangeElite(exchangeBestCount);
   }
+  std::cerr << '\n';
 }
 
 float Algorithm::BrkgaCuda::getBestFitness() {

@@ -94,24 +94,24 @@ void CvrpInstance::validateBestKnownSolution(const std::string& filename) {
   std::cerr << "Best known solution is valid!\n";
 }
 
-template <class... Args>
 void _throw_assert_fail(const std::string& condition,
                         const std::string& file,
                         int line,
                         const std::string& func,
-                        const char* msgFormat,
-                        const Args&... args) {
-  char msgBuf[2048];
-  sprintf(msgBuf, msgFormat, args...);
-
+                        const std::string& message) {
   std::string log = "Assertion `" + condition + "` failed\n";
-  log += file + ":" + std::to_string(line) + ": on " + func + ": ";
-  log += msgBuf;
+  log += file + ":" + std::to_string(line) + ": on " + func + ": " + message;
   throw std::logic_error(log);
 }
 
-#define throw_assert(cond, ...) \
-  if (!static_cast<bool>(cond)) _throw_assert_fail(#cond, __FILE__, __LINE__, __PRETTY_FUNCTION__, __VA_ARGS__)
+#define throw_assert(cond, ...)                                                \
+  do {                                                                         \
+    if (!static_cast<bool>(cond)) {                                            \
+      std::string buf(2048, '.');                                              \
+      snprintf((char*)buf.data(), buf.size(), __VA_ARGS__);                    \
+      _throw_assert_fail(#cond, __FILE__, __LINE__, __PRETTY_FUNCTION__, buf); \
+    }                                                                          \
+  } while (false)
 
 void CvrpInstance::validateSolution(const std::vector<unsigned>& tour, const float fitness, bool hasDepot) const {
   throw_assert(!tour.empty(), "Tour is empty");
@@ -130,7 +130,7 @@ void CvrpInstance::validateSolution(const std::vector<unsigned>& tour, const flo
     alreadyVisited.insert(v);
   }
   throw_assert(alreadyVisited.size() == numberOfClients + (int)hasDepot, "Wrong number of clients: %u != %u",
-               alreadyVisited.size(), numberOfClients + (int)hasDepot);
+               (unsigned)alreadyVisited.size(), numberOfClients + (int)hasDepot);
 
   unsigned filled = 0;
   float expectedFitness = 0;
@@ -158,8 +158,8 @@ void CvrpInstance::validateSolution(const std::vector<unsigned>& tour, const flo
   }
 
   if (!hasDepot) expectedFitness += distances[u * (numberOfClients + 1) + 0];  // go back to the depot
-  throw_assert(std::abs(fitness - expectedFitness) < 1e-6, "Wrong fitness evaluation: %f != %f", fitness,
-               expectedFitness);
+  throw_assert(std::abs(fitness - expectedFitness) < 1e-6, "Wrong fitness evaluation: expected %f, but found %f",
+               expectedFitness, fitness);
 }
 
 void CvrpInstance::validateDeviceSolutions(const unsigned* dIndices, const float* dFitness, unsigned n) const {
