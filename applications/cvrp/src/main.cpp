@@ -1,8 +1,9 @@
 #include "brkga/BrkgaCuda.hpp"
-#include "brkga/BrkgaOpenCL.hpp"
-#include "brkga/GpuBrkga.hpp"
+// #include "brkga/BrkgaOpenCL.hpp"
+// #include "brkga/GpuBrkga.hpp"
 
 #include <getopt.h>
+
 #include <iomanip>
 #include <iostream>
 #include <set>
@@ -39,8 +40,7 @@ int main(int argc, char** argv) {
   }
 
   std::string bksFilename = instanceFilename;
-  while (!bksFilename.empty() && bksFilename.back() != '.')
-    bksFilename.pop_back();
+  while (!bksFilename.empty() && bksFilename.back() != '.') bksFilename.pop_back();
   bksFilename.pop_back();
   bksFilename += ".sol";
   if (!std::ifstream(bksFilename).is_open()) {
@@ -50,28 +50,23 @@ int main(int argc, char** argv) {
 
   std::cerr << "Reading instance from " << instanceFilename << '\n';
   auto instance = CvrpInstance::fromFile(instanceFilename);
-  if (!bksFilename.empty())
-    instance.validateBestKnownSolution(bksFilename);
+  if (!bksFilename.empty()) instance.validateBestKnownSolution(bksFilename);
 
-  Algorithm::BaseBrkga* brkga = nullptr;
   if (algorithm == "brkga-cuda") {
-    brkga = new Algorithm::BrkgaCuda(&instance, seed);
-  } else if (algorithm == "gpu-brkga") {
-    brkga = new Algorithm::GpuBrkga(&instance, seed, instance.chromosomeLength());
-  } else if (algorithm == "brkga-opencl") {
-#ifdef BRKGA_OPENCL_ENABLED
-    brkga = new Algorithm::BrkgaOpenCL(&instance, Configuration::fromFile("config-opencl.txt"));
-#else
-    std::cerr << "BRKGA OpenCL is disabled by CMake\n";
-    abort();
-#endif
+    Algorithm::BrkgaCuda::from(&instance, seed).run();
+    //   } else if (algorithm == "gpu-brkga") {
+    //     brkga = new Algorithm::GpuBrkga(&instance, seed, instance.chromosomeLength());
+    //   } else if (algorithm == "brkga-opencl") {
+    // #ifdef BRKGA_OPENCL_ENABLED
+    //     brkga = new Algorithm::BrkgaOpenCL(&instance, Configuration::fromFile("config-opencl.txt"));
+    // #else
+    //     std::cerr << "BRKGA OpenCL is disabled by CMake\n";
+    //     abort();
+    // #endif
   } else {
     std::cerr << "Invalid algorithm: " << algorithm << '\n';
     abort();
   }
-
-  brkga->run();
-  delete brkga;
 
   return 0;
 }

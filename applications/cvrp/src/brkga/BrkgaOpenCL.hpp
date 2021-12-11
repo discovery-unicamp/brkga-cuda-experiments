@@ -3,9 +3,10 @@
 
 #ifdef BRKGA_OPENCL_ENABLED
 
+#error "This API isn't supported anymore"
+
 #include "../CvrpInstance.hpp"
 #include "BaseBrkga.hpp"
-
 #include <brkga-opencl/Brkga.hpp>
 #include <brkga-opencl/Configuration.hpp>
 #include <brkga-opencl/Problem.hpp>
@@ -40,6 +41,6 @@ private:
 };
 }  // namespace Algorithm
 
-#endif // BRKGA_OPENCL_ENABLED
+#endif  // BRKGA_OPENCL_ENABLED
 
 #endif  // BRKGA_OPEN_CL_HPP

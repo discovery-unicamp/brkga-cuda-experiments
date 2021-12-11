@@ -9,10 +9,10 @@ add_executable(brkga-cvrp
   src/brkga/BaseBrkga.hpp
   src/brkga/BrkgaCuda.cpp
   src/brkga/BrkgaCuda.hpp
-  src/brkga/BrkgaOpenCL.cpp
-  src/brkga/BrkgaOpenCL.hpp
-  src/brkga/GpuBrkga.cpp
-  src/brkga/GpuBrkga.hpp
+  # src/brkga/BrkgaOpenCL.cpp
+  # src/brkga/BrkgaOpenCL.hpp
+  # src/brkga/GpuBrkga.cpp
+  # src/brkga/GpuBrkga.hpp
 )
 
 set_source_files_properties(src/brkga/GpuBrkga.cpp PROPERTIES LANGUAGE CUDA)

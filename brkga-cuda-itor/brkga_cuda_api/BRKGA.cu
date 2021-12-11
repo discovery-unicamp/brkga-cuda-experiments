@@ -8,14 +8,13 @@
 #include <bb_segsort.h>
 #undef CUDA_CHECK
 
-#include "BRKGA.h"
+#include "BRKGA.hpp"
+#include "BrkgaConfiguration.hpp"
 #include "CommonStructs.h"
-#include "ConfigFile.h"
 #include "cuda_error.cuh"
 #include "nvtx.cuh"
 
 #include <curand.h>
-#include <omp.h>
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 
@@ -24,42 +23,23 @@
 #include <iostream>
 #include <vector>
 
-BRKGA::BRKGA(Instance* _instance,
-             ConfigFile& conf_file,
-             bool _evolve_coalesced,
-             bool _evolve_pipeline,
-             unsigned,
-             unsigned RAND_SEED) {
+BRKGA::BRKGA(BrkgaConfiguration& config) {
   CUDA_CHECK_LAST(0);
-  omp_set_nested(1);
-  this->instance = _instance;
-  this->pinned = false;
-  this->population_size = conf_file.p;
-  this->number_populations = conf_file.K;
-  this->number_chromosomes = conf_file.p * conf_file.K;
-  this->number_genes = this->number_chromosomes * instance->chromosomeLength();
-  this->chromosome_size = instance->chromosomeLength();
-  this->elite_size = (unsigned)(conf_file.pe * (float)conf_file.p);
-  this->mutants_size = (unsigned)(conf_file.pm * (float)conf_file.p);
-  this->rhoe = conf_file.rhoe;
-  this->decode_type = conf_file.decode_type;
-  this->evolve_pipeline = _evolve_pipeline;
-  this->evolve_coalesced = _evolve_coalesced;
-  if (_evolve_coalesced) std::cerr << "Evolving with coalesced memory!" << std::endl;
-  if (pinned) std::cerr << "Evolving with pinned memory!" << std::endl;
-
-  using std::range_error;
-  if (chromosome_size == 0) throw range_error("Chromosome size equals zero.");
-  if (population_size == 0) throw range_error("Population size equals zero.");
-  if (elite_size == 0) throw range_error("Elite-set size equals zero.");
-  if (elite_size + mutants_size > population_size)
-    throw range_error("elite + mutant sets greater than population size (p).");
-  if (number_populations == 0) throw range_error("Number of parallel populations cannot be zero.");
+  instance = config.instance;
+  number_populations = config.numberOfPopulations;
+  population_size = config.populationSize;
+  number_chromosomes = number_populations * population_size;
+  number_genes = number_chromosomes * instance->chromosomeLength();
+  chromosome_size = instance->chromosomeLength();
+  elite_size = config.eliteCount;
+  mutants_size = config.mutantsCount;
+  rhoe = config.rho;
+  decode_type = config.decodeType;
+  evolve_pipeline = true;
 
   size_t total_memory = allocate_data();
 
-  std::cerr << "Total Memory Used In GPU " << total_memory << " bytes (" << total_memory / 1000000 << " Mbytes)"
-            << std::endl;
+  std::cerr << "Total memory used in GPU " << total_memory << " bytes (" << (total_memory >> 20) << " MB)" << '\n';
 
   this->dimBlock.x = THREADS_PER_BLOCK;
 
@@ -69,17 +49,16 @@ BRKGA::BRKGA(Instance* _instance,
   // Grid dimension when having one thread per gene
   this->dimGrid_gene.x = ceilDiv(number_genes, THREADS_PER_BLOCK);
 
-  if (_evolve_pipeline) initialize_pipeline_parameters();
+  if (evolve_pipeline) initialize_pipeline_parameters();
 
   // Create pseudo-random number generator
   gen = nullptr;
   curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
-  std::cerr << "Building with seed " << RAND_SEED << '\n';
-  curandSetPseudoRandomGeneratorSeed(gen, RAND_SEED);
-  // Initialize population with random alleles with generated random floats on
-  // device
-  reset_population();
+  std::cerr << "Building with seed " << config.seed << '\n';
+  curandSetPseudoRandomGeneratorSeed(gen, config.seed);
   CUDA_CHECK_LAST(0);
+
+  reset_population();
 }
 
 void BRKGA::initialize_pipeline_parameters() {
@@ -260,21 +239,6 @@ void BRKGA::evaluate_chromosomes_sorted_device_pipe(unsigned pop_id) {
  * saves for each gene of each chromosome, the chromosome
  * index, and the original gene index. Used later to sort all chromosomes by
  * gene values. We save gene indexes to preserve this information after sorting.
- * \param d_chromosome_gene_idx is an array containing a struct for all
- * chromosomes of all populations.
- * \param chromosome_size is the size of each chromosome.
- */
-__global__ void device_set_chromosome_gene_idx(ChromosomeGeneIdxPair* d_chromosome_gene_idx,
-                                               unsigned chromosome_size,
-                                               unsigned number_chromosomes) {
-  assert(0);
-}
-
-/**
- * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used, then this method
- * saves for each gene of each chromosome, the chromosome
- * index, and the original gene index. Used later to sort all chromosomes by
- * gene values. We save gene indexes to preserve this information after sorting.
  * \param d_chromosome_gene_idx_pop is an array containing a struct for all
  * chromosomes of the population being processed.
  * \param chromosome_size is the size of each chromosome.
@@ -365,106 +329,12 @@ void BRKGA::sort_chromosomes_genes() {
   CUDA_CHECK_LAST(0);
 #endif  // NDEBUG
 
-  // set_index_order<<<number_chromosomes, chromosome_size>>>(number_chromosomes, chromosome_size, d_chromosome_gene_idx);
-  // CUDA_CHECK_LAST(0);
+  // set_index_order<<<number_chromosomes, chromosome_size>>>(number_chromosomes, chromosome_size,
+  // d_chromosome_gene_idx); CUDA_CHECK_LAST(0);
 }
 
 void BRKGA::sort_chromosomes_genes_pipe(unsigned) {
   throw std::runtime_error(__FUNCTION__ + std::string(" is not supported"));
-}
-
-/**
- * \brief Kernel function to compute a next population.
- * In this function each thread process one chromosome.
- * \param d_population is the array of chromosomes in the current population.
- * \param d_population2 is the array where the next population will be set.
- * \param d_random_parent is an array with random values to compute indices of
- * parents for crossover. \param d_random_elite_parent is an array with random
- * values to compute indices of ELITE parents for crossover. \param
- * chromosome_size is the size of each individual. \param population_size is the
- * size of each population. \param elite_size is the number of elite
- * chromosomes. \param mutants_size is the number of mutants chromosomes. \param
- * rhoe is the parameter used to decide if a gene is inherited from the ELINTE
- * parent or the normal parent. \param d_scores_idx contains the original index
- * of a chromosome in its population, and this struct is ordered by the
- * chromosomes fitness.
- */
-__global__ void device_next_population(const float* d_population,
-                                       float* d_population2,
-                                       const float* d_random_elite_parent,
-                                       const float* d_random_parent,
-                                       unsigned chromosome_size,
-                                       unsigned population_size,
-                                       unsigned elite_size,
-                                       unsigned mutants_size,
-                                       float rhoe,
-                                       PopIdxThreadIdxPair* d_scores_idx,
-                                       unsigned number_chromosomes) {
-  unsigned tx = blockIdx.x * blockDim.x + threadIdx.x;  // global thread index
-  if (tx < number_chromosomes) {
-    unsigned chromosome_idx = tx * chromosome_size;
-    unsigned pop_idx = (unsigned)tx / population_size;  // the population index of this thread
-    unsigned inside_pop_idx = tx % population_size;
-    // below are the inside population random indexes of a elite parent and
-    // regular parent for crossover
-    auto parent_elite_idx = (unsigned)((1 - d_random_elite_parent[tx]) * elite_size);
-    auto parent_idx = (unsigned)(elite_size + (1 - d_random_parent[tx]) * (population_size - elite_size));
-    assert(parent_elite_idx < elite_size);
-    assert(elite_size <= parent_idx && parent_idx < population_size);
-
-    // if inside_pop_idx < elite_size then thread is elite, so we copy elite
-    // chromosome to the next population
-    if (inside_pop_idx < elite_size) {
-      unsigned elite_chromosome_idx = d_scores_idx[tx].thIdx * chromosome_size;
-      for (int i = 0; i < chromosome_size; i++)
-        d_population2[chromosome_idx + i] = d_population[elite_chromosome_idx + i];
-    } else if (inside_pop_idx < population_size - mutants_size) {
-      // if inside_pop_idex >= elite_size and inside < population_size -
-      // mutants_size then thread is responsible to crossover
-      unsigned elite_chromosome_idx =
-          d_scores_idx[pop_idx * population_size + parent_elite_idx].thIdx * chromosome_size;
-      unsigned parent_chromosome_idx = d_scores_idx[pop_idx * population_size + parent_idx].thIdx * chromosome_size;
-      for (int i = 0; i < chromosome_size; i++) {
-        if (d_population2[chromosome_idx + i] <= rhoe)
-          // copy allele from elite parent
-          d_population2[chromosome_idx + i] = d_population[elite_chromosome_idx + i];
-        else
-          // copy allele from regular parent
-          d_population2[chromosome_idx + i] = d_population[parent_chromosome_idx + i];
-      }
-    }  // in the else case the thread corresponds to a mutant and nothing is
-    // done.
-  }  // if tx < number_chromosomes
-}
-
-/**
- * \brief Kernel function to compute a next population.
- * In this function each thread process one GENE.
- * \param d_population is the array of chromosomes in the current population.
- * \param d_population2 is the array where the next population will be set.
- * \param d_random_parent is an array with random values to compute indices of
- * parents for crossover. \param d_random_elite_parent is an array with random
- * values to compute indices of ELITE parents for crossover. \param
- * chromosome_size is the size of each individual. \param population_size is the
- * size of each population. \param elite_size is the number of elite
- * chromosomes. \param mutants_size is the number of mutants chromosomes. \param
- * rhoe is the parameter used to decide if a gene is inherited from the ELINTE
- * parent or the normal parent. \param d_scores_idx contains the original index
- * of a chromosome in its population, and this struct is ordered by the
- * chromosomes fitness.
- */
-__global__ void device_next_population_coalesced(const float* d_population,
-                                                 float* d_population2,
-                                                 const float* d_random_elite_parent,
-                                                 const float* d_random_parent,
-                                                 unsigned chromosome_size,
-                                                 unsigned population_size,
-                                                 unsigned elite_size,
-                                                 unsigned mutants_size,
-                                                 float rhoe,
-                                                 PopIdxThreadIdxPair* d_scores_idx,
-                                                 unsigned number_genes) {
-  assert(0);
 }
 
 void BRKGA::evolve() {
@@ -545,9 +415,7 @@ void BRKGA::evolve_pipe() {
   assert(decode_type == DEVICE_DECODE_CHROMOSOME_SORTED);
   sort_chromosomes_genes();
 
-  for (unsigned p = 0; p < number_populations; p++) {
-    evaluate_chromosomes_pipe(p);
-  }
+  for (unsigned p = 0; p < number_populations; p++) { evaluate_chromosomes_pipe(p); }
 
   for (unsigned p = 0; p < number_populations; p++) {
     // After this call the vector d_scores_idx_pop
@@ -709,11 +577,7 @@ void BRKGA::exchangeElite(unsigned M) {
   CUDA_CHECK_LAST(0);
 }
 
-std::vector<std::vector<float>> BRKGA::getkBestChromosomes(unsigned) {
-  throw std::runtime_error(__FUNCTION__ + std::string(" is not supported"));
-}
-
-std::vector<std::vector<float>> BRKGA::getkBestChromosomes2(unsigned k) {
+std::vector<std::vector<float>> BRKGA::getBestChromosomes(unsigned k) {
   if (k > POOL_SIZE) k = POOL_SIZE;
   std::vector<std::vector<float>> ret(k, std::vector<float>(chromosome_size + 1));
   saveBestChromosomes();

@@ -2,10 +2,7 @@
 #define CVRP_EXAMPLE_SRC_CVRPINSTANCE_HPP
 
 #include "Point.hpp"
-#include <brkga_cuda_api/BRKGA.h>
-#include <brkga_cuda_api/CommonStructs.h>
-#include <brkga_cuda_api/Instance.hpp>
-#include <brkga_cuda_api/cuda_error.cuh>
+#include <brkga_cuda_api/Brkga>
 
 #include <cuda.h>
 #include <cuda_runtime.h>

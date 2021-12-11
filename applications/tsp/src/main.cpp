@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
   std::cout << "Instance read; here's the info:"
             << "\n\tDimension: " << n << std::endl;
 
-  ConfigFile config(par_file);
+  BrkgaConfiguration config(par_file);
   BRKGA alg(&instance, config, evolve_coalesced, evolve_pipeline, num_pop_pipe, rand_seed);
 
   // alg.setInstanceInfo2D(adjMatrix, n,n, sizeof(float));
@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
     // i += 1;
   }
 
-  std::vector<std::vector<float>> res2 = alg.getkBestChromosomes2(3);
+  std::vector<std::vector<float>> res2 = alg.getBestChromosomes(3);
 
   std::vector<float> aux;
   // aux will be the vector with best solution

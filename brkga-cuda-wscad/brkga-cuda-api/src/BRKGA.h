@@ -40,7 +40,6 @@ public:
   void saveBestChromosomes();
   std::vector<std::vector <float>> getkBestChromosomes2(unsigned k);
 
-
 private:
 	float *d_population=NULL; //device population
 	float *d_population2=NULL; //device population
@@ -56,7 +55,7 @@ private:
 	float *h_best_solutions=NULL;
 	unsigned best_saved=0; //indicate whether best solutions were already saved or not
 
-	PopIdxThreadIdxPair *d_scores_idx=NULL; //table with indices of each chromosome score on device 
+	PopIdxThreadIdxPair *d_scores_idx=NULL; //table with indices of each chromosome score on device
 	PopIdxThreadIdxPair *h_scores_idx=NULL; //table with indices of each chromosome score on host
 
 	ChromosomeGeneIdxPair *d_chromosome_gene_idx = NULL; //table with indices for all chromosomes and each of its gene on device

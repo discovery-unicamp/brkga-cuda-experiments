@@ -9,8 +9,8 @@
 #ifndef BRKGA_H
 #define BRKGA_H
 
+#include "BrkgaConfiguration.hpp"
 #include "CommonStructs.h"
-#include "ConfigFile.h"
 #include "Instance.hpp"
 #include "MathUtils.h"
 
@@ -26,7 +26,6 @@
  */
 class BRKGA {
 public:
-
   /**
    * \brief Constructor
    * \param n the size of each chromosome, i.e. the number of genes
@@ -35,7 +34,7 @@ public:
    * pe a float that represents the proportion of elite chromosomes in each
    * population; pm a float that represents the proportion of mutants in each
    * population; K the number of independent populations; decode_type HOST_DECODE,
-   * DEVICE_DECODE, etc (see ConfigFile.h); OMP_THREADS used in openMP when
+   * DEVICE_DECODE, etc (see BrkgaConfiguration.h); OMP_THREADS used in openMP when
    * processing on host;
    * \param _evolve_coalesced indicates if it will be used one thread per gene to
    * compute next population (coalesced) or one thread per chromosome.
@@ -45,12 +44,7 @@ public:
    * how many of all populations are to be decoded on GPU.
    * \param RAND_SEED used to initialize random number generators.
    */
-  BRKGA(Instance* instance,
-        ConfigFile& conf_file,
-        bool coalesced = false,
-        bool evolve_pipeline = false,
-        unsigned n_pop_pipe = 0,
-        unsigned RAND_SEED = 1234);
+  BRKGA(BrkgaConfiguration& config);
 
   /**
    * \brief Destructor deallocates used memory.
@@ -77,15 +71,6 @@ public:
   void exchangeElite(unsigned M);
 
   /**
-   * \deprecated Use getkBestChromosomes2 instead.
-   * \brief This method returns a vector of vectors, where each vector corresponds
-   * to a chromosome, where in position 0 we have its score and in positions 1 to
-   * chromosome_size the aleles values of the chromosome.
-   * \param k is the number of chromosomes to return. The best k are returned.
-   */
-  std::vector<std::vector<float>> getkBestChromosomes(unsigned k);
-
-  /**
    * \brief This Function saves in the pool d_best_solutions and h_best_solutions
    * the best POOL_SIZE solutions generated so far among all populations.
    */
@@ -99,7 +84,7 @@ public:
    * This function copys chromosomes directly from the pool of best solutions.
    * \param k is the number of chromosomes to return. The best k are returned.
    */
-  std::vector<std::vector<float>> getkBestChromosomes2(unsigned k);
+  std::vector<std::vector<float>> getBestChromosomes(unsigned k);
 
   std::vector<unsigned> getBestChromosomeIndices() const;
 
@@ -158,7 +143,6 @@ private:
   bool evolve_coalesced = false;  /// use one thread per gene to compute a next population
   bool evolve_pipeline = false;  /// use pipeline to process one population at a
                                  /// time in parallel with CPU computing scores
-  bool pinned = false;  /// use pinned memory or not to allocate h_population
 
   cudaStream_t* pop_stream = nullptr;  // use one stream per population when doing pipelined version
 

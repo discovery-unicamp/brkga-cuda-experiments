@@ -77,11 +77,11 @@ int main(int argc, char* argv[]) {
 	std::cout << argv[0] << ": instance " << argv[1] << " has " << decoder.getNRows()
 		<< " rows to be covered with " << decoder.getNColumns() << " columns" << std::endl;
 
-	ConfigFile config(par_file);
+	BrkgaConfiguration config(par_file);
 	//population size is 10*n to use the same rule of Toso and Resende
 	config.p = 10 * decoder.getNRows();
 	BRKGA alg(&decoder, config, evolve_coalesced, evolve_pipeline, num_pop_pipe, rand_seed);
-	
+
 	for(int i=1; i<=config.MAX_GENS; i++){
 		alg.evolve();
 		std::cout <<"Evolution: "<< i <<std::endl;
@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
 		//std::cout<<"Value of cuda score: " << res[0][0] << std::endl;
 	}
 
-	std::vector<std::vector <float>> res2 = alg.getkBestChromosomes2(3);
+	std::vector<std::vector <float>> res2 = alg.getBestChromosomes(3);
 
 	std::vector<float> aux;
 	//aux will be the vector with best solution
@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
 	}
 	printf("\n");
 	printf("Value of best solution: %.2f\n",res2[0][0]);
-	
+
 	//std::vector< float > bestChromosome(aux);
 	SetCoveringSolution best(aux, true, true, false, 0.5);
 	if(! decoder.verify(best.getSelectedColumns())) {

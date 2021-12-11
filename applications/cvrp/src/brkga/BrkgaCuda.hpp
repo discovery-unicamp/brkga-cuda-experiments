@@ -3,16 +3,16 @@
 
 #include "../CvrpInstance.hpp"
 #include "BaseBrkga.hpp"
-
-#include <brkga_cuda_api/BRKGA.h>
-#include <brkga_cuda_api/CommonStructs.h>
-#include <brkga_cuda_api/Instance.hpp>
-#include <brkga_cuda_api/cuda_error.cuh>
+#include <brkga_cuda_api/Brkga>
 
 namespace Algorithm {
 class BrkgaCuda : public BaseBrkga {
 public:
-  BrkgaCuda(CvrpInstance* cvrpInstance, unsigned seed);
+  static BrkgaCuda from(CvrpInstance* cvrpInstance, unsigned seed) {
+    return BrkgaCuda(new CvrpInstanceWrapper(cvrpInstance), seed);
+  }
+
+  ~BrkgaCuda() { delete instance; }
 
 protected:
   void runGenerations() override;
@@ -53,7 +53,9 @@ private:
     CvrpInstance* instance;
   };
 
-  CvrpInstanceWrapper instance;
+  BrkgaCuda(CvrpInstanceWrapper* i, unsigned seed);
+
+  CvrpInstanceWrapper* instance;
   BRKGA brkga;
 };
 }  // namespace Algorithm

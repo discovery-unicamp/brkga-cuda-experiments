@@ -1,9 +1,11 @@
 #ifndef CVRP_GPU_BRKGA
 #define CVRP_GPU_BRKGA
 
-#include <brkga_cuda_api/ConfigFile.h>
+#error "This API isn't supported anymore"
+
 #include "../CvrpInstance.hpp"
 #include "BaseBrkga.hpp"
+#include <brkga_cuda_api/ConfigFile.h>
 
 template <class T>
 class GPUBRKGA;

@@ -1,28 +1,18 @@
 #ifndef CVRP_BRKGA
 #define CVRP_BRKGA
 
+#include <brkga_cuda_api/Brkga>
+
 #include <cuda.h>
 #include <cuda_runtime.h>
+
 #include <iomanip>
 #include <iostream>
 
 namespace Algorithm {
 class BaseBrkga {
 public:
-  BaseBrkga() : config("config.txt") {
-    numberOfGenerations = config.MAX_GENS;
-    generationsExchangeBest = config.X_INTVL;
-    exchangeBestCount = config.X_NUMBER;
-    numberOfPopulations = config.K;
-    populationSize = config.p;
-    elitePercentage = config.pe;
-    mutantPercentage = config.pm;
-    rho = config.rhoe;
-    decodeType = config.decode_type == HOST_DECODE                       ? "cpu"
-                 : config.decode_type == DEVICE_DECODE                   ? "gpu"
-                 : config.decode_type == DEVICE_DECODE_CHROMOSOME_SORTED ? "sorted-gpu"
-                                                                         : "** UNKNOWN! **";
-  }
+  BaseBrkga(const BrkgaConfiguration& config) : _config(config) {}
 
   virtual ~BaseBrkga() = default;
 
@@ -43,8 +33,9 @@ public:
     std::cerr << "Optimization finished\n";
     float bestFitness = getBestFitness();
     std::cout << std::fixed << std::setprecision(3) << bestFitness << ' ' << timeElapsedMs / 1000 << ' '
-              << numberOfGenerations << ' ' << numberOfPopulations << ' ' << populationSize << ' ' << elitePercentage
-              << ' ' << mutantPercentage << ' ' << rho << ' ' << decodeType << '\n';
+              << _config.MAX_GENS << ' ' << _config.numberOfPopulations << ' ' << _config.populationSize << ' '
+              << _config.eliteCount << ' ' << _config.mutantsCount << ' ' << _config.rho << ' ' << _config.decodeTypeStr
+              << '\n';
   }
 
 protected:
@@ -52,17 +43,7 @@ protected:
 
   virtual float getBestFitness() = 0;
 
-  unsigned numberOfGenerations;
-  unsigned generationsExchangeBest;
-  unsigned exchangeBestCount;
-  unsigned numberOfPopulations;
-  unsigned populationSize;
-  float elitePercentage;
-  float mutantPercentage;
-  float rho;
-  std::string decodeType;
-
-  ConfigFile config;
+  BrkgaConfiguration _config;
 };
 }  // namespace Algorithm
 
