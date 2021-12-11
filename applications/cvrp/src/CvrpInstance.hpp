@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cassert>
 #include <fstream>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -34,6 +35,10 @@ public:  // for testing purposes
   [[nodiscard]] inline const std::string& getName() const { return name; }
 
   [[nodiscard]] unsigned chromosomeLength() const { return numberOfClients; }
+
+  [[nodiscard]] float getFitness(const std::function<float(unsigned, unsigned)>& evalCost,
+                                 const std::vector<unsigned>& tour,
+                                 bool hasDepot = false) const;
 
   void validateBestKnownSolution(const std::string& filename);
 
@@ -70,6 +75,10 @@ private:
         numberOfClients(static_cast<unsigned>(-1)),
         dDistances(nullptr),
         dDemands(nullptr) {}
+
+  [[nodiscard]] std::function<float(unsigned, unsigned)> buildCvrpEvaluator(const std::vector<unsigned>& tour,
+                                                                            std::vector<unsigned>& accDemand,
+                                                                            std::vector<float>& accCost) const;
 };
 
 #endif  // CVRP_EXAMPLE_SRC_CVRPINSTANCE_HPP
