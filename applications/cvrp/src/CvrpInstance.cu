@@ -339,6 +339,38 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
   CUDA_CHECK(cudaFree(dIndices));
 }
 
+__global__ void setupDemands(unsigned* accDemandList,
+                             const unsigned numberOfChromosomes,
+                             const unsigned chromosomeLength,
+                             const unsigned* tourList,
+                             const unsigned* demands) {
+  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid >= numberOfChromosomes) return;
+
+  const auto n = chromosomeLength;
+  const auto* tour = tourList + tid * n;
+  auto* accDemand = accDemandList + tid * n;
+
+  accDemand[0] = demands[tour[0]];
+  for (unsigned i = 1; i < n; ++i) accDemand[i] = accDemand[i - 1] + demands[tour[i]];
+}
+
+__global__ void setupCosts(float* accCostList,
+                           const unsigned numberOfChromosomes,
+                           const unsigned chromosomeLength,
+                           const unsigned* tourList,
+                           const float* distances) {
+  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid >= numberOfChromosomes) return;
+
+  const auto n = chromosomeLength;
+  const auto* tour = tourList + tid * n;
+  auto* accCost = accCostList + tid * n;
+
+  accCost[0] = 0;
+  for (unsigned i = 1; i < n; ++i) accCost[i] = accCost[i - 1] + distances[tour[i - 1] * (n + 1) + tour[i]];
+}
+
 __global__ void cvrpEvaluateIndicesOnDevice(float* results,
                                             unsigned* accDemandList,
                                             float* accCostList,
@@ -357,16 +389,6 @@ __global__ void cvrpEvaluateIndicesOnDevice(float* results,
   auto* accDemand = accDemandList + tid * n;
   auto* accCost = accCostList + tid * n;
   auto* bestCost = bestCostList + tid * n;
-
-  accDemand[0] = demands[tour[0]];
-  for (unsigned i = 1; i < n; ++i) accDemand[i] = accDemand[i - 1] + demands[tour[i]];
-
-  accCost[0] = 0;
-  for (unsigned i = 1; i < n; ++i) {
-    const auto u = tour[i - 1];
-    const auto v = tour[i];
-    accCost[i] = accCost[i - 1] + distances[u * (n + 1) + v];
-  }
 
   auto evalCost = [&](unsigned l, unsigned r) {
     if (accDemand[r] - (l == 0 ? 0 : accDemand[l - 1]) > capacity) return INFINITY;
@@ -403,9 +425,16 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
 
   const unsigned block = THREADS_PER_BLOCK;
   const unsigned grid = ceilDiv(numberOfChromosomes, block);
+  setupDemands<<<grid, block, 0, stream>>>(accDemand, numberOfChromosomes, chromosomeLength(), dIndices, dDemands);
+  CUDA_CHECK_LAST(0);
+
+  setupCosts<<<grid, block, 0, stream>>>(accCost, numberOfChromosomes, chromosomeLength(), dIndices, dDistances);
+  CUDA_CHECK_LAST(0);
+
   cvrpEvaluateIndicesOnDevice<<<grid, block, 0, stream>>>(dResults, accDemand, accCost, bestCost, dIndices,
                                                           numberOfChromosomes, chromosomeLength(), capacity, dDistances,
                                                           dDemands);
+  CUDA_CHECK_LAST(0);
 
   CUDA_CHECK(cudaFree(accDemand));
   CUDA_CHECK(cudaFree(accCost));
