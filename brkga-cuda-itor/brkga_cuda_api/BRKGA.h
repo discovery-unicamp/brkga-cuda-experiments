@@ -183,6 +183,10 @@ private:
    */
   void global_sort_chromosomes();
 
+  void evaluate_chromosomes();
+
+  void evaluate_chromosomes_pipe(unsigned pop_id);
+
   /**
    * \brief If HOST_DECODE is used then this function decodes each chromosome with
    *        the host_decode function provided in Decoder.cpp.

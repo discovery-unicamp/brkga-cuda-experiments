@@ -191,6 +191,30 @@ void BRKGA::reset_population() {
   CUDA_CHECK_LAST(0);
 }
 
+void BRKGA::evaluate_chromosomes() {
+  if (decode_type == DEVICE_DECODE) {
+    evaluate_chromosomes_device();
+  } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
+    evaluate_chromosomes_sorted_device();
+  } else if (decode_type == HOST_DECODE) {
+    evaluate_chromosomes_host();
+  } else {
+    throw std::domain_error("Function decode type is unknown");
+  }
+}
+
+void BRKGA::evaluate_chromosomes_pipe(unsigned pop_id) {
+  if (decode_type == DEVICE_DECODE) {
+    evaluate_chromosomes_device_pipe(pop_id);
+  } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
+    evaluate_chromosomes_sorted_device_pipe(pop_id);
+  } else if (decode_type == HOST_DECODE) {
+    evaluate_chromosomes_host_pipe(pop_id);
+  } else {
+    throw std::domain_error("Function decode type is unknown");
+  }
+}
+
 void BRKGA::evaluate_chromosomes_host() {
   instance->evaluateChromosomesOnHost(number_chromosomes, m_population, m_scores);
 }
@@ -444,55 +468,11 @@ __global__ void device_next_population_coalesced(const float* d_population,
 }
 
 void BRKGA::evolve() {
-  using std::domain_error;
   if (evolve_pipeline) {
     evolve_pipe();
     return;
   }
   throw std::runtime_error(__FUNCTION__ + std::string(" is not supported"));
-
-  if (decode_type == DEVICE_DECODE) {
-    evaluate_chromosomes_device();
-  } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
-    evaluate_chromosomes_sorted_device();
-  } else if (decode_type == HOST_DECODE) {
-    evaluate_chromosomes_host();
-  } else {
-    throw domain_error("Function decode type is unknown");
-  }
-
-  // After this call the vector d_scores_idx has all chromosomes sorted by
-  // population, and inside each population, chromosomes are sorted by score
-  sort_chromosomes();
-
-  // This call initialize the whole area of the next population d_population2
-  // with random values. So mutants are already build. For the non mutants we
-  // use the random values generated here to perform the crossover on the
-  // current population d_population.
-  curandGenerateUniform(gen, m_population_temp, number_chromosomes * chromosome_size);
-
-  // generate random numbers to index parents used for crossover
-  curandGenerateUniform(gen, d_random_elite_parent, number_chromosomes);
-  curandGenerateUniform(gen, d_random_parent, number_chromosomes);
-  CUDA_CHECK_LAST(0);
-
-  // Kernel function, where each thread process one chromosome of the next
-  // population.
-  if (!evolve_coalesced) {
-    device_next_population<<<dimGrid, dimBlock>>>(m_population, m_population_temp, d_random_elite_parent,
-                                                  d_random_parent, chromosome_size, population_size, elite_size,
-                                                  mutants_size, rhoe, m_scores_idx, number_chromosomes);
-    CUDA_CHECK_LAST(0);
-  } else {
-    // Kernel function, where each thread process one chromosome of the next
-    // population.
-    device_next_population_coalesced<<<dimGrid_gene, dimBlock>>>(
-        m_population, m_population_temp, d_random_elite_parent, d_random_parent, chromosome_size, population_size,
-        elite_size, mutants_size, rhoe, m_scores_idx, number_genes);
-    CUDA_CHECK_LAST(0);
-  }
-
-  std::swap(m_population, m_population_temp);
 }
 
 /**
@@ -561,22 +541,12 @@ __global__ void device_next_population_coalesced_pipe(const float* d_population_
 }
 
 void BRKGA::evolve_pipe() {
-  using std::domain_error;
-
   // FIXME
   assert(decode_type == DEVICE_DECODE_CHROMOSOME_SORTED);
   sort_chromosomes_genes();
 
   for (unsigned p = 0; p < number_populations; p++) {
-    if (decode_type == DEVICE_DECODE) {
-      evaluate_chromosomes_device_pipe(p);
-    } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
-      evaluate_chromosomes_sorted_device_pipe(p);
-    } else if (decode_type == HOST_DECODE) {
-      evaluate_chromosomes_host_pipe(p);
-    } else {
-      throw domain_error("Function decode type is unknown");
-    }
+    evaluate_chromosomes_pipe(p);
   }
 
   for (unsigned p = 0; p < number_populations; p++) {
@@ -732,17 +702,7 @@ void BRKGA::exchangeElite(unsigned M) {
     throw range_error("Total exchange elite size greater than population size.");
   }
 
-  using std::domain_error;
-  if (decode_type == DEVICE_DECODE) {
-    evaluate_chromosomes_device();
-  } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
-    evaluate_chromosomes_sorted_device();
-  } else if (decode_type == HOST_DECODE) {
-    evaluate_chromosomes_host();
-  } else {
-    throw domain_error("Function decode type is unknown");
-  }
-
+  evaluate_chromosomes();
   sort_chromosomes();
   device_exchange_elite<<<number_populations, M>>>(m_population, chromosome_size, population_size, number_populations,
                                                    m_scores_idx, M);
@@ -824,17 +784,7 @@ void BRKGA::saveBestChromosomes() {
 }
 
 void BRKGA::global_sort_chromosomes() {
-  using std::domain_error;
-  if (decode_type == DEVICE_DECODE) {
-    evaluate_chromosomes_device();
-  } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
-    evaluate_chromosomes_sorted_device();
-  } else if (decode_type == HOST_DECODE) {
-    evaluate_chromosomes_host();
-  } else {
-    throw domain_error("Function decode type is unknown");
-  }
-
+  evaluate_chromosomes();
   device_set_idx<<<dimGrid, dimBlock>>>(m_scores_idx, population_size, number_chromosomes);
   CUDA_CHECK_LAST(0);
   thrust::device_ptr<float> keys(m_scores);
