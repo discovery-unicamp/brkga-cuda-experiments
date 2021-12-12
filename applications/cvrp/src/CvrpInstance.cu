@@ -344,7 +344,7 @@ __global__ void setupDemands(unsigned* accDemandList,
                              const unsigned chromosomeLength,
                              const unsigned* tourList,
                              const unsigned* demands) {
-  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= numberOfChromosomes) return;
 
   const auto n = chromosomeLength;
@@ -360,7 +360,7 @@ __global__ void setupCosts(float* accCostList,
                            const unsigned chromosomeLength,
                            const unsigned* tourList,
                            const float* distances) {
-  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= numberOfChromosomes) return;
 
   const auto n = chromosomeLength;
@@ -372,8 +372,8 @@ __global__ void setupCosts(float* accCostList,
 }
 
 __global__ void cvrpEvaluateIndicesOnDevice(float* results,
-                                            unsigned* accDemandList,
-                                            float* accCostList,
+                                            const unsigned* accDemandList,
+                                            const float* accCostList,
                                             float* bestCostList,
                                             const unsigned* tourList,
                                             const unsigned numberOfChromosomes,
@@ -381,13 +381,13 @@ __global__ void cvrpEvaluateIndicesOnDevice(float* results,
                                             const unsigned capacity,
                                             const float* distances,
                                             const unsigned* demands) {
-  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= numberOfChromosomes) return;
 
   const auto n = chromosomeLength;
   const auto* tour = tourList + tid * n;
-  auto* accDemand = accDemandList + tid * n;
-  auto* accCost = accCostList + tid * n;
+  const auto* accDemand = accDemandList + tid * n;
+  const auto* accCost = accCostList + tid * n;
   auto* bestCost = bestCostList + tid * n;
 
   auto evalCost = [&](unsigned l, unsigned r) {
@@ -411,6 +411,65 @@ __global__ void cvrpEvaluateIndicesOnDevice(float* results,
   results[tid] = bestCost[0];
 }
 
+__global__ void cvrpEvaluateIndicesOnDevice_test(float* results,
+                                                 const unsigned numberOfChromosomes,
+                                                 const unsigned chromosomeLength,
+                                                 const unsigned* tourList,
+                                                 const float* distances,
+                                                 const float* accCostList,
+                                                 const unsigned capacity,
+                                                 const unsigned* demands,
+                                                 const unsigned* accDemandList) {
+  static_assert(sizeof(unsigned) == sizeof(float));
+
+  extern __shared__ float sharedBuffer[];
+  float* eval = sharedBuffer;
+  float* toDepotCost = sharedBuffer + chromosomeLength;
+  float* accCost = sharedBuffer + 2 * chromosomeLength;
+  float* bestCost = sharedBuffer + 3 * chromosomeLength;
+  unsigned* accDemand = (unsigned*)sharedBuffer + 4 * chromosomeLength + 1;
+
+  const auto block = blockIdx.x;
+  const auto thread = threadIdx.x;
+  const auto threadCount = blockDim.x;
+  assert(gridDim.x == numberOfChromosomes);
+
+  const auto offset = block * chromosomeLength;
+  const auto* tour = tourList + offset;
+
+  if (thread == 0) bestCost[chromosomeLength] = 0;
+  for (unsigned i = thread; i < chromosomeLength; i += threadCount) {
+    toDepotCost[i] = distances[tour[i]];
+    accDemand[i] = accDemandList[offset + i];
+    accCost[i] = accCostList[offset + i];
+  }
+  __syncthreads();
+
+  auto evalCost = [&](const unsigned i, const unsigned j) {
+    if (accDemand[j] - (i == 0 ? 0 : accDemand[i - 1]) > capacity) return INFINITY;
+    const auto fromToDepot = toDepotCost[i] + toDepotCost[j];
+    const auto tourCost = accCost[j] - accCost[i];
+    return fromToDepot + tourCost;
+  };
+
+  for (int i = (int)chromosomeLength - 1; i >= 0; --i) {
+    const auto len = min(chromosomeLength - i, threadCount);
+    if (thread < len) eval[thread] = evalCost(i, i + thread) + bestCost[i + thread + 1];
+    __syncthreads();
+
+    // sets `eval[0]` to the minimum value of `eval`
+    for (unsigned j = 1; j < len; j *= 2) {
+      if (thread % (2 * j) == 0 && thread + j < len && eval[thread + j] < eval[thread]) eval[thread] = eval[thread + j];
+      __syncthreads();
+    }
+
+    if (thread == 0) bestCost[i] = eval[0];
+    __syncthreads();
+  }
+
+  results[block] = bestCost[0];
+}
+
 void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
                                            unsigned numberOfChromosomes,
                                            const unsigned* dIndices,
@@ -423,17 +482,28 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
   CUDA_CHECK(cudaMalloc(&accCost, total * sizeof(float)));
   CUDA_CHECK(cudaMalloc(&bestCost, (total + 1) * sizeof(float)));
 
-  const unsigned block = THREADS_PER_BLOCK;
-  const unsigned grid = ceilDiv(numberOfChromosomes, block);
-  setupDemands<<<grid, block, 0, stream>>>(accDemand, numberOfChromosomes, chromosomeLength(), dIndices, dDemands);
+  const unsigned threads = THREADS_PER_BLOCK;
+  const unsigned blocks = ceilDiv(numberOfChromosomes, threads);
+  setupDemands<<<blocks, threads, 0, stream>>>(accDemand, numberOfChromosomes, chromosomeLength(), dIndices, dDemands);
+
+  setupCosts<<<blocks, threads, 0, stream>>>(accCost, numberOfChromosomes, chromosomeLength(), dIndices, dDistances);
   CUDA_CHECK_LAST(0);
 
-  setupCosts<<<grid, block, 0, stream>>>(accCost, numberOfChromosomes, chromosomeLength(), dIndices, dDistances);
-  CUDA_CHECK_LAST(0);
-
-  cvrpEvaluateIndicesOnDevice<<<grid, block, 0, stream>>>(dResults, accDemand, accCost, bestCost, dIndices,
-                                                          numberOfChromosomes, chromosomeLength(), capacity, dDistances,
-                                                          dDemands);
+  // cvrpEvaluateIndicesOnDevice<<<blocks, threads, 0, stream>>>(dResults, accDemand, accCost, bestCost, dIndices,
+  //                                                             numberOfChromosomes, chromosomeLength(), capacity,
+  //                                                             dDistances, dDemands);
+  auto demandsCopy = demands;
+  std::sort(demandsCopy.begin(), demandsCopy.end());
+  unsigned u;
+  unsigned filled = 0;
+  for (u = 1; u <= numberOfClients; ++u) {
+    filled += demandsCopy[u];
+    if (filled > capacity) break;
+  }
+  const unsigned maxLength = u - 1;
+  const auto sharedMemSize = (5 * chromosomeLength() + 1) * sizeof(float);
+  cvrpEvaluateIndicesOnDevice_test<<<numberOfChromosomes, maxLength, sharedMemSize, stream>>>(
+      dResults, numberOfChromosomes, chromosomeLength(), dIndices, dDistances, accCost, capacity, dDemands, accDemand);
   CUDA_CHECK_LAST(0);
 
   CUDA_CHECK(cudaFree(accDemand));
