@@ -21,7 +21,7 @@
 #include <sstream>
 #include <vector>
 
-class CvrpInstance {
+class CvrpInstance : public Instance {
 public:  // for testing purposes
   static CvrpInstance fromFile(const std::string& filename);
 
