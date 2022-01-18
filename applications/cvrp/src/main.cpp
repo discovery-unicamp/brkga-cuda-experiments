@@ -1,4 +1,5 @@
 #include "CvrpInstance.hpp"
+#include "GpuBrkgaWrapper.hpp"
 #include <brkga_cuda_api/Brkga>
 #include <getopt.h>
 
@@ -87,6 +88,7 @@ int main(int argc, char** argv) {
 
   if (algorithm == "brkga-cuda") {
     BRKGA brkga(config);
+
     auto runGenerations = [&]() {
       for (size_t generation = 1; generation <= config.MAX_GENS; ++generation) {
         std::cerr << "Generation " << generation << '\r';
@@ -95,6 +97,7 @@ int main(int argc, char** argv) {
       }
       std::cerr << '\n';
     };
+
     auto getBestFitness = [&]() {
       auto best = brkga.getBestChromosomes(1)[0];
       std::cerr << "Validating the best solution\n";
@@ -102,6 +105,29 @@ int main(int argc, char** argv) {
                                   best[0]);
       return best[0];
     };
+
+    run(runGenerations, getBestFitness, config);
+  } else if (algorithm == "gpu-brkga") {
+    instance.gpuBrkgaChromosomeCount = config.numberOfPopulations * config.populationSize;
+    GpuBrkgaWrapper brkga(config, &instance);
+
+    auto runGenerations = [&]() {
+      for (size_t generation = 1; generation <= config.MAX_GENS; ++generation) {
+        std::cerr << "Generation " << generation << '\r';
+        brkga.evolve();
+        if (generation % config.X_INTVL == 0) brkga.exchangeElite(config.X_NUMBER);
+      }
+      std::cerr << '\n';
+    };
+
+    auto getBestFitness = [&]() {
+      auto best = brkga.getBestChromosome();
+      std::cerr << "Validating the best solution\n";
+      instance.validateChromosome(std::vector(best.begin() + 1, best.begin() + instance.chromosomeLength() + 1),
+                                  best[0]);
+      return best[0];
+    };
+
     run(runGenerations, getBestFitness, config);
   } else {
     std::cerr << "Invalid algorithm: " << algorithm << '\n';

@@ -34,8 +34,6 @@ public:  // for testing purposes
 
   [[nodiscard]] inline const std::string& getName() const { return name; }
 
-  [[nodiscard]] unsigned chromosomeLength() const { return numberOfClients; }
-
   [[nodiscard]] float getFitness(const std::function<float(unsigned, unsigned)>& evalCost,
                                  const std::vector<unsigned>& tour,
                                  bool hasDepot = false) const;
@@ -47,6 +45,10 @@ public:  // for testing purposes
   void validateChromosome(const std::vector<float>& chromosome, const float fitness) const;
 
   void validateDeviceSolutions(const unsigned* dIndices, const float* dFitness, unsigned n) const;
+
+  // brkgaCuda @{
+  // FIXME move to configuration since this is a constant value inside the class
+  [[nodiscard]] unsigned chromosomeLength() const { return numberOfClients; }
 
   void evaluateChromosomesOnHost(unsigned int numberOfChromosomes, const float* chromosomes, float* results) const;
 
@@ -61,6 +63,18 @@ public:  // for testing purposes
                                unsigned numberOfChromosomes,
                                const unsigned* dIndices,
                                float* dResults) const;
+  // @} brkgaCuda
+
+  // GPU-BRKGA @{
+  inline void Init() const {}
+
+  inline void Decode(float* d_next, float* d_nextFitKeys) const {
+    cudaStream_t defaultStream = nullptr;
+    evaluateChromosomesOnDevice(defaultStream, gpuBrkgaChromosomeCount, d_next, d_nextFitKeys);
+  }
+
+  unsigned gpuBrkgaChromosomeCount = 0;
+  // @} GPU-BRKGA
 
   unsigned capacity;
   unsigned numberOfClients;
