@@ -55,6 +55,8 @@ public:  // for testing purposes
                                    const float* dChromosomes,
                                    float* dResults) const;
 
+  void evaluateIndicesOnHost(unsigned numberOfChromosomes, const unsigned* indices, float* results) const;
+
   void evaluateIndicesOnDevice(cudaStream_t stream,
                                unsigned numberOfChromosomes,
                                const unsigned* dIndices,

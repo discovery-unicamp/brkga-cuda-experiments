@@ -76,7 +76,7 @@ void BRKGA::initialize_pipeline_parameters() {
   m_population_pipe = (float**)malloc(number_populations * sizeof(float*));
   m_population_pipe_temp = (float**)malloc(number_populations * sizeof(float*));
   m_scores_pipe = (float**)malloc(number_populations * sizeof(float*));
-  d_chromosome_gene_idx_pipe =
+  m_chromosome_gene_idx_pipe =
       (unsigned**)malloc(number_populations * sizeof(unsigned*));  // NOLINT(bugprone-sizeof-expression)
   d_scores_idx_pipe = (PopIdxThreadIdxPair**)malloc(
       number_populations * sizeof(PopIdxThreadIdxPair*));  // NOLINT(bugprone-sizeof-expression)
@@ -87,7 +87,7 @@ void BRKGA::initialize_pipeline_parameters() {
     m_population_pipe[p] = m_population + (p * population_size * chromosome_size);
     m_population_pipe_temp[p] = m_population_temp + (p * population_size * chromosome_size);
     m_scores_pipe[p] = m_scores + (p * population_size);
-    d_chromosome_gene_idx_pipe[p] = d_chromosome_gene_idx + (p * population_size * chromosome_size);
+    m_chromosome_gene_idx_pipe[p] = m_chromosome_gene_idx + (p * population_size * chromosome_size);
     d_scores_idx_pipe[p] = m_scores_idx + (p * population_size);
     d_random_elite_parent_pipe[p] = d_random_elite_parent + (p * population_size);
     d_random_parent_pipe[p] = d_random_parent + (p * population_size);
@@ -114,7 +114,7 @@ size_t BRKGA::allocate_data() {
   // Allocate an array representing the indices of each gene of each chromosome
   // on host and device
   total_memory += number_chromosomes * chromosome_size * sizeof(unsigned);
-  CUDA_CHECK(cudaMalloc((void**)&d_chromosome_gene_idx, number_chromosomes * chromosome_size * sizeof(unsigned)));
+  CUDA_CHECK(cudaMallocManaged((void**)&m_chromosome_gene_idx, number_chromosomes * chromosome_size * sizeof(unsigned)));
 
   total_memory += number_chromosomes * sizeof(float);
   CUDA_CHECK(cudaMalloc((void**)&d_random_elite_parent, number_chromosomes * sizeof(float)));
@@ -145,7 +145,7 @@ BRKGA::~BRKGA() {
   CUDA_CHECK(cudaFree(m_scores));
   CUDA_CHECK(cudaFree(m_scores_idx));
 
-  CUDA_CHECK(cudaFree(d_chromosome_gene_idx));
+  CUDA_CHECK(cudaFree(m_chromosome_gene_idx));
 
   CUDA_CHECK(cudaFree(d_random_elite_parent));
   CUDA_CHECK(cudaFree(d_random_parent));
@@ -158,7 +158,7 @@ BRKGA::~BRKGA() {
     free(m_population_pipe);
     free(m_population_pipe_temp);
     free(m_scores_pipe);
-    free(d_chromosome_gene_idx_pipe);
+    free(m_chromosome_gene_idx_pipe);
     free(d_scores_idx_pipe);
     free(d_random_elite_parent_pipe);
     free(d_random_parent_pipe);
@@ -175,6 +175,8 @@ void BRKGA::evaluate_chromosomes() {
     evaluate_chromosomes_device();
   } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
     evaluate_chromosomes_sorted_device();
+  } else if (decode_type == HOST_DECODE_SORTED) {
+    evaluate_chromosomes_sorted_host();
   } else if (decode_type == HOST_DECODE) {
     evaluate_chromosomes_host();
   } else {
@@ -187,6 +189,8 @@ void BRKGA::evaluate_chromosomes_pipe(unsigned pop_id) {
     evaluate_chromosomes_device_pipe(pop_id);
   } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
     evaluate_chromosomes_sorted_device_pipe(pop_id);
+  } else if (decode_type == HOST_DECODE_SORTED) {
+    evaluate_chromosomes_sorted_host_pipe(pop_id);
   } else if (decode_type == HOST_DECODE) {
     evaluate_chromosomes_host_pipe(pop_id);
   } else {
@@ -221,17 +225,61 @@ void BRKGA::evaluate_chromosomes_device_pipe(unsigned pop_id) {
   instance->evaluateChromosomesOnDevice(pop_stream[pop_id], number_chromosomes, m_population_temp, m_scores);
 }
 
+void BRKGA::evaluate_chromosomes_sorted_host() {
+  sort_chromosomes_genes();
+  instance->evaluateIndicesOnHost(number_chromosomes, m_chromosome_gene_idx, m_scores);
+
+  // FIXME refactor the code for better overlapping opportunities as in the following code
+/*
+// prefetch first tile
+cudaMemPrefetchAsync(a, tile_size * sizeof(size_t), 0, s2);
+cudaEventRecord(e1, s2);
+
+for (int i = 0; i < num_tiles; i++) {
+  // make sure previous kernel and current tile copy both completed
+  cudaEventSynchronize(e1);
+  cudaEventSynchronize(e2);
+
+  // run multiple kernels on current tile
+  for (int j = 0; j < num_kernels; j++)
+    kernel<<<1024, 1024, 0, s1>>>(tile_size, a + tile_size * i);
+  cudaEventRecord(e1, s1);
+
+  // prefetch next tile to the gpu in a separate stream
+  if (i < num_tiles-1) {
+    // make sure the stream is idle to force non-deferred HtoD prefetches first
+    cudaStreamSynchronize(s2);
+    cudaMemPrefetchAsync(a + tile_size * (i+1), tile_size * sizeof(size_t), 0, s2);
+    cudaEventRecord(e2, s2);
+  }
+
+  // offload current tile to the cpu after the kernel is completed using the deferred path
+  cudaMemPrefetchAsync(a + tile_size * i, tile_size * sizeof(size_t), cudaCpuDeviceId, s1);
+
+  // rotate streams and swap events
+  st = s1; s1 = s2; s2 = st;
+  st = s2; s2 = s3; s3 = st;
+  et = e1; e1 = e2; e2 = et;
+}
+ */
+}
+
 void BRKGA::evaluate_chromosomes_sorted_device() {
   sort_chromosomes_genes();
-  instance->evaluateIndicesOnDevice(default_stream, number_chromosomes, d_chromosome_gene_idx, m_scores);
+  instance->evaluateIndicesOnDevice(default_stream, number_chromosomes, m_chromosome_gene_idx, m_scores);
+}
+
+void BRKGA::evaluate_chromosomes_sorted_host_pipe(unsigned pop_id) {
+  instance->evaluateIndicesOnHost(population_size, m_chromosome_gene_idx_pipe[pop_id], m_scores_pipe[pop_id]);
 }
 
 void BRKGA::evaluate_chromosomes_sorted_device_pipe(unsigned pop_id) {
   // sort_chromosomes_genes_pipe(pop_id);
   assert(m_population_pipe[pop_id] - m_population
          == pop_id * population_size * chromosome_size);  // wrong pair of pointers
-  instance->evaluateIndicesOnDevice(pop_stream[pop_id], population_size, d_chromosome_gene_idx_pipe[pop_id],
+  instance->evaluateIndicesOnDevice(pop_stream[pop_id], population_size, m_chromosome_gene_idx_pipe[pop_id],
                                     m_scores_pipe[pop_id]);
+  CUDA_CHECK_LAST(pop_stream[pop_id]);
 }
 
 /**
@@ -239,7 +287,7 @@ void BRKGA::evaluate_chromosomes_sorted_device_pipe(unsigned pop_id) {
  * saves for each gene of each chromosome, the chromosome
  * index, and the original gene index. Used later to sort all chromosomes by
  * gene values. We save gene indexes to preserve this information after sorting.
- * \param d_chromosome_gene_idx_pop is an array containing a struct for all
+ * \param m_chromosome_gene_idx_pop is an array containing a struct for all
  * chromosomes of the population being processed.
  * \param chromosome_size is the size of each chromosome.
  * \param pop_id is the index of the population to work on.
@@ -302,7 +350,7 @@ void BRKGA::sort_chromosomes_genes() {
   // First set for each gene, its chromosome index and its original index in the chromosome
   const auto threads = THREADS_PER_BLOCK;
   const auto blocks = ceilDiv(number_chromosomes * chromosome_size, threads);
-  device_set_chromosome_gene_idx_pipe<<<blocks, threads>>>(d_chromosome_gene_idx, chromosome_size, number_chromosomes);
+  device_set_chromosome_gene_idx_pipe<<<blocks, threads>>>(m_chromosome_gene_idx, chromosome_size, number_chromosomes);
   CUDA_CHECK_LAST(0);
 
   // we use d_population2 to sort all genes by their values
@@ -316,7 +364,7 @@ void BRKGA::sort_chromosomes_genes() {
   CUDA_CHECK(cudaMalloc(&d_segs, segs.size() * sizeof(int)));
   CUDA_CHECK(cudaMemcpy(d_segs, segs.data(), segs.size() * sizeof(int), cudaMemcpyHostToDevice));
 
-  auto status = bb_segsort(m_population_temp, d_chromosome_gene_idx, (int)(number_chromosomes * chromosome_size),
+  auto status = bb_segsort(m_population_temp, m_chromosome_gene_idx, (int)(number_chromosomes * chromosome_size),
                            d_segs, (int)number_chromosomes);
   CUDA_CHECK_LAST(0);
   if (status != 0) throw std::runtime_error("bb_segsort exited with status " + std::to_string(status));
@@ -324,13 +372,13 @@ void BRKGA::sort_chromosomes_genes() {
   CUDA_CHECK(cudaFree(d_segs));
 
 #ifndef NDEBUG
-  assert_is_sorted<<<1, chromosome_size>>>(number_chromosomes, chromosome_size, d_chromosome_gene_idx,
+  assert_is_sorted<<<1, chromosome_size>>>(number_chromosomes, chromosome_size, m_chromosome_gene_idx,
                                            m_population_temp, m_population);
   CUDA_CHECK_LAST(0);
 #endif  // NDEBUG
 
   // set_index_order<<<number_chromosomes, chromosome_size>>>(number_chromosomes, chromosome_size,
-  // d_chromosome_gene_idx); CUDA_CHECK_LAST(0);
+  // m_chromosome_gene_idx); CUDA_CHECK_LAST(0);
 }
 
 void BRKGA::sort_chromosomes_genes_pipe(unsigned) {
@@ -412,7 +460,7 @@ __global__ void device_next_population_coalesced_pipe(const float* d_population_
 
 void BRKGA::evolve_pipe() {
   // FIXME
-  assert(decode_type == DEVICE_DECODE_CHROMOSOME_SORTED);
+  assert(decode_type == DEVICE_DECODE_CHROMOSOME_SORTED || decode_type == HOST_DECODE_SORTED);
   sort_chromosomes_genes();
 
   for (unsigned p = 0; p < number_populations; p++) { evaluate_chromosomes_pipe(p); }

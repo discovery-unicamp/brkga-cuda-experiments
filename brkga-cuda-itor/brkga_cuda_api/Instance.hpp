@@ -22,6 +22,8 @@ public:
                                            const float* dChromosomes,
                                            float* dResults) const = 0;
 
+  virtual void evaluateIndicesOnHost(unsigned numberOfChromosomes, const unsigned* indices, float* results) const = 0;
+
   virtual void evaluateIndicesOnDevice(cudaStream_t stream,
                                        unsigned numberOfChromosomes,
                                        const unsigned* dIndices,

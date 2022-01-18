@@ -4,6 +4,7 @@ project(brkga-cvrp LANGUAGES CUDA CXX)
 add_executable(brkga-cvrp
   src/main.cpp
   src/CvrpInstance.cu
+  src/CvrpInstance.cpp
   src/CvrpInstance.hpp
   src/Point.hpp
   src/brkga/BaseBrkga.hpp
@@ -14,6 +15,9 @@ add_executable(brkga-cvrp
   # src/brkga/GpuBrkga.cpp
   # src/brkga/GpuBrkga.hpp
 )
+
+find_package(OpenMP REQUIRED)
+target_link_libraries(brkga-cvrp PRIVATE OpenMP::OpenMP_CXX)
 
 set_source_files_properties(src/brkga/GpuBrkga.cpp PROPERTIES LANGUAGE CUDA)
 set_source_files_properties(src/brkga/GpuBrkga.hpp PROPERTIES LANGUAGE CUDA)

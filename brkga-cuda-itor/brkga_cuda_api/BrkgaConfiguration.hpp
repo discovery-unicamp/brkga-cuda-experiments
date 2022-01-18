@@ -23,6 +23,8 @@
   3  /// decoding is done on GPU, and chromosomes are given sorted by genes values.
      /// Users should implement device_decode_chromosome_sorted.
 
+#define HOST_DECODE_SORTED 4
+
 class Instance;
 
 /**
@@ -90,9 +92,9 @@ public:
     }
 
     Builder& decodeType(unsigned d) {
-      if (d < 1 || d > 3) throw std::invalid_argument("Decode type should be 1, 2 or 3");
+      if (d < 1 || d > 4) throw std::invalid_argument("Decode type should be in range [1, 4]");
       _decodeType = d;
-      _decodeTypeStr = (d == 1 ? "host" : d == 2 ? "gpu" : "sorted-gpu");
+      _decodeTypeStr = (d == 1 ? "host" : d == 2 ? "gpu" : d == 3 ? "sorted-gpu" : "sorted-host");
       return *this;
     }
 

@@ -106,8 +106,8 @@ private:
   float* m_best_solutions = nullptr;  /// pool of 10 best solutions
   unsigned best_saved = 0;  /// indicate whether best solutions were already saved or not
 
-  unsigned* d_chromosome_gene_idx = nullptr;  /// Table with indices for all chromosomes and each of its gene on device
-  unsigned** d_chromosome_gene_idx_pipe = nullptr;  /// Pointer for each population for its table with indices for all
+  unsigned* m_chromosome_gene_idx = nullptr;  /// Table with indices for all chromosomes and each of its gene on device
+  unsigned** m_chromosome_gene_idx_pipe = nullptr;  /// Pointer for each population for its table with indices for all
                                                     /// chromosomes in the population and each of its gene on device
 
   float* d_random_elite_parent = nullptr;  /// a random number for each thread to choose its elite parent
@@ -202,18 +202,20 @@ private:
    * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used then this function decodes
    * each chromosome with the kernel function decode_chromosomes_sorted above. But
    * first we sort each chromosome by its genes values. We save this information
-   * in the struct ChromosomeGeneIdxPair d_chromosome_gene_idx.
+   * in the struct ChromosomeGeneIdxPair m_chromosome_gene_idx.
    */
   void evaluate_chromosomes_sorted_device();
+  void evaluate_chromosomes_sorted_host();
 
   /**
    * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used then this function decodes
    * each chromosome with the kernel function decode_chromosomes_sorted above. But
    * first we sort each chromosome by its genes values. We save this information
-   * in the struct ChromosomeGeneIdxPair d_chromosome_gene_idx.
+   * in the struct ChromosomeGeneIdxPair m_chromosome_gene_idx.
    * \param pop_id is the index of the population to be processed
    */
   void evaluate_chromosomes_sorted_device_pipe(unsigned pop_id);
+  void evaluate_chromosomes_sorted_host_pipe(unsigned pop_id);
 
   /**
    * \brief If DEVICE_DECODE_CHROMOSOME_SORTED, then we

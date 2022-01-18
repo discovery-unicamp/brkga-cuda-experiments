@@ -8,7 +8,7 @@ Algorithm::BrkgaCuda::BrkgaCuda(CvrpInstanceWrapper* i, unsigned seed)
                     .eliteProportion(.1f)
                     .mutantsProportion(.1f)
                     .rho(.7f)
-                    .decodeType(3)
+                    .decodeType(4)
                     .seed(seed)
                     .build()),
       instance(i),
