@@ -33,8 +33,8 @@ public:
    * p the population size;
    * pe a float that represents the proportion of elite chromosomes in each
    * population; pm a float that represents the proportion of mutants in each
-   * population; K the number of independent populations; decode_type HOST_DECODE,
-   * DEVICE_DECODE, etc (see BrkgaConfiguration.h); OMP_THREADS used in openMP when
+   * population; K the number of independent populations; decode_type HOST,
+   * DEVICE, etc (see BrkgaConfiguration.h); OMP_THREADS used in openMP when
    * processing on host;
    * \param _evolve_coalesced indicates if it will be used one thread per gene to
    * compute next population (coalesced) or one thread per chromosome.
@@ -172,13 +172,13 @@ private:
   void evaluate_chromosomes_pipe(unsigned pop_id);
 
   /**
-   * \brief If HOST_DECODE is used then this function decodes each chromosome with
+   * \brief If HOST is used then this function decodes each chromosome with
    *        the host_decode function provided in Decoder.cpp.
    */
   void evaluate_chromosomes_host();
 
   /**
-   * \brief If pipeline decoding is used then HOST_DECODE must be used.
+   * \brief If pipeline decoding is used then HOST must be used.
    * This function decodes each chromosome with the host_decode function provided
    * in Decoder.cpp. One population specific population is decoded.
    * \param pop_id
@@ -187,13 +187,13 @@ private:
   void evaluate_chromosomes_host_pipe(unsigned pop_id);
 
   /**
-   * \brief If DEVICE_DECODE is used then this function decodes each chromosome
+   * \brief If DEVICE is used then this function decodes each chromosome
    * with the kernel function decode above.
    */
   void evaluate_chromosomes_device();
 
   /**
-   * \brief If DEVICE_DECODE is used then this function decodes each chromosome
+   * \brief If DEVICE is used then this function decodes each chromosome
    * with the kernel function decode above.
    */
   void evaluate_chromosomes_device_pipe(unsigned pop_id);

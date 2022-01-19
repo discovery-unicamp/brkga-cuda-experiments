@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
                     .eliteProportion(.1f)
                     .mutantsProportion(.1f)
                     .rho(.7f)
-                    .decodeType(4)
+                    .decodeType(DecodeType::HOST_SORTED)
                     .seed(seed)
                     .build();
 
@@ -133,6 +133,6 @@ int main(int argc, char** argv) {
     abort();
   }
 
-  std::cerr << "Finishing the experiment\n";
+  std::cerr << "Exiting gracefully\n";
   return 0;
 }

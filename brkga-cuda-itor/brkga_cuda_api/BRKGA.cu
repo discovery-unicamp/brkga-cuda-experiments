@@ -11,6 +11,7 @@
 #include "BRKGA.hpp"
 #include "BrkgaConfiguration.hpp"
 #include "CommonStructs.h"
+#include "DecodeType.hpp"
 #include "cuda_error.cuh"
 #include "nvtx.cuh"
 
@@ -24,6 +25,21 @@
 #include <vector>
 
 BRKGA::BRKGA(BrkgaConfiguration& config) {
+  std::cerr << "Configuration received:\n"
+            << " - Number of populations: " << config.numberOfPopulations << "\n"
+            << " - Population size: " << config.populationSize << "\n"
+            << " - Chromosome length: " << config.chromosomeLength << "\n"
+            << " - Elite count: " << config.eliteCount << " (~" << config.getEliteProbability() * 100 << "%)\n"
+            << " - Mutants count: " << config.mutantsCount << " (~" << config.getMutantsProbability() * 100 << "%)\n"
+            << " - Rho: " << config.rho << "\n"
+            << " - Seed: " << config.seed << "\n"
+            << " - Decode type: " << config.decodeType << " (" << config.decodeTypeStr << ")\n"
+            << " - Generations: " << config.MAX_GENS << "\n"
+            << " - Exchange interval: " << config.X_INTVL << "\n"
+            << " - Exchange count: " << config.X_NUMBER << "\n"
+            << " - Reset iterations: " << config.RESET_AFTER << "\n"
+            << " - OMP threads: " << config.OMP_THREADS << "\n";
+
   CUDA_CHECK_LAST(0);
   instance = config.instance;
   number_populations = config.numberOfPopulations;
@@ -114,7 +130,8 @@ size_t BRKGA::allocate_data() {
   // Allocate an array representing the indices of each gene of each chromosome
   // on host and device
   total_memory += number_chromosomes * chromosome_size * sizeof(unsigned);
-  CUDA_CHECK(cudaMallocManaged((void**)&m_chromosome_gene_idx, number_chromosomes * chromosome_size * sizeof(unsigned)));
+  CUDA_CHECK(
+      cudaMallocManaged((void**)&m_chromosome_gene_idx, number_chromosomes * chromosome_size * sizeof(unsigned)));
 
   total_memory += number_chromosomes * sizeof(float);
   CUDA_CHECK(cudaMalloc((void**)&d_random_elite_parent, number_chromosomes * sizeof(float)));
@@ -171,13 +188,13 @@ void BRKGA::reset_population() {
 }
 
 void BRKGA::evaluate_chromosomes() {
-  if (decode_type == DEVICE_DECODE) {
+  if (decode_type == DecodeType::DEVICE) {
     evaluate_chromosomes_device();
-  } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
+  } else if (decode_type == DecodeType::DEVICE_SORTED) {
     evaluate_chromosomes_sorted_device();
-  } else if (decode_type == HOST_DECODE_SORTED) {
+  } else if (decode_type == DecodeType::HOST_SORTED) {
     evaluate_chromosomes_sorted_host();
-  } else if (decode_type == HOST_DECODE) {
+  } else if (decode_type == DecodeType::HOST) {
     evaluate_chromosomes_host();
   } else {
     throw std::domain_error("Function decode type is unknown");
@@ -185,13 +202,13 @@ void BRKGA::evaluate_chromosomes() {
 }
 
 void BRKGA::evaluate_chromosomes_pipe(unsigned pop_id) {
-  if (decode_type == DEVICE_DECODE) {
+  if (decode_type == DecodeType::DEVICE) {
     evaluate_chromosomes_device_pipe(pop_id);
-  } else if (decode_type == DEVICE_DECODE_CHROMOSOME_SORTED) {
+  } else if (decode_type == DecodeType::DEVICE_SORTED) {
     evaluate_chromosomes_sorted_device_pipe(pop_id);
-  } else if (decode_type == HOST_DECODE_SORTED) {
+  } else if (decode_type == DecodeType::HOST_SORTED) {
     evaluate_chromosomes_sorted_host_pipe(pop_id);
-  } else if (decode_type == HOST_DECODE) {
+  } else if (decode_type == DecodeType::HOST) {
     evaluate_chromosomes_host_pipe(pop_id);
   } else {
     throw std::domain_error("Function decode type is unknown");
@@ -230,38 +247,38 @@ void BRKGA::evaluate_chromosomes_sorted_host() {
   instance->evaluateIndicesOnHost(number_chromosomes, m_chromosome_gene_idx, m_scores);
 
   // FIXME refactor the code for better overlapping opportunities as in the following code
-/*
-// prefetch first tile
-cudaMemPrefetchAsync(a, tile_size * sizeof(size_t), 0, s2);
-cudaEventRecord(e1, s2);
+  /*
+  // prefetch first tile
+  cudaMemPrefetchAsync(a, tile_size * sizeof(size_t), 0, s2);
+  cudaEventRecord(e1, s2);
 
-for (int i = 0; i < num_tiles; i++) {
-  // make sure previous kernel and current tile copy both completed
-  cudaEventSynchronize(e1);
-  cudaEventSynchronize(e2);
+  for (int i = 0; i < num_tiles; i++) {
+    // make sure previous kernel and current tile copy both completed
+    cudaEventSynchronize(e1);
+    cudaEventSynchronize(e2);
 
-  // run multiple kernels on current tile
-  for (int j = 0; j < num_kernels; j++)
-    kernel<<<1024, 1024, 0, s1>>>(tile_size, a + tile_size * i);
-  cudaEventRecord(e1, s1);
+    // run multiple kernels on current tile
+    for (int j = 0; j < num_kernels; j++)
+      kernel<<<1024, 1024, 0, s1>>>(tile_size, a + tile_size * i);
+    cudaEventRecord(e1, s1);
 
-  // prefetch next tile to the gpu in a separate stream
-  if (i < num_tiles-1) {
-    // make sure the stream is idle to force non-deferred HtoD prefetches first
-    cudaStreamSynchronize(s2);
-    cudaMemPrefetchAsync(a + tile_size * (i+1), tile_size * sizeof(size_t), 0, s2);
-    cudaEventRecord(e2, s2);
+    // prefetch next tile to the gpu in a separate stream
+    if (i < num_tiles-1) {
+      // make sure the stream is idle to force non-deferred HtoD prefetches first
+      cudaStreamSynchronize(s2);
+      cudaMemPrefetchAsync(a + tile_size * (i+1), tile_size * sizeof(size_t), 0, s2);
+      cudaEventRecord(e2, s2);
+    }
+
+    // offload current tile to the cpu after the kernel is completed using the deferred path
+    cudaMemPrefetchAsync(a + tile_size * i, tile_size * sizeof(size_t), cudaCpuDeviceId, s1);
+
+    // rotate streams and swap events
+    st = s1; s1 = s2; s2 = st;
+    st = s2; s2 = s3; s3 = st;
+    et = e1; e1 = e2; e2 = et;
   }
-
-  // offload current tile to the cpu after the kernel is completed using the deferred path
-  cudaMemPrefetchAsync(a + tile_size * i, tile_size * sizeof(size_t), cudaCpuDeviceId, s1);
-
-  // rotate streams and swap events
-  st = s1; s1 = s2; s2 = st;
-  st = s2; s2 = s3; s3 = st;
-  et = e1; e1 = e2; e2 = et;
-}
- */
+   */
 }
 
 void BRKGA::evaluate_chromosomes_sorted_device() {
@@ -460,7 +477,7 @@ __global__ void device_next_population_coalesced_pipe(const float* d_population_
 
 void BRKGA::evolve_pipe() {
   // FIXME
-  assert(decode_type == DEVICE_DECODE_CHROMOSOME_SORTED || decode_type == HOST_DECODE_SORTED);
+  assert(decode_type == DecodeType::DEVICE_SORTED || decode_type == DecodeType::HOST_SORTED);
   sort_chromosomes_genes();
 
   for (unsigned p = 0; p < number_populations; p++) { evaluate_chromosomes_pipe(p); }
