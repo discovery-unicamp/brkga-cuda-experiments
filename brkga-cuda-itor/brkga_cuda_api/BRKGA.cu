@@ -33,12 +33,12 @@ BRKGA::BRKGA(BrkgaConfiguration& config) {
             << " - Mutants count: " << config.mutantsCount << " (~" << config.getMutantsProbability() * 100 << "%)\n"
             << " - Rho: " << config.rho << "\n"
             << " - Seed: " << config.seed << "\n"
-            << " - Decode type: " << config.decodeType << " (" << config.decodeTypeStr << ")\n"
-            << " - Generations: " << config.MAX_GENS << "\n"
-            << " - Exchange interval: " << config.X_INTVL << "\n"
-            << " - Exchange count: " << config.X_NUMBER << "\n"
-            << " - Reset iterations: " << config.RESET_AFTER << "\n"
-            << " - OMP threads: " << config.OMP_THREADS << "\n";
+            << " - Decode type: " << config.decodeType << " (" << getDecodeTypeAsString(config.decodeType) << ")\n"
+            << " - Generations: " << config.generations << "\n"
+            << " - Exchange interval: " << config.exchangeBestInterval << "\n"
+            << " - Exchange count: " << config.exchangeBestCount << "\n"
+            << " - Reset iterations: " << config.resetPopulationInterval << "\n"
+            << " - OMP threads: " << config.ompThreads << "\n";
 
   CUDA_CHECK_LAST(0);
   instance = config.instance;

@@ -34,7 +34,7 @@ public:
    * pe a float that represents the proportion of elite chromosomes in each
    * population; pm a float that represents the proportion of mutants in each
    * population; K the number of independent populations; decode_type HOST,
-   * DEVICE, etc (see BrkgaConfiguration.h); OMP_THREADS used in openMP when
+   * DEVICE, etc (see BrkgaConfiguration.h); ompThreads used in openMP when
    * processing on host;
    * \param _evolve_coalesced indicates if it will be used one thread per gene to
    * compute next population (coalesced) or one thread per chromosome.

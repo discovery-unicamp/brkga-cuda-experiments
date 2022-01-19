@@ -27,9 +27,9 @@ void run(const std::function<void()>& runGenerations,
 
   std::cerr << "Optimization finished\n";
   std::cout << std::fixed << std::setprecision(3) << getBestFitness() << ' ' << timeElapsedMs / 1000 << ' '
-            << config.MAX_GENS << ' ' << config.numberOfPopulations << ' ' << config.populationSize << ' '
-            << config.eliteCount << ' ' << config.mutantsCount << ' ' << config.rho << ' ' << config.decodeTypeStr
-            << '\n';
+            << config.generations << ' ' << config.numberOfPopulations << ' ' << config.populationSize << ' '
+            << config.eliteCount << ' ' << config.mutantsCount << ' ' << config.rho << ' '
+            << getDecodeTypeAsString(config.decodeType) << '\n';
 }
 
 int main(int argc, char** argv) {
@@ -91,10 +91,10 @@ int main(int argc, char** argv) {
     BRKGA brkga(config);
 
     auto runGenerations = [&]() {
-      for (size_t generation = 1; generation <= config.MAX_GENS; ++generation) {
+      for (size_t generation = 1; generation <= config.generations; ++generation) {
         std::cerr << "Generation " << generation << '\r';
         brkga.evolve();
-        if (generation % config.X_INTVL == 0) brkga.exchangeElite(config.X_NUMBER);
+        if (generation % config.exchangeBestInterval == 0) brkga.exchangeElite(config.exchangeBestCount);
       }
       std::cerr << '\n';
     };
@@ -112,10 +112,10 @@ int main(int argc, char** argv) {
     GpuBrkgaWrapper brkga(config, &instance);
 
     auto runGenerations = [&]() {
-      for (size_t generation = 1; generation <= config.MAX_GENS; ++generation) {
+      for (size_t generation = 1; generation <= config.generations; ++generation) {
         std::cerr << "Generation " << generation << '\r';
         brkga.evolve();
-        if (generation % config.X_INTVL == 0) brkga.exchangeElite(config.X_NUMBER);
+        if (generation % config.exchangeBestInterval == 0) brkga.exchangeElite(config.exchangeBestCount);
       }
       std::cerr << '\n';
     };

@@ -8,7 +8,7 @@ GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config, CvrpInstance*
               << "); the algorithm may fail to run";
   }
   if (config.decodeType != DecodeType::DEVICE && config.decodeType != DecodeType::HOST) {
-    std::cerr << "Decode type `" << config.decodeTypeStr << "` not supported; use some non-sorted version\n";
+    std::cerr << "Decode type `" << getDecodeTypeAsString(config.decodeType) << "` not supported; use some non-sorted version\n";
     abort();
   }
 

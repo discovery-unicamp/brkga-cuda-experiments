@@ -19,6 +19,7 @@ endif()
 add_library(brkga-cuda
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BRKGA.cu
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BRKGA.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BrkgaConfiguration.cpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BrkgaConfiguration.hpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/CommonStructs.h
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/cuda_error.cuh
