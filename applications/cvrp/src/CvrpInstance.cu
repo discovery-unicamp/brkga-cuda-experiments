@@ -295,6 +295,7 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
                                                float* dResults) const {
   throw std::runtime_error(__FUNCTION__ + std::string(" is broken"));
 
+/*
   float* dGenes = nullptr;
   unsigned* dIndices = nullptr;
   const auto totalGenes = numberOfChromosomes * chromosomeLength();
@@ -337,6 +338,7 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
 
   CUDA_CHECK(cudaFree(dGenes));
   CUDA_CHECK(cudaFree(dIndices));
+ */
 }
 
 __global__ void setupDemands(unsigned* accDemandList,
@@ -474,7 +476,8 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
                                            unsigned numberOfChromosomes,
                                            const unsigned* dIndices,
                                            float* dResults) const {
-  const auto total = numberOfChromosomes * chromosomeLength();
+  const auto chromosomeLength = numberOfClients;
+  const auto total = numberOfChromosomes * chromosomeLength;
   unsigned* accDemand = nullptr;
   float* accCost = nullptr;
   float* bestCost = nullptr;
@@ -484,13 +487,13 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
 
   const unsigned threads = THREADS_PER_BLOCK;
   const unsigned blocks = ceilDiv(numberOfChromosomes, threads);
-  setupDemands<<<blocks, threads, 0, stream>>>(accDemand, numberOfChromosomes, chromosomeLength(), dIndices, dDemands);
+  setupDemands<<<blocks, threads, 0, stream>>>(accDemand, numberOfChromosomes, chromosomeLength, dIndices, dDemands);
 
-  setupCosts<<<blocks, threads, 0, stream>>>(accCost, numberOfChromosomes, chromosomeLength(), dIndices, dDistances);
+  setupCosts<<<blocks, threads, 0, stream>>>(accCost, numberOfChromosomes, chromosomeLength, dIndices, dDistances);
   CUDA_CHECK_LAST(0);
 
   // cvrpEvaluateIndicesOnDevice<<<blocks, threads, 0, stream>>>(dResults, accDemand, accCost, bestCost, dIndices,
-  //                                                             numberOfChromosomes, chromosomeLength(), capacity,
+  //                                                             numberOfChromosomes, chromosomeLength, capacity,
   //                                                             dDistances, dDemands);
   auto demandsCopy = demands;
   std::sort(demandsCopy.begin(), demandsCopy.end());
@@ -501,9 +504,9 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
     if (filled > capacity) break;
   }
   const unsigned maxLength = u - 1;
-  const auto sharedMemSize = (5 * chromosomeLength() + 1) * sizeof(float);
+  const auto sharedMemSize = (5 * chromosomeLength + 1) * sizeof(float);
   cvrpEvaluateIndicesOnDevice_test<<<numberOfChromosomes, maxLength, sharedMemSize, stream>>>(
-      dResults, numberOfChromosomes, chromosomeLength(), dIndices, dDistances, accCost, capacity, dDemands, accDemand);
+      dResults, numberOfChromosomes, chromosomeLength, dIndices, dDistances, accCost, capacity, dDemands, accDemand);
   CUDA_CHECK_LAST(0);
 
   CUDA_CHECK(cudaFree(accDemand));

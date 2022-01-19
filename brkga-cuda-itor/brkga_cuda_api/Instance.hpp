@@ -11,8 +11,6 @@ class Instance {
 public:
   virtual ~Instance() = default;
 
-  [[nodiscard]] virtual unsigned chromosomeLength() const = 0;
-
   virtual void evaluateChromosomesOnHost(unsigned numberOfChromosomes,
                                          const float* chromosomes,
                                          float* results) const = 0;

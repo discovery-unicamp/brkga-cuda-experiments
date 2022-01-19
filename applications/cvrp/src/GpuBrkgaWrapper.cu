@@ -3,8 +3,8 @@
 #include <brkga_cuda_api/Brkga>
 
 GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config, CvrpInstance* _instance) : instance(_instance) {
-  if (_instance->chromosomeLength() > max_t) {
-    std::cerr << "Warning: Thread limit exceed (" << _instance->chromosomeLength() << " > " << max_t
+  if (config.chromosomeLength > max_t) {
+    std::cerr << "Warning: Thread limit exceed (" << config.chromosomeLength << " > " << max_t
               << "); the algorithm may fail to run";
   }
   if (config.decodeTypeStr != "gpu" && config.decodeTypeStr != "host") {
@@ -13,7 +13,7 @@ GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config, CvrpInstance*
   }
 
   auto isDecodedOnGpu = config.decodeTypeStr == "gpu";
-  gpuBrkga = new GPUBRKGA<CvrpInstance>(_instance->chromosomeLength(), config.populationSize,
+  gpuBrkga = new GPUBRKGA<CvrpInstance>(config.chromosomeLength, config.populationSize,
                                         (double)config.eliteCount / (double)config.populationSize,
                                         (double)config.mutantsCount / (double)config.populationSize, config.rho,
                                         *_instance, config.seed, isDecodedOnGpu, config.numberOfPopulations);

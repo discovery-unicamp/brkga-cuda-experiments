@@ -79,6 +79,7 @@ int main(int argc, char** argv) {
                     .instance(&instance)
                     .numberOfPopulations(3)
                     .populationSize(256)
+                    .chromosomeLength(instance.numberOfClients)
                     .eliteProportion(.1f)
                     .mutantsProportion(.1f)
                     .rho(.7f)
@@ -100,9 +101,8 @@ int main(int argc, char** argv) {
 
     auto getBestFitness = [&]() {
       auto best = brkga.getBestChromosomes(1)[0];
-      std::cerr << "Validating the best solution\n";
-      instance.validateChromosome(std::vector(best.begin() + 1, best.begin() + instance.chromosomeLength() + 1),
-                                  best[0]);
+      std::cerr << "Validating the best solution found\n";
+      instance.validateChromosome(std::vector(best.begin() + 1, best.begin() + config.chromosomeLength + 1), best[0]);
       return best[0];
     };
 
@@ -122,9 +122,8 @@ int main(int argc, char** argv) {
 
     auto getBestFitness = [&]() {
       auto best = brkga.getBestChromosome();
-      std::cerr << "Validating the best solution\n";
-      instance.validateChromosome(std::vector(best.begin() + 1, best.begin() + instance.chromosomeLength() + 1),
-                                  best[0]);
+      std::cerr << "Validating the best solution found\n";
+      instance.validateChromosome(std::vector(best.begin() + 1, best.begin() + config.chromosomeLength + 1), best[0]);
       return best[0];
     };
 
@@ -134,5 +133,6 @@ int main(int argc, char** argv) {
     abort();
   }
 
+  std::cerr << "Finishing the experiment\n";
   return 0;
 }

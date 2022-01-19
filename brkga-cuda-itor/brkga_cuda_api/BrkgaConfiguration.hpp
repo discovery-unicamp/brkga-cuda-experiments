@@ -52,6 +52,12 @@ public:
       return *this;
     }
 
+    Builder& chromosomeLength(unsigned n) {
+      if (n < 1) throw std::invalid_argument("Chromosome length must be at least 1");
+      _chromosomeLength = n;
+      return *this;
+    }
+
     Builder& eliteCount(unsigned n) {
       if (n == 0 || n >= _populationSize)
         throw std::invalid_argument("Elite count should be in range [1, population size)");
@@ -100,8 +106,9 @@ public:
 
     BrkgaConfiguration build() const {
       if (_instance == nullptr) throw std::invalid_argument("Instance wasn't set");
-      if (_populationSize == 0) throw std::invalid_argument("Population size wasn't set");
       if (_numberOfPopulations == 0) throw std::invalid_argument("Number of populations wasn't set");
+      if (_populationSize == 0) throw std::invalid_argument("Population size wasn't set");
+      if (_chromosomeLength == 0) throw std::invalid_argument("Chromosome length wasn't set");
       if (_eliteCount == 0) throw std::invalid_argument("Elite count wasn't set");
       if (_mutantsCount == 0) throw std::invalid_argument("Mutants count wasn't set");
       if (std::abs(_rho) < 1e-6) throw std::invalid_argument("Rho wasn't set");
@@ -111,8 +118,9 @@ public:
 
       BrkgaConfiguration config;
       config.instance = _instance;
-      config.populationSize = _populationSize;
       config.numberOfPopulations = _numberOfPopulations;
+      config.populationSize = _populationSize;
+      config.chromosomeLength = _chromosomeLength;
       config.eliteCount = _eliteCount;
       config.mutantsCount = _mutantsCount;
       config.rho = _rho;
@@ -131,27 +139,29 @@ public:
       config.RESET_AFTER = 10000000;
       config.OMP_THREADS = 0;
 
-      std::cerr << "Configuration received:" << '\n'
-                << " - Population size: " << _populationSize << '\n'
-                << " - Number of populations: " << _numberOfPopulations << '\n'
-                << " - Elite count: " << _eliteCount << '\n'
-                << " - Mutants count: " << _mutantsCount << '\n'
-                << " - Rho: " << _rho << '\n'
-                << " - Seed: " << _seed << '\n'
-                << " - Decode type: " << _decodeType << " (" << _decodeTypeStr << ")" << '\n'
-                << " - Generations: " << config.MAX_GENS << '\n'
-                << " - Exchange interval: " << config.X_INTVL << '\n'
-                << " - Exchange count: " << config.X_NUMBER << '\n'
-                << " - Reset iterations: " << config.RESET_AFTER << '\n'
-                << " - OMP threads: " << config.OMP_THREADS << '\n';
+      std::cerr << "Configuration received:" << "\n"
+                << " - Number of populations: " << _numberOfPopulations << "\n"
+                << " - Population size: " << _populationSize << "\n"
+                << " - Chromosome length: " << _chromosomeLength << "\n"
+                << " - Elite count: " << _eliteCount << " (~" << config.getEliteProbability() * 100 << "%)\n"
+                << " - Mutants count: " << _mutantsCount << " (~" << config.getMutantsProbability() * 100 << "%)\n"
+                << " - Rho: " << _rho << "\n"
+                << " - Seed: " << _seed << "\n"
+                << " - Decode type: " << _decodeType << " (" << _decodeTypeStr << ")" << "\n"
+                << " - Generations: " << config.MAX_GENS << "\n"
+                << " - Exchange interval: " << config.X_INTVL << "\n"
+                << " - Exchange count: " << config.X_NUMBER << "\n"
+                << " - Reset iterations: " << config.RESET_AFTER << "\n"
+                << " - OMP threads: " << config.OMP_THREADS << "\n";
 
       return config;
     }
 
-  protected:
+  private:
     Instance* _instance = nullptr;
     unsigned _numberOfPopulations = 0;
     unsigned _populationSize = 0;
+    unsigned _chromosomeLength = 0;
     unsigned _eliteCount = 0;
     unsigned _mutantsCount = 0;
     float _rho = 0;
@@ -162,9 +172,13 @@ public:
 
   virtual ~BrkgaConfiguration() = default;
 
+  [[nodiscard]] inline float getMutantsProbability() const { return (float)mutantsCount / (float)populationSize; }
+  [[nodiscard]] inline float getEliteProbability() const { return (float)eliteCount / (float)populationSize; }
+
   Instance* instance;
   unsigned numberOfPopulations;  /// number of different independent populations
   unsigned populationSize;  /// size of population, example 256 individuals
+  unsigned chromosomeLength;
   unsigned eliteCount;  /// proportion of elite population, example 0.1
   unsigned mutantsCount;  /// proportion of mutant population, example 0.05
   float rho;  /// probability that child gets an allele from elite parent, exe 0.7

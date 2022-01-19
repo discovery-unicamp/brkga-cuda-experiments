@@ -29,8 +29,8 @@ BRKGA::BRKGA(BrkgaConfiguration& config) {
   number_populations = config.numberOfPopulations;
   population_size = config.populationSize;
   number_chromosomes = number_populations * population_size;
-  number_genes = number_chromosomes * instance->chromosomeLength();
-  chromosome_size = instance->chromosomeLength();
+  number_genes = number_chromosomes * config.chromosomeLength;
+  chromosome_size = config.chromosomeLength;
   elite_size = config.eliteCount;
   mutants_size = config.mutantsCount;
   rhoe = config.rho;

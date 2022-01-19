@@ -47,22 +47,21 @@ public:  // for testing purposes
   void validateDeviceSolutions(const unsigned* dIndices, const float* dFitness, unsigned n) const;
 
   // brkgaCuda @{
-  // FIXME move to configuration since this is a constant value inside the class
-  [[nodiscard]] unsigned chromosomeLength() const { return numberOfClients; }
-
-  void evaluateChromosomesOnHost(unsigned int numberOfChromosomes, const float* chromosomes, float* results) const;
+  void evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
+                                 const float* chromosomes,
+                                 float* results) const override;
 
   void evaluateChromosomesOnDevice(cudaStream_t stream,
                                    unsigned numberOfChromosomes,
                                    const float* dChromosomes,
-                                   float* dResults) const;
+                                   float* dResults) const override;
 
-  void evaluateIndicesOnHost(unsigned numberOfChromosomes, const unsigned* indices, float* results) const;
+  void evaluateIndicesOnHost(unsigned numberOfChromosomes, const unsigned* indices, float* results) const override;
 
   void evaluateIndicesOnDevice(cudaStream_t stream,
                                unsigned numberOfChromosomes,
                                const unsigned* dIndices,
-                               float* dResults) const;
+                               float* dResults) const override;
   // @} brkgaCuda
 
   // GPU-BRKGA @{
