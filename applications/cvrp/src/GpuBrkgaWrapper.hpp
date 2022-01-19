@@ -1,10 +1,14 @@
-#include "CvrpInstance.hpp"
+#ifndef APPLICATIONS_GPU_BRKGA_WRAPPER_HPP
+#define APPLICATIONS_GPU_BRKGA_WRAPPER_HPP
 
-#include <memory>
+#include <brkga_cuda_api/BrkgaConfiguration.hpp>
+
 #include <vector>
 
 template <class T>
 class GPUBRKGA;
+
+class CvrpInstance;
 
 /**
  * @brief Since GPUBRKGA uses template, we've wrapped it to avoid include errors.
@@ -27,3 +31,5 @@ private:
   CvrpInstance* instance;
   GPUBRKGA<CvrpInstance>* gpuBrkga;
 };
+
+#endif  // APPLICATIONS_GPU_BRKGA_WRAPPER_HPP

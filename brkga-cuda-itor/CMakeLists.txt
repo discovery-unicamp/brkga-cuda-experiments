@@ -10,6 +10,8 @@ find_package(CUDA REQUIRED)
 enable_language(CUDA)
 include_directories(SYSTEM "${CUDA_INCLUDE_DIRS}")
 
+add_compile_definitions(LOG_LEVEL=2)
+
 if(USE_NVTX)
   message("Compiling to use NVTX!")
   add_definitions(-DUSE_NVTX)
@@ -22,9 +24,9 @@ add_library(brkga-cuda
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BrkgaConfiguration.cpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BrkgaConfiguration.hpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/CommonStructs.h
-  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/cuda_error.cuh
+  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/CudaError.cuh
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/Instance.hpp
-  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/MathUtils.h
+  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/MathUtils.hpp
 )
 
 set_target_properties(brkga-cuda PROPERTIES POSITION_INDEPENDENT_CODE ON)

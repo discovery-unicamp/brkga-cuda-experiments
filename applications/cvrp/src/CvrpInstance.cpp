@@ -1,11 +1,15 @@
 #include "CvrpInstance.hpp"
+
 #include "MinQueue.hpp"
+
+#include <omp.h>
+
 #include <vector>
 
 void CvrpInstance::evaluateIndicesOnHost(unsigned numberOfChromosomes, const unsigned* indices, float* results) const {
   const auto n = numberOfClients;
 
-  #pragma omp parallel for default(none) shared(numberOfChromosomes, indices, results)
+#pragma omp parallel for default(none) shared(numberOfChromosomes, indices, results)
   for (unsigned k = 0; k < numberOfChromosomes; ++k) {
     const auto* tour = &indices[k * n];
 
@@ -42,6 +46,6 @@ void CvrpInstance::evaluateIndicesOnHost(unsigned numberOfChromosomes, const uns
 
 #ifndef NDEBUG
     validateSolution(std::vector<unsigned>(tour, tour + n), fitness);
-#endif //NDEBUG
+#endif  // NDEBUG
   }
 }

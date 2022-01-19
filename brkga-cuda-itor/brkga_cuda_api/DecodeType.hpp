@@ -1,9 +1,8 @@
 #ifndef BRKGA_CUDA_API_DECODE_TYPE_HPP
 #define BRKGA_CUDA_API_DECODE_TYPE_HPP
 
-#include <string>
 #include <stdexcept>
-
+#include <string>
 
 enum DecodeType {
   /// used to represent an empty variable

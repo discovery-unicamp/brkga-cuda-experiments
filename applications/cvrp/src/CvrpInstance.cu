@@ -1,7 +1,21 @@
+#include "CvrpInstance.hpp"
 #include <bb_segsort.h>
 #undef CUDA_CHECK
 
-#include "CvrpInstance.hpp"
+#include <brkga_cuda_api/CudaError.cuh>
+#include <brkga_cuda_api/Logger.hpp>
+#include <brkga_cuda_api/MathUtils.hpp>
+
+#include <algorithm>
+#include <cassert>
+#include <fstream>
+#include <functional>
+#include <numeric>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 void _throw_assert_fail(const std::string& condition,
                         const std::string& file,
@@ -88,7 +102,7 @@ CvrpInstance::~CvrpInstance() {
 }
 
 void CvrpInstance::validateBestKnownSolution(const std::string& filename) {
-  std::cerr << "Reading best known solution from " << filename << '\n';
+  info("Reading best known solution from", filename);
   std::ifstream file(filename);
   assert(file.is_open());
   std::string line;
@@ -110,7 +124,7 @@ void CvrpInstance::validateBestKnownSolution(const std::string& filename) {
   float fitness = std::stof(line.substr(5));
 
   validateSolution(tour, fitness, true);
-  std::cerr << "Best known solution is valid!\n";
+  info("Best known solution is valid");
 }
 
 void CvrpInstance::validateSolution(const std::vector<unsigned>& tour, const float fitness, bool hasDepot) const {
@@ -289,56 +303,53 @@ __global__ void cvrpEvaluateChromosomesOnDevice(const unsigned* allIndices,
   results[tid] = fitness;
 }
 
-void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
-                                               unsigned numberOfChromosomes,
-                                               const float* dChromosomes,
-                                               float* dResults) const {
+void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t,
+                                               unsigned,
+                                               const float*,
+                                               float*) const {
   throw std::runtime_error(__FUNCTION__ + std::string(" is broken"));
 
-/*
-  float* dGenes = nullptr;
-  unsigned* dIndices = nullptr;
-  const auto totalGenes = numberOfChromosomes * chromosomeLength();
-  CUDA_CHECK(cudaMalloc(&dGenes, totalGenes * sizeof(float)));
-  CUDA_CHECK(cudaMalloc(&dIndices, totalGenes * sizeof(unsigned)));
+  /*
+    float* dGenes = nullptr;
+    unsigned* dIndices = nullptr;
+    const auto totalGenes = numberOfChromosomes * chromosomeLength();
+    CUDA_CHECK(cudaMalloc(&dGenes, totalGenes * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&dIndices, totalGenes * sizeof(unsigned)));
 
-  initAlleleIndices<<<1, chromosomeLength(), 0, stream>>>(dChromosomes, numberOfChromosomes, chromosomeLength(), dGenes,
-                                                          dIndices);
-  CUDA_CHECK_LAST(0);
+    initAlleleIndices<<<1, chromosomeLength(), 0, stream>>>(dChromosomes, numberOfChromosomes, chromosomeLength(),
+  dGenes, dIndices); CUDA_CHECK_LAST(0);
 
-  std::vector<int> segs(numberOfChromosomes);
-  for (unsigned i = 0; i < numberOfChromosomes; ++i) segs[i] = i * chromosomeLength();
+    std::vector<int> segs(numberOfChromosomes);
+    for (unsigned i = 0; i < numberOfChromosomes; ++i) segs[i] = i * chromosomeLength();
 
-  int* d_segs = nullptr;
-  CUDA_CHECK(cudaMalloc(&d_segs, segs.size() * sizeof(int)));
-  CUDA_CHECK(cudaMemcpy(d_segs, segs.data(), segs.size() * sizeof(int), cudaMemcpyHostToDevice));
+    int* d_segs = nullptr;
+    CUDA_CHECK(cudaMalloc(&d_segs, segs.size() * sizeof(int)));
+    CUDA_CHECK(cudaMemcpy(d_segs, segs.data(), segs.size() * sizeof(int), cudaMemcpyHostToDevice));
 
-  auto status =
-      bb_segsort(dGenes, dIndices, (int)(numberOfChromosomes * chromosomeLength()), d_segs, (int)numberOfChromosomes);
-  assert(status == 0);
-  CUDA_CHECK_LAST(0);
+    auto status =
+        bb_segsort(dGenes, dIndices, (int)(numberOfChromosomes * chromosomeLength()), d_segs, (int)numberOfChromosomes);
+    assert(status == 0);
+    CUDA_CHECK_LAST(0);
 
-  CUDA_CHECK(cudaFree(d_segs));
+    CUDA_CHECK(cudaFree(d_segs));
 
-#ifndef NDEBUG
-  checkGenesSortedCorrectly<<<1, chromosomeLength(), 0, stream>>>(numberOfChromosomes, chromosomeLength(), dChromosomes,
-                                                                  dGenes, dIndices);
-  CUDA_CHECK_LAST(0);
-#endif  // NDEBUG
+  #ifndef NDEBUG
+    checkGenesSortedCorrectly<<<1, chromosomeLength(), 0, stream>>>(numberOfChromosomes, chromosomeLength(),
+  dChromosomes, dGenes, dIndices); CUDA_CHECK_LAST(0); #endif  // NDEBUG
 
-  const auto threads = THREADS_PER_BLOCK;
-  const auto blocks = ceilDiv(numberOfChromosomes, threads);
-  cvrpEvaluateChromosomesOnDevice<<<blocks, threads, 0, stream>>>(dIndices, numberOfChromosomes, chromosomeLength(),
-                                                                  capacity, dDistances, dDemands, dResults);
-  CUDA_CHECK_LAST(0);
+    const auto threads = THREADS_PER_BLOCK;
+    const auto blocks = ceilDiv(numberOfChromosomes, threads);
+    cvrpEvaluateChromosomesOnDevice<<<blocks, threads, 0, stream>>>(dIndices, numberOfChromosomes, chromosomeLength(),
+                                                                    capacity, dDistances, dDemands, dResults);
+    CUDA_CHECK_LAST(0);
 
-#ifndef NDEBUG
-  validateDeviceSolutions(dIndices, dResults, numberOfChromosomes);
-#endif  // NDEBUG
+  #ifndef NDEBUG
+    validateDeviceSolutions(dIndices, dResults, numberOfChromosomes);
+  #endif  // NDEBUG
 
-  CUDA_CHECK(cudaFree(dGenes));
-  CUDA_CHECK(cudaFree(dIndices));
- */
+    CUDA_CHECK(cudaFree(dGenes));
+    CUDA_CHECK(cudaFree(dIndices));
+   */
 }
 
 __global__ void setupDemands(unsigned* accDemandList,
@@ -485,7 +496,7 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
   CUDA_CHECK(cudaMalloc(&accCost, total * sizeof(float)));
   CUDA_CHECK(cudaMalloc(&bestCost, (total + 1) * sizeof(float)));
 
-  const unsigned threads = THREADS_PER_BLOCK;
+  const unsigned threads = 256;
   const unsigned blocks = ceilDiv(numberOfChromosomes, threads);
   setupDemands<<<blocks, threads, 0, stream>>>(accDemand, numberOfChromosomes, chromosomeLength, dIndices, dDemands);
 

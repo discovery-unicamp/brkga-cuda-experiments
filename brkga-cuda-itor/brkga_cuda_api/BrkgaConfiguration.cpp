@@ -1,5 +1,8 @@
 #include "BrkgaConfiguration.hpp"
 
+#include <cmath>
+#include <stdexcept>
+
 BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::instance(Instance* i) {
   if (i == nullptr) throw std::invalid_argument("Instance can't be null");
   _instance = i;
@@ -27,8 +30,7 @@ BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::chromosomeLength(unsig
 BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::eliteCount(unsigned n) {
   if (n == 0 || n >= _populationSize)
     throw std::invalid_argument("Elite count should be in range [1, population size)");
-  if (n + _mutantsCount >= _populationSize)
-    throw std::invalid_argument("Elite + mutants should be < population size");
+  if (n + _mutantsCount >= _populationSize) throw std::invalid_argument("Elite + mutants should be < population size");
   _eliteCount = n;
   return *this;
 }
@@ -41,8 +43,7 @@ BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::eliteProportion(float 
 BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::mutantsCount(unsigned n) {
   if (n == 0 || n >= _populationSize)
     throw std::invalid_argument("Mutants count should be in range [1, population size)");
-  if (n + _eliteCount >= _populationSize)
-    throw std::invalid_argument("Elite + mutants should be < population size");
+  if (n + _eliteCount >= _populationSize) throw std::invalid_argument("Elite + mutants should be < population size");
   _mutantsCount = n;
   return *this;
 }

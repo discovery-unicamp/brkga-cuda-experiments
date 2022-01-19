@@ -1,9 +1,12 @@
+#ifndef APPLICATIONS_MIN_QUEUE_HPP
+#define APPLICATIONS_MIN_QUEUE_HPP
+
 #include <deque>
 
 template <class T>
 class MinQueue {
 public:
-  const T& min() const { return queue[0].first; }
+  [[nodiscard]] inline const T& min() const { return queue[0].first; }
 
   void push(const T& value) {
     // moves the minimum value towards the head of the queue, counting the elements removed in order to "pop" work
@@ -23,8 +26,10 @@ public:
     }
   }
 
-  void clear() { queue.clear(); }
+  inline void clear() { queue.clear(); }
 
 private:
   std::deque<std::pair<T, unsigned>> queue;
 };
+
+#endif  // APPLICATIONS_MIN_QUEUE_HPP

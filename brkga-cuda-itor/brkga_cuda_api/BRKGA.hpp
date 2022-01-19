@@ -10,16 +10,16 @@
 #define BRKGA_H
 
 #include "BrkgaConfiguration.hpp"
-#include "CommonStructs.h"
 #include "Instance.hpp"
-#include "MathUtils.h"
 
-#include <curand.h>
+#include <curand.h>  // TODO check if this header is required here
 
-#include <stdexcept>
 #include <vector>
 
 #define THREADS_PER_BLOCK 256
+
+enum DecodeType;
+class PopIdxThreadIdxPair;
 
 /**
  * \brief BRKGA class contains the main interface of the BRKGA algorithm.
@@ -138,7 +138,7 @@ private:
   dim3 dimGrid_gene_pipe;  /// Grid dimension when we have one thread per gene
                            /// (coalesced used)
 
-  unsigned decode_type;  /// How to decode each chromosome
+  DecodeType decode_type;  /// How to decode each chromosome
 
   bool evolve_coalesced = false;  /// use one thread per gene to compute a next population
   bool evolve_pipeline = false;  /// use pipeline to process one population at a

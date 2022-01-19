@@ -1,14 +1,15 @@
+#include "CvrpInstance.hpp"
 #include "GpuBrkgaWrapper.hpp"
 #include <GPU-BRKGA/GPUBRKGA.cu>
-#include <brkga_cuda_api/Brkga>
+#include <brkga_cuda_api/BrkgaConfiguration.hpp>
+#include <brkga_cuda_api/Logger.hpp>
 
 GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config, CvrpInstance* _instance) : instance(_instance) {
   if (config.chromosomeLength > max_t) {
-    std::cerr << "Warning: Thread limit exceed (" << config.chromosomeLength << " > " << max_t
-              << "); the algorithm may fail to run";
+    warning("Thread limit exceeded:", config.chromosomeLength, ">", max_t, "and the algorithm may fail to run");
   }
   if (config.decodeType != DecodeType::DEVICE && config.decodeType != DecodeType::HOST) {
-    std::cerr << "Decode type `" << getDecodeTypeAsString(config.decodeType) << "` not supported; use some non-sorted version\n";
+    error("Decode type", getDecodeTypeAsString(config.decodeType), "isn't supported; use some non-sorted version\n");
     abort();
   }
 

@@ -6,9 +6,10 @@ add_executable(brkga-cvrp
   src/CvrpInstance.cu
   src/CvrpInstance.cpp
   src/CvrpInstance.hpp
-  src/Point.hpp
   src/GpuBrkgaWrapper.cu
   src/GpuBrkgaWrapper.hpp
+  src/Point.cpp
+  src/Point.hpp
 )
 
 find_package(OpenMP REQUIRED)

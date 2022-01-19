@@ -9,10 +9,6 @@
 
 #include "DecodeType.hpp"
 
-#include <cassert>
-#include <iostream>
-#include <stdexcept>
-
 #define POOL_SIZE 10  // size of the pool with the best solutions so far
 
 class Instance;

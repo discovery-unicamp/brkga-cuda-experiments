@@ -1,13 +1,15 @@
 #include "CvrpInstance.hpp"
 #include "GpuBrkgaWrapper.hpp"
-#include <brkga_cuda_api/Brkga>
+#include <brkga_cuda_api/BRKGA.hpp>
+#include <brkga_cuda_api/Logger.hpp>
 #include <getopt.h>
 
+#include <fstream>
 #include <functional>
 #include <iomanip>
 #include <iostream>
-#include <set>
 #include <string>
+#include <vector>
 
 void run(const std::function<void()>& runGenerations,
          const std::function<float()>& getBestFitness,
@@ -25,7 +27,7 @@ void run(const std::function<void()>& runGenerations,
   float timeElapsedMs;
   cudaEventElapsedTime(&timeElapsedMs, start, stop);
 
-  std::cerr << "Optimization finished\n";
+  info("Optimization finished");
   std::cout << std::fixed << std::setprecision(3) << getBestFitness() << ' ' << timeElapsedMs / 1000 << ' '
             << config.generations << ' ' << config.numberOfPopulations << ' ' << config.populationSize << ' '
             << config.eliteCount << ' ' << config.mutantsCount << ' ' << config.rho << ' '
@@ -39,26 +41,26 @@ int main(int argc, char** argv) {
   int option;
   while (option = getopt(argc, argv, "a:i:s:"), option != -1) {
     if (option == 'a') {
-      std::cerr << "Algorithm: " << optarg << '\n';
+      debug("Parse algorithm:", optarg);
       algorithm = optarg;
     } else if (option == 'i') {
-      std::cerr << "Instance file: " << optarg << '\n';
+      debug("Parse instance file:", optarg);
       instanceFilename = optarg;
     } else if (option == 's') {
-      std::cerr << "Parsing seed: " << optarg << '\n';
+      debug("Parse seed:", optarg);
       seed = std::stoi(optarg);
     }
   }
   if (algorithm.empty()) {
-    std::cerr << "No algorithm provided\n";
+    error("No algorithm provided");
     abort();
   }
   if (instanceFilename.empty()) {
-    std::cerr << "No instance provided\n";
+    error("No instance provided");
     abort();
   }
   if (seed < 0) {
-    std::cerr << "No seed provided\n";
+    error("No seed provided");
     abort();
   }
 
@@ -67,11 +69,11 @@ int main(int argc, char** argv) {
   bksFilename.pop_back();
   bksFilename += ".sol";
   if (!std::ifstream(bksFilename).is_open()) {
-    std::cerr << "Warning: no best known solution file found\n";
+    warning("no best known solution file found");
     bksFilename = "";
   }
 
-  std::cerr << "Reading instance from " << instanceFilename << '\n';
+  info("Reading instance from", instanceFilename);
   auto instance = CvrpInstance::fromFile(instanceFilename);
   if (!bksFilename.empty()) instance.validateBestKnownSolution(bksFilename);
 
@@ -91,17 +93,17 @@ int main(int argc, char** argv) {
     BRKGA brkga(config);
 
     auto runGenerations = [&]() {
-      for (size_t generation = 1; generation <= config.generations; ++generation) {
-        std::cerr << "Generation " << generation << '\r';
+      for (unsigned generation = 1; generation <= config.generations; ++generation) {
+        std::clog << "Generation " << generation << '\r';
         brkga.evolve();
         if (generation % config.exchangeBestInterval == 0) brkga.exchangeElite(config.exchangeBestCount);
       }
-      std::cerr << '\n';
+      std::clog << '\n';
     };
 
     auto getBestFitness = [&]() {
       auto best = brkga.getBestChromosomes(1)[0];
-      std::cerr << "Validating the best solution found\n";
+      info("Validating the best solution found");
       instance.validateChromosome(std::vector(best.begin() + 1, best.begin() + config.chromosomeLength + 1), best[0]);
       return best[0];
     };
@@ -112,27 +114,27 @@ int main(int argc, char** argv) {
     GpuBrkgaWrapper brkga(config, &instance);
 
     auto runGenerations = [&]() {
-      for (size_t generation = 1; generation <= config.generations; ++generation) {
-        std::cerr << "Generation " << generation << '\r';
+      for (unsigned generation = 1; generation <= config.generations; ++generation) {
+        std::clog << "Generation " << generation << '\r';
         brkga.evolve();
         if (generation % config.exchangeBestInterval == 0) brkga.exchangeElite(config.exchangeBestCount);
       }
-      std::cerr << '\n';
+      std::clog << '\n';
     };
 
     auto getBestFitness = [&]() {
       auto best = brkga.getBestChromosome();
-      std::cerr << "Validating the best solution found\n";
+      info("Validating the best solution found");
       instance.validateChromosome(std::vector(best.begin() + 1, best.begin() + config.chromosomeLength + 1), best[0]);
       return best[0];
     };
 
     run(runGenerations, getBestFitness, config);
   } else {
-    std::cerr << "Invalid algorithm: " << algorithm << '\n';
+    info("Invalid algorithm:", algorithm);
     abort();
   }
 
-  std::cerr << "Exiting gracefully\n";
+  info("Exiting gracefully");
   return 0;
 }

@@ -1,11 +1,7 @@
 #ifndef SRC_BRKGA_INSTANCE_HPP
 #define SRC_BRKGA_INSTANCE_HPP
 
-#include "CommonStructs.h"
-
 #include <cuda_runtime.h>
-
-#include <iostream>
 
 class Instance {
 public:
