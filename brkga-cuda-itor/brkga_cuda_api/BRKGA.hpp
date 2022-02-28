@@ -135,52 +135,6 @@ private:
   void evaluateChromosomesPipe(unsigned pop_id);
 
   /**
-   * \brief If HOST is used then this function decodes each chromosome with
-   *        the host_decode function provided in Decoder.cpp.
-   */
-  void evaluateChromosomesOnHost();
-
-  /**
-   * \brief If pipeline decoding is used then HOST must be used.
-   * This function decodes each chromosome with the host_decode function provided
-   * in Decoder.cpp. One population specific population is decoded.
-   * \param pop_id
-   * is the index of the population to be decoded.
-   */
-  void evaluateChromosomesOnHostPipe(unsigned pop_id);
-
-  /**
-   * \brief If DEVICE is used then this function decodes each chromosome
-   * with the kernel function decode above.
-   */
-  void evaluateChromosomesOnDevice();
-
-  /**
-   * \brief If DEVICE is used then this function decodes each chromosome
-   * with the kernel function decode above.
-   */
-  void evaluateChromosomesDevicePipe(unsigned pop_id);
-
-  /**
-   * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used then this function decodes
-   * each chromosome with the kernel function decode_chromosomes_sorted above. But
-   * first we sort each chromosome by its genes values. We save this information
-   * in the struct ChromosomeGeneIdxPair m_chromosome_gene_idx.
-   */
-  void evaluateChromosomesSortedOnDevice();
-  void evaluateChromosomesSortedOnHost();
-
-  /**
-   * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used then this function decodes
-   * each chromosome with the kernel function decode_chromosomes_sorted above. But
-   * first we sort each chromosome by its genes values. We save this information
-   * in the struct ChromosomeGeneIdxPair m_chromosome_gene_idx.
-   * \param pop_id is the index of the population to be processed
-   */
-  void evaluateChromosomesSortedOnDevicePipe(unsigned pop_id);
-  void evaluateChromosomesSortedOnHostPipe(unsigned pop_id);
-
-  /**
    * \brief If DEVICE_DECODE_CHROMOSOME_SORTED, then we
    * we perform 2 stable_sort sorts: first we sort all genes of all
    * chromosomes by their values, and then we sort by the chromosomes index, and

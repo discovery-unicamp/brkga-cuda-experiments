@@ -175,13 +175,54 @@ void BRKGA::resetPopulation() {
 void BRKGA::evaluateChromosomes() {
   debug("evaluating the chromosomes with", getDecodeTypeAsString(decodeType));
   if (decodeType == DecodeType::DEVICE) {
-    evaluateChromosomesOnDevice();
+    // Make a copy of chromosomes to dPopulation2 such that they can be messed
+    // up inside the decoder functions without affecting the real chromosomes on
+    // dPopulation.
+    CUDA_CHECK(cudaMemcpy(mPopulationTemp, mPopulation, numberOfChromosomes * chromosomeSize * sizeof(float),
+                          cudaMemcpyDeviceToDevice));
+    instance->evaluateChromosomesOnDevice(defaultStream, numberOfChromosomes, mPopulationTemp, mScores);
   } else if (decodeType == DecodeType::DEVICE_SORTED) {
-    evaluateChromosomesSortedOnDevice();
+    sortChromosomesGenes();
+    instance->evaluateIndicesOnDevice(defaultStream, numberOfChromosomes, mChromosomeGeneIdx, mScores);
   } else if (decodeType == DecodeType::HOST_SORTED) {
-    evaluateChromosomesSortedOnHost();
+    sortChromosomesGenes();
+    instance->evaluateIndicesOnHost(numberOfChromosomes, mChromosomeGeneIdx, mScores);
+
+    // FIXME refactor the code for better overlapping opportunities as in the following code
+    /*
+    // prefetch first tile
+    cudaMemPrefetchAsync(a, tile_size * sizeof(size_t), 0, s2);
+    cudaEventRecord(e1, s2);
+
+    for (int i = 0; i < num_tiles; i++) {
+      // make sure previous kernel and current tile copy both completed
+      cudaEventSynchronize(e1);
+      cudaEventSynchronize(e2);
+
+      // run multiple kernels on current tile
+      for (int j = 0; j < num_kernels; j++)
+        kernel<<<1024, 1024, 0, s1>>>(tile_size, a + tile_size * i);
+      cudaEventRecord(e1, s1);
+
+      // prefetch next tile to the gpu in a separate streams
+      if (i < num_tiles-1) {
+        // make sure the streams is idle to force non-deferred HtoD prefetches first
+        cudaStreamSynchronize(s2);
+        cudaMemPrefetchAsync(a + tile_size * (i+1), tile_size * sizeof(size_t), 0, s2);
+        cudaEventRecord(e2, s2);
+      }
+
+      // offload current tile to the cpu after the kernel is completed using the deferred path
+      cudaMemPrefetchAsync(a + tile_size * i, tile_size * sizeof(size_t), cudaCpuDeviceId, s1);
+
+      // rotate streams and swap events
+      st = s1; s1 = s2; s2 = st;
+      st = s2; s2 = s3; s3 = st;
+      et = e1; e1 = e2; e2 = et;
+    }
+    */
   } else if (decodeType == DecodeType::HOST) {
-    evaluateChromosomesOnHost();
+    instance->evaluateChromosomesOnHost(numberOfChromosomes, mPopulation, mScores);
   } else {
     throw std::domain_error("Function decode type is unknown");
   }
@@ -189,101 +230,28 @@ void BRKGA::evaluateChromosomes() {
 
 void BRKGA::evaluateChromosomesPipe(unsigned id) {
   debug("evaluating the chromosomes of the population no.", id, "with", getDecodeTypeAsString(decodeType));
+  assert(mPopulationPipe[id] - mPopulation == id * populationSize * chromosomeSize);  // wrong pair of pointers
+
   if (decodeType == DecodeType::DEVICE) {
-    evaluateChromosomesDevicePipe(id);
+    // Make a copy of chromosomes to dPopulation2 such that they can be messed
+    // up inside the decoder functions without affecting the real chromosomes on
+    // dPopulation.
+    CUDA_CHECK(streams[id],
+              cudaMemcpyAsync(mPopulationTemp, mPopulation, numberOfChromosomes * chromosomeSize * sizeof(float),
+                              cudaMemcpyDeviceToDevice, streams[id]));
+    instance->evaluateChromosomesOnDevice(streams[id], numberOfChromosomes, mPopulationTemp, mScores);
+    CUDA_CHECK_LAST(streams[id]);
   } else if (decodeType == DecodeType::DEVICE_SORTED) {
-    evaluateChromosomesSortedOnDevicePipe(id);
+    instance->evaluateIndicesOnDevice(streams[id], populationSize, mChromosomeGeneIdxPipe[id],
+                                      mScoresPipe[id]);
+    CUDA_CHECK_LAST(streams[id]);
   } else if (decodeType == DecodeType::HOST_SORTED) {
-    evaluateChromosomesSortedOnHostPipe(id);
+    instance->evaluateIndicesOnHost(populationSize, mChromosomeGeneIdxPipe[id], mScoresPipe[id]);
   } else if (decodeType == DecodeType::HOST) {
-    evaluateChromosomesOnHostPipe(id);
+    instance->evaluateChromosomesOnHost(populationSize, mPopulationPipe[id], mScoresPipe[id]);
   } else {
     throw std::domain_error("Function decode type is unknown");
   }
-}
-
-void BRKGA::evaluateChromosomesOnHost() {
-  instance->evaluateChromosomesOnHost(numberOfChromosomes, mPopulation, mScores);
-}
-
-void BRKGA::evaluateChromosomesOnHostPipe(unsigned id) {
-  instance->evaluateChromosomesOnHost(populationSize, mPopulationPipe[id], mScoresPipe[id]);
-}
-
-void BRKGA::evaluateChromosomesOnDevice() {
-  // Make a copy of chromosomes to dPopulation2 such that they can be messed
-  // up inside the decoder functions without affecting the real chromosomes on
-  // dPopulation.
-  CUDA_CHECK(cudaMemcpy(mPopulationTemp, mPopulation, numberOfChromosomes * chromosomeSize * sizeof(float),
-                        cudaMemcpyDeviceToDevice));
-  instance->evaluateChromosomesOnDevice(defaultStream, numberOfChromosomes, mPopulationTemp, mScores);
-}
-
-void BRKGA::evaluateChromosomesDevicePipe(unsigned id) {
-  // Make a copy of chromosomes to dPopulation2 such that they can be messed
-  // up inside the decoder functions without affecting the real chromosomes on
-  // dPopulation.
-  CUDA_CHECK(streams[id],
-             cudaMemcpyAsync(mPopulationTemp, mPopulation, numberOfChromosomes * chromosomeSize * sizeof(float),
-                             cudaMemcpyDeviceToDevice, streams[id]));
-  instance->evaluateChromosomesOnDevice(streams[id], numberOfChromosomes, mPopulationTemp, mScores);
-}
-
-void BRKGA::evaluateChromosomesSortedOnHost() {
-  sortChromosomesGenes();
-  instance->evaluateIndicesOnHost(numberOfChromosomes, mChromosomeGeneIdx, mScores);
-
-  // FIXME refactor the code for better overlapping opportunities as in the following code
-  /*
-  // prefetch first tile
-  cudaMemPrefetchAsync(a, tile_size * sizeof(size_t), 0, s2);
-  cudaEventRecord(e1, s2);
-
-  for (int i = 0; i < num_tiles; i++) {
-    // make sure previous kernel and current tile copy both completed
-    cudaEventSynchronize(e1);
-    cudaEventSynchronize(e2);
-
-    // run multiple kernels on current tile
-    for (int j = 0; j < num_kernels; j++)
-      kernel<<<1024, 1024, 0, s1>>>(tile_size, a + tile_size * i);
-    cudaEventRecord(e1, s1);
-
-    // prefetch next tile to the gpu in a separate streams
-    if (i < num_tiles-1) {
-      // make sure the streams is idle to force non-deferred HtoD prefetches first
-      cudaStreamSynchronize(s2);
-      cudaMemPrefetchAsync(a + tile_size * (i+1), tile_size * sizeof(size_t), 0, s2);
-      cudaEventRecord(e2, s2);
-    }
-
-    // offload current tile to the cpu after the kernel is completed using the deferred path
-    cudaMemPrefetchAsync(a + tile_size * i, tile_size * sizeof(size_t), cudaCpuDeviceId, s1);
-
-    // rotate streams and swap events
-    st = s1; s1 = s2; s2 = st;
-    st = s2; s2 = s3; s3 = st;
-    et = e1; e1 = e2; e2 = et;
-  }
-   */
-}
-
-void BRKGA::evaluateChromosomesSortedOnDevice() {
-  sortChromosomesGenes();
-  instance->evaluateIndicesOnDevice(defaultStream, numberOfChromosomes, mChromosomeGeneIdx, mScores);
-}
-
-void BRKGA::evaluateChromosomesSortedOnHostPipe(unsigned id) {
-  instance->evaluateIndicesOnHost(populationSize, mChromosomeGeneIdxPipe[id], mScoresPipe[id]);
-}
-
-void BRKGA::evaluateChromosomesSortedOnDevicePipe(unsigned id) {
-  // sortChromosomesGenesPipe(id);
-  assert(mPopulationPipe[id] - mPopulation
-         == id * populationSize * chromosomeSize);  // wrong pair of pointers
-  instance->evaluateIndicesOnDevice(streams[id], populationSize, mChromosomeGeneIdxPipe[id],
-                                    mScoresPipe[id]);
-  CUDA_CHECK_LAST(streams[id]);
 }
 
 /**
