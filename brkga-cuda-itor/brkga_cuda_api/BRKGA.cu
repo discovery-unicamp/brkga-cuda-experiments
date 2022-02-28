@@ -142,11 +142,6 @@ size_t BRKGA::allocateData() {
   memoryUsed += numberOfChromosomes * sizeof(float);
   CUDA_CHECK(cudaMalloc((void**)&dRandomParent, numberOfChromosomes * sizeof(float)));
 
-  // Allocate a poll to save the POOL_SIZE best solutions, where the first value
-  // in each chromosome is the chromosome score
-  memoryUsed += POOL_SIZE * (chromosomeSize + 1) * sizeof(float);
-  CUDA_CHECK(cudaMallocManaged(&mBestSolutions, POOL_SIZE * (chromosomeSize + 1) * sizeof(float)));
-
   return memoryUsed;
 }
 
@@ -169,8 +164,6 @@ BRKGA::~BRKGA() {
 
   CUDA_CHECK(cudaFree(dRandomEliteParent));
   CUDA_CHECK(cudaFree(dRandomParent));
-
-  CUDA_CHECK(cudaFree(mBestSolutions));
 
   if (evolvePipeline) {
     for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK(cudaStreamDestroy(streams[p]));
@@ -644,76 +637,17 @@ void BRKGA::exchangeElite(unsigned M) {
   CUDA_CHECK_LAST(0);
 }
 
-std::vector<std::vector<float>> BRKGA::getBestChromosomes(unsigned k) {
-  if (k > POOL_SIZE) k = POOL_SIZE;
-  std::vector<std::vector<float>> ret(k, std::vector<float>(chromosomeSize + 1));
-
-  debug("Fetching the", k, "best chromosomes");
-  saveBestChromosomes();
-
-  for (unsigned i = 0; i < k; i++) {
-    for (unsigned j = 0; j <= chromosomeSize; j++) { ret[i][j] = mBestSolutions[i * (chromosomeSize + 1) + j]; }
-  }
-
-  return ret;
-}
-
-/**
-* \brief This kernel is used to update the pool with the best POOL_SIZE
-solutions.
-*
-* It is assumed that a global sort by fitness of chromosomes has been done.
-* \param dPopulation is the array containing all chromosomes of all
-populations.
-* \param chromosomeSize is the size of each individual/chromosome.
-* \param dScoresIdx is the struct sorted by chromosomes fitness.
-
-* \param d_best_solution is the array to save the best chromosomes.
-* \param dScores contains the fitness of all chromosomes sorted according to
-dScoresIdx.
-* \param bestSaved is used to indicate if we want to save POOL_SIZE best
-* solutions or keep POOL_SIZE solutions considering previously saved
-chromosomes.
-*/
-__global__ void device_save_best_chromosomes(float* dPopulation,
-                                             unsigned chromosomeSize,
-                                             PopIdxThreadIdxPair* dScoresIdx,
-                                             float* dBestSolutions,
-                                             const float* dScores,
-                                             unsigned bestSaved) {
-  if (!bestSaved) {  // this is the first time saving best solutions in to the
-    // pool
-    for (int i = 0; i < POOL_SIZE; i++) {
-      unsigned tx = dScoresIdx[i].thIdx;
-      float* begin = &dPopulation[tx * chromosomeSize];
-      dBestSolutions[i * (chromosomeSize + 1)] = dScores[i];  // save the value of the chromosome
-      for (int j = 1; j <= chromosomeSize; j++) {  // save the chromosome
-        dBestSolutions[i * (chromosomeSize + 1) + j] = begin[j - 1];
-      }
-    }
-  } else {  // Since best solutions were already saved
-    // only save now if the i-th best current solution is better than the
-    // i-th best overall
-    for (int i = 0; i < POOL_SIZE; i++) {
-      unsigned tx = dScoresIdx[i].thIdx;
-      float* begin = &dPopulation[tx * chromosomeSize];
-      if (dScores[i] < dBestSolutions[i * (chromosomeSize + 1)]) {
-        dBestSolutions[i * (chromosomeSize + 1)] = dScores[i];
-        for (int j = 1; j <= chromosomeSize; j++) { dBestSolutions[i * (chromosomeSize + 1) + j] = begin[j - 1]; }
-      }
-    }
-  }
-}
-
-void BRKGA::saveBestChromosomes() {
+std::vector<float> BRKGA::getBestChromosomes() {
   globalSortChromosomes();
-  device_save_best_chromosomes<<<1, 1>>>(mPopulation, chromosomeSize, mScoresIdx, mBestSolutions, mScores,
-                                         bestSaved);
-  CUDA_CHECK_LAST(0);
-  bestSaved = 1;
+  unsigned bestChromosome = mScoresIdx[0].thIdx;
+  std::vector<float> best(chromosomeSize + 1);
+  best[0] = mScores[0];
+  CUDA_CHECK(cudaMemcpy(best.data() + 1, mPopulation + bestChromosome * chromosomeSize, chromosomeSize * sizeof(float), cudaMemcpyDeviceToHost));
 
   // synchronize here to avoid an issue where the result is not saved
   CUDA_CHECK(cudaDeviceSynchronize());
+
+  return best;
 }
 
 void BRKGA::globalSortChromosomes() {

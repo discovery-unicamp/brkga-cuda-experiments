@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
     };
 
     auto getBestFitness = [&]() {
-      auto best = brkga.getBestChromosomes(1)[0];
+      auto best = brkga.getBestChromosomes();
       info("Validating the best solution found");
       instance.validateChromosome(std::vector(best.begin() + 1, best.begin() + config.chromosomeLength + 1), best[0]);
       return best[0];

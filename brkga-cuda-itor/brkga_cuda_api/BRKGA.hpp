@@ -49,12 +49,6 @@ public:
   void exchangeElite(unsigned M);
 
   /**
-   * \brief This Function saves in the pool d_best_solutions and h_best_solutions
-   * the best POOL_SIZE solutions generated so far among all populations.
-   */
-  void saveBestChromosomes();
-
-  /**
    * \brief This method returns a vector of vectors, where each vector corresponds
    * to a chromosome, where in position 0 we have its score and in positions 1 to
    * chromosomeSize the aleles values of the chromosome.
@@ -62,7 +56,7 @@ public:
    * This function copys chromosomes directly from the pool of best solutions.
    * \param k is the number of chromosomes to return. The best k are returned.
    */
-  std::vector<std::vector<float>> getBestChromosomes(unsigned k);
+  std::vector<float> getBestChromosomes();
 
   std::vector<unsigned> getBestChromosomeIndices() const;
 
@@ -78,9 +72,6 @@ private:
   PopIdxThreadIdxPair* mScoresIdx = nullptr;
   std::vector<float*> mScoresPipe;  /// Pointer to each population device score of each chromosome
   std::vector<PopIdxThreadIdxPair*> dScoresIdxPipe;
-
-  float* mBestSolutions = nullptr;  /// pool of 10 best solutions
-  unsigned bestSaved = 0;  /// indicate whether best solutions were already saved or not
 
   unsigned* mChromosomeGeneIdx = nullptr;  /// Table with indices for all chromosomes and each of its gene on device
   std::vector<unsigned*> mChromosomeGeneIdxPipe;  /// Pointer for each population for its table with indices for all
