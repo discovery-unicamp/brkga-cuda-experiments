@@ -46,7 +46,7 @@ public:
    * \brief Exchange M individuals among the different populations.
    * \param M is the number of elite individuals to be exchanged.
    */
-  void exchangeElite(unsigned M);
+  void exchangeElite(unsigned count);
 
   /**
    * \brief This method returns a vector of vectors, where each vector corresponds
@@ -106,8 +106,6 @@ private:
                            /// (coalesced used)
 
   DecodeType decodeType;  /// How to decode each chromosome
-
-  bool evolveCoalesced = false;  /// use one thread per gene to compute a next population
 
   std::vector<cudaStream_t> streams;  // use one stream per population when doing pipelined version
 
@@ -205,14 +203,6 @@ private:
    * \param pop_id is the index of the population to be sorted.
    */
   void sortChromosomesPipe(unsigned pop_id);
-
-  /**
-   * \brief Main function of the BRKGA algorithm, using pipeline.
-   * It evolves K populations for one generation in a pipelined fashion: each
-   * population is evolved separately in the GPU while decoding is mostly performed
-   * on CPU except for n_pop_pipe populations that are decoded on GPU.
-   */
-  void evolvePipe();
 
   void sortChromosomesGenesPipe(unsigned pop_id);
 };

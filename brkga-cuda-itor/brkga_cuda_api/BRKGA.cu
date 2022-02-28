@@ -389,14 +389,6 @@ void BRKGA::sortChromosomesGenesPipe(unsigned) {
   throw std::runtime_error(__FUNCTION__ + std::string(" is not supported"));
 }
 
-void BRKGA::evolve() {
-  if (evolvePipeline) {
-    evolvePipe();
-    return;
-  }
-  throw std::runtime_error(__FUNCTION__ + std::string(" is not supported"));
-}
-
 /**
  * \brief Kernel function to compute a next population of a give population.
  * In this function each thread process one GENE.
@@ -462,7 +454,7 @@ __global__ void device_next_population_coalesced_pipe(const float* dPopulation,
   }
 }
 
-void BRKGA::evolvePipe() {
+void BRKGA::evolve() {
   debug("Evolving the population");
   // FIXME
   assert(decodeType == DecodeType::DEVICE_SORTED || decodeType == DecodeType::HOST_SORTED);
@@ -591,21 +583,21 @@ void BRKGA::sortChromosomesPipe(unsigned id) {
  * individual/chromosome. \param populationSize is the size of each population.
  * \param numberOfPopulations is the number of independent populations.
  * \param dScores_ids is the struct sorted by chromosomes fitness.
- * \param M is the number of elite chromosomes to exchange.
+ * \param count is the number of elite chromosomes to exchange.
  */
 __global__ void device_exchange_elite(float* dPopulation,
                                       unsigned chromosomeSize,
                                       unsigned populationSize,
                                       unsigned numberOfPopulations,
                                       PopIdxThreadIdxPair* dScoresIdx,
-                                      unsigned M) {
-  unsigned tx = threadIdx.x;  // this thread value between 0 and M-1
+                                      unsigned count) {
+  unsigned tx = threadIdx.x;  // this thread value between 0 and count-1
   unsigned idx = blockIdx.x;  // this thread population index, a value
   // between 0 and numberOfPopulations-1
   unsigned eliteIdx = idx * populationSize + tx;
   unsigned eliteChromosomeIdx = dScoresIdx[eliteIdx].thIdx;
   unsigned insideDestinyIdx =
-      populationSize - 1 - (M * idx) - tx;  // index of the destiny of this thread inside each population
+      populationSize - 1 - (count * idx) - tx;  // index of the destiny of this thread inside each population
 
   for (unsigned i = 0; i < numberOfPopulations; i++) {
     if (i != idx) {
@@ -617,19 +609,21 @@ __global__ void device_exchange_elite(float* dPopulation,
   }
 }
 
-void BRKGA::exchangeElite(unsigned M) {
+void BRKGA::exchangeElite(unsigned count) {
   using std::range_error;
 
-  debug("Sharing the", M, "best chromosomes of each one of the", numberOfPopulations, "populations");
-  if (M > eliteSize) throw range_error("Exchange elite size M greater than elite size.");
-  if (M * numberOfPopulations > populationSize) {
-    throw range_error("Total exchange elite size greater than population size.");
+  debug("Sharing the", count, "best chromosomes of each one of the", numberOfPopulations, "populations");
+  if (count > eliteSize) throw range_error("Exchange count is greater than elite size.");
+  if (count * numberOfPopulations > populationSize) {
+    throw range_error("Exchange count will replace the entire population: it should be at most"
+                      + std::string(" [population size] / [number of populations] (")
+                      + std::to_string(populationSize / numberOfPopulations) + ").");
   }
 
   evaluateChromosomes();
   sortChromosomes();
-  device_exchange_elite<<<numberOfPopulations, M>>>(mPopulation, chromosomeSize, populationSize, numberOfPopulations,
-                                                   mScoresIdx, M);
+  device_exchange_elite<<<numberOfPopulations, count>>>(mPopulation, chromosomeSize, populationSize, numberOfPopulations,
+                                                   mScoresIdx, count);
   CUDA_CHECK_LAST(0);
 }
 
