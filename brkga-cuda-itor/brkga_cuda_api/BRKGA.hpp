@@ -71,30 +71,28 @@ private:
 
   float* mPopulation;
   float* mPopulationTemp;
-  float** mPopulationPipe =
-      nullptr;  /// Device populations using evolvePipeline. One pointer is used to each population.
-  float** mPopulationPipeTemp =
-      nullptr;  /// Device populations using evolvePipeline. One pointer is used to each population.
+  std::vector<float*> mPopulationPipe;  /// Device populations using evolvePipeline. One pointer is used to each population.
+  std::vector<float*> mPopulationPipeTemp;  /// Device populations using evolvePipeline. One pointer is used to each population.
 
   float* mScores = nullptr;
   PopIdxThreadIdxPair* mScoresIdx = nullptr;
-  float** mScoresPipe = nullptr;  /// Pointer to each population device score of each chromosome
-  PopIdxThreadIdxPair** dScoresIdxPipe = nullptr;
+  std::vector<float*> mScoresPipe;  /// Pointer to each population device score of each chromosome
+  std::vector<PopIdxThreadIdxPair*> dScoresIdxPipe;
 
   float* mBestSolutions = nullptr;  /// pool of 10 best solutions
   unsigned bestSaved = 0;  /// indicate whether best solutions were already saved or not
 
   unsigned* mChromosomeGeneIdx = nullptr;  /// Table with indices for all chromosomes and each of its gene on device
-  unsigned** mChromosomeGeneIdxPipe = nullptr;  /// Pointer for each population for its table with indices for all
+  std::vector<unsigned*> mChromosomeGeneIdxPipe;  /// Pointer for each population for its table with indices for all
                                                     /// chromosomes in the population and each of its gene on device
 
   float* dRandomEliteParent = nullptr;  /// a random number for each thread to choose its elite parent
                                            /// during crossover
   float* dRandomParent = nullptr;  /// a random number for each thread to choose
                                      /// its non-elite parent during crossover
-  float** dRandomEliteParentPipe = nullptr;  /// A pointer to each population where random numbers for each
+  std::vector<float*> dRandomEliteParentPipe;  /// A pointer to each population where random numbers for each
                                                  /// thread to choose its elite parent during crossover
-  float** dRandomParentPipe = nullptr;  /// A pointer to each population to random numbers for each thread
+  std::vector<float*> dRandomParentPipe;  /// A pointer to each population to random numbers for each thread
                                            /// to choose its non-elite parent during crossover
 
   unsigned numberOfChromosomes;  /// total number of chromosomes in all K populations
@@ -122,7 +120,7 @@ private:
   bool evolvePipeline = false;  /// use pipeline to process one population at a
                                  /// time in parallel with CPU computing scores
 
-  cudaStream_t* stream = nullptr;  // use one stream per population when doing pipelined version
+  std::vector<cudaStream_t> streams;  // use one stream per population when doing pipelined version
 
   static constexpr cudaStream_t defaultStream = nullptr;  // NOLINT(misc-misplaced-const)
 

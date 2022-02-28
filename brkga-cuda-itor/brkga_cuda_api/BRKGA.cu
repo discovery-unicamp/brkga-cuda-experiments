@@ -85,24 +85,22 @@ BRKGA::BRKGA(BrkgaConfiguration& config) {
 void BRKGA::initPipeline() {
   // Grid dimension when using pipeline
   // One thread per chromosome of 1 population
-  this->dimGridPipe.x = (populationSize) / THREADS_PER_BLOCK;
+  dimGridPipe.x = (populationSize) / THREADS_PER_BLOCK;
   // One thread per gene of 1 population
-  this->dimGridGenePipe.x = ceilDiv(chromosomeSize * populationSize, THREADS_PER_BLOCK);
+  dimGridGenePipe.x = ceilDiv(chromosomeSize * populationSize, THREADS_PER_BLOCK);
 
-  // Allocate one stream for each population
-  this->stream = (cudaStream_t*)malloc(numberOfPopulations * sizeof(cudaStream_t));
-  for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK(cudaStreamCreate(&stream[p]));
+  // Allocate one streams for each population
+  streams.resize(numberOfPopulations);
+  for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK(cudaStreamCreate(&streams[p]));
 
   // set pointers for each population in the BRKGA arrays
-  mPopulationPipe = (float**)malloc(numberOfPopulations * sizeof(float*));
-  mPopulationPipeTemp = (float**)malloc(numberOfPopulations * sizeof(float*));
-  mScoresPipe = (float**)malloc(numberOfPopulations * sizeof(float*));
-  mChromosomeGeneIdxPipe =
-      (unsigned**)malloc(numberOfPopulations * sizeof(unsigned*));  // NOLINT(bugprone-sizeof-expression)
-  dScoresIdxPipe = (PopIdxThreadIdxPair**)malloc(
-      numberOfPopulations * sizeof(PopIdxThreadIdxPair*));  // NOLINT(bugprone-sizeof-expression)
-  dRandomEliteParentPipe = (float**)malloc(numberOfPopulations * sizeof(float*));
-  dRandomParentPipe = (float**)malloc(numberOfPopulations * sizeof(float*));
+  mPopulationPipe.resize(numberOfPopulations);
+  mPopulationPipeTemp.resize(numberOfPopulations);
+  mScoresPipe.resize(numberOfPopulations);
+  mChromosomeGeneIdxPipe.resize(numberOfPopulations);
+  dScoresIdxPipe.resize(numberOfPopulations);
+  dRandomEliteParentPipe.resize(numberOfPopulations);
+  dRandomParentPipe.resize(numberOfPopulations);
 
   for (unsigned p = 0; p < numberOfPopulations; p++) {
     mPopulationPipe[p] = mPopulation + (p * populationSize * chromosomeSize);
@@ -154,7 +152,7 @@ size_t BRKGA::allocateData() {
 
 BRKGA::~BRKGA() {
   if (evolvePipeline) {
-    for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK_LAST(stream[p]);
+    for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK_LAST(streams[p]);
   }
   CUDA_CHECK_LAST(0);
 
@@ -175,15 +173,7 @@ BRKGA::~BRKGA() {
   CUDA_CHECK(cudaFree(mBestSolutions));
 
   if (evolvePipeline) {
-    for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK(cudaStreamDestroy(stream[p]));
-    free(stream);
-    free(mPopulationPipe);
-    free(mPopulationPipeTemp);
-    free(mScoresPipe);
-    free(mChromosomeGeneIdxPipe);
-    free(dScoresIdxPipe);
-    free(dRandomEliteParentPipe);
-    free(dRandomParentPipe);
+    for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK(cudaStreamDestroy(streams[p]));
   }
 }
 
@@ -244,10 +234,10 @@ void BRKGA::evaluateChromosomesDevicePipe(unsigned id) {
   // Make a copy of chromosomes to dPopulation2 such that they can be messed
   // up inside the decoder functions without affecting the real chromosomes on
   // dPopulation.
-  CUDA_CHECK(stream[id],
+  CUDA_CHECK(streams[id],
              cudaMemcpyAsync(mPopulationTemp, mPopulation, numberOfChromosomes * chromosomeSize * sizeof(float),
-                             cudaMemcpyDeviceToDevice, stream[id]));
-  instance->evaluateChromosomesOnDevice(stream[id], numberOfChromosomes, mPopulationTemp, mScores);
+                             cudaMemcpyDeviceToDevice, streams[id]));
+  instance->evaluateChromosomesOnDevice(streams[id], numberOfChromosomes, mPopulationTemp, mScores);
 }
 
 void BRKGA::evaluateChromosomesSortedOnHost() {
@@ -270,9 +260,9 @@ void BRKGA::evaluateChromosomesSortedOnHost() {
       kernel<<<1024, 1024, 0, s1>>>(tile_size, a + tile_size * i);
     cudaEventRecord(e1, s1);
 
-    // prefetch next tile to the gpu in a separate stream
+    // prefetch next tile to the gpu in a separate streams
     if (i < num_tiles-1) {
-      // make sure the stream is idle to force non-deferred HtoD prefetches first
+      // make sure the streams is idle to force non-deferred HtoD prefetches first
       cudaStreamSynchronize(s2);
       cudaMemPrefetchAsync(a + tile_size * (i+1), tile_size * sizeof(size_t), 0, s2);
       cudaEventRecord(e2, s2);
@@ -302,9 +292,9 @@ void BRKGA::evaluateChromosomesSortedOnDevicePipe(unsigned id) {
   // sortChromosomesGenesPipe(id);
   assert(mPopulationPipe[id] - mPopulation
          == id * populationSize * chromosomeSize);  // wrong pair of pointers
-  instance->evaluateIndicesOnDevice(stream[id], populationSize, mChromosomeGeneIdxPipe[id],
+  instance->evaluateIndicesOnDevice(streams[id], populationSize, mChromosomeGeneIdxPipe[id],
                                     mScoresPipe[id]);
-  CUDA_CHECK_LAST(stream[id]);
+  CUDA_CHECK_LAST(streams[id]);
 }
 
 /**
@@ -516,17 +506,17 @@ void BRKGA::evolvePipe() {
     // next population.
     unsigned num_genes = populationSize * chromosomeSize;  // number of genes in one population
 
-    device_next_population_coalesced_pipe<<<dimGridGenePipe, dimBlock, 0, stream[p]>>>(
+    device_next_population_coalesced_pipe<<<dimGridGenePipe, dimBlock, 0, streams[p]>>>(
         mPopulationPipe[p], mPopulationPipeTemp[p], dRandomEliteParentPipe[p], dRandomParentPipe[p],
         chromosomeSize, populationSize, eliteSize, mutantsSize, rhoe, dScoresIdxPipe[p], num_genes);
-    CUDA_CHECK_LAST(stream[p]);
+    CUDA_CHECK_LAST(streams[p]);
 
     std::swap(mPopulationPipe[p], mPopulationPipeTemp[p]);
   }
 
   std::swap(mPopulation, mPopulationTemp);
 
-  for (unsigned p = 0; p < numberOfPopulations; ++p) CUDA_CHECK(cudaStreamSynchronize(stream[p]));
+  for (unsigned p = 0; p < numberOfPopulations; ++p) CUDA_CHECK(cudaStreamSynchronize(streams[p]));
   debug("A new generation of the population was created");
 }
 
@@ -586,14 +576,14 @@ void BRKGA::sortChromosomes() {
 
 void BRKGA::sortChromosomesPipe(unsigned id) {
   // For each thread we store in dScoresIdx the global chromosome index and its population index.
-  device_set_idx_pipe<<<dimGridPipe, dimBlock, 0, stream[id]>>>(dScoresIdxPipe[id], id,
+  device_set_idx_pipe<<<dimGridPipe, dimBlock, 0, streams[id]>>>(dScoresIdxPipe[id], id,
                                                                          populationSize);
-  CUDA_CHECK_LAST(stream[id]);
+  CUDA_CHECK_LAST(streams[id]);
 
   thrust::device_ptr<float> keys(mScoresPipe[id]);
   thrust::device_ptr<PopIdxThreadIdxPair> vals(dScoresIdxPipe[id]);
   // now sort all chromosomes by their scores (vals)
-  thrust::stable_sort_by_key(thrust::cuda::par.on(stream[id]), keys, keys + populationSize, vals);
+  thrust::stable_sort_by_key(thrust::cuda::par.on(streams[id]), keys, keys + populationSize, vals);
   // We do not need this other sor anymore
   // now sort all chromosomes by their population index
   // in the sorting process it is used operator< above to compare two structs of
