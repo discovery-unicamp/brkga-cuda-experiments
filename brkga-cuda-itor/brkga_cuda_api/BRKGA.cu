@@ -56,7 +56,6 @@ BRKGA::BRKGA(BrkgaConfiguration& config) {
   mutantsSize = config.mutantsCount;
   rhoe = config.rho;
   decodeType = config.decodeType;
-  evolvePipeline = true;
 
   size_t memoryUsed = allocateData();
 
@@ -70,7 +69,7 @@ BRKGA::BRKGA(BrkgaConfiguration& config) {
   // Grid dimension when having one thread per gene
   this->dimGridGene.x = ceilDiv(numberOfGenes, THREADS_PER_BLOCK);
 
-  if (evolvePipeline) initPipeline();
+  initPipeline();
 
   // Create pseudo-random number generator
   gen = nullptr;
@@ -146,9 +145,8 @@ size_t BRKGA::allocateData() {
 }
 
 BRKGA::~BRKGA() {
-  if (evolvePipeline) {
-    for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK_LAST(streams[p]);
-  }
+  // Ensure we had no problem
+  for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK_LAST(streams[p]);
   CUDA_CHECK_LAST(0);
 
   // Cleanup
@@ -165,9 +163,7 @@ BRKGA::~BRKGA() {
   CUDA_CHECK(cudaFree(dRandomEliteParent));
   CUDA_CHECK(cudaFree(dRandomParent));
 
-  if (evolvePipeline) {
-    for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK(cudaStreamDestroy(streams[p]));
-  }
+  for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK(cudaStreamDestroy(streams[p]));
 }
 
 void BRKGA::resetPopulation() {

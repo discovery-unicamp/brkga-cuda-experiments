@@ -16,7 +16,7 @@
 
 #include <vector>
 
-#define THREADS_PER_BLOCK 256
+#define THREADS_PER_BLOCK 256  // TODO move to the user configuration
 
 enum DecodeType;
 class PopIdxThreadIdxPair;
@@ -108,8 +108,6 @@ private:
   DecodeType decodeType;  /// How to decode each chromosome
 
   bool evolveCoalesced = false;  /// use one thread per gene to compute a next population
-  bool evolvePipeline = false;  /// use pipeline to process one population at a
-                                 /// time in parallel with CPU computing scores
 
   std::vector<cudaStream_t> streams;  // use one stream per population when doing pipelined version
 
