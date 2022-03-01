@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
 
     auto runGenerations = [&]() {
       for (unsigned generation = 1; generation <= config.generations; ++generation) {
-        std::clog << "Generation " << generation << '\r';
+        std::clog << "Generation " << generation << "; best: " << brkga.getBestScore() << '\r';
         brkga.evolve();
         if (generation % config.exchangeBestInterval == 0) brkga.exchangeElite(config.exchangeBestCount);
       }
@@ -115,7 +115,7 @@ int main(int argc, char** argv) {
 
     auto runGenerations = [&]() {
       for (unsigned generation = 1; generation <= config.generations; ++generation) {
-        std::clog << "Generation " << generation << '\r';
+        std::clog << "Generation " << generation << "; best: " << brkga.getBestChromosome()[0] << '\r';
         brkga.evolve();
         if (generation % config.exchangeBestInterval == 0) brkga.exchangeElite(config.exchangeBestCount);
       }

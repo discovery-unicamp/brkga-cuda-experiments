@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <exception>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -586,24 +587,33 @@ void BRKGA::exchangeElite(unsigned count) {
 }
 
 std::vector<float> BRKGA::getBestChromosomes() {
-  globalSortChromosomes();
-  unsigned bestChromosome = mScoresIdx[0].thIdx;
-  std::vector<float> best(chromosomeSize + 1);
-  best[0] = mScores[0];
-  CUDA_CHECK(cudaMemcpy(best.data() + 1, mPopulation + bestChromosome * chromosomeSize, chromosomeSize * sizeof(float), cudaMemcpyDeviceToHost));
+  unsigned bestPopulation = 0;
+  unsigned bestChromosome = dScoresIdxPipe[0][0].thIdx;
+  float bestScore = mScoresPipe[0][0];
+  for (unsigned p = 1; p < numberOfPopulations; ++p) {
+    if (mScoresPipe[p][0] < bestScore) {
+      bestScore = mScoresPipe[p][0];
+      bestPopulation = p;
+      bestChromosome = dScoresIdxPipe[p][0].thIdx;
+    }
+  }
 
-  // synchronize here to avoid an issue where the result is not saved
+  float* bestBegin = mPopulationPipe[bestPopulation] + bestChromosome * chromosomeSize;
+
+  std::vector<float> best(chromosomeSize + 1);
+  best[0] = bestScore;
+  CUDA_CHECK(cudaMemcpy(best.data() + 1, bestBegin, chromosomeSize * sizeof(float), cudaMemcpyDeviceToHost));
+
+  // Synchronize here to avoid an issue where the result is not saved
   CUDA_CHECK(cudaDeviceSynchronize());
 
-  updateScores();  // TODO remove the global sort so we can remove this update
   return best;
 }
 
-void BRKGA::globalSortChromosomes() {
-  evaluateChromosomes();
-  device_set_idx<<<dimGrid, dimBlock>>>(mScoresIdx, populationSize, numberOfChromosomes);
-  CUDA_CHECK_LAST(0);
-  thrust::device_ptr<float> keys(mScores);
-  thrust::device_ptr<PopIdxThreadIdxPair> vals(mScoresIdx);
-  thrust::sort_by_key(keys, keys + numberOfChromosomes, vals);
+float BRKGA::getBestScore() {
+  float bestScore = mScoresPipe[0][0];
+  for (unsigned p = 1; p < numberOfPopulations; ++p)
+    if (mScoresPipe[p][0] < bestScore)
+      bestScore = mScoresPipe[p][0];
+  return bestScore;
 }

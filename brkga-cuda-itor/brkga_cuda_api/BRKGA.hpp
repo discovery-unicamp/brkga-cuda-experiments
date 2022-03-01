@@ -58,6 +58,8 @@ public:
    */
   std::vector<float> getBestChromosomes();
 
+  float getBestScore();
+
   std::vector<unsigned> getBestChromosomeIndices() const;
 
 private:
@@ -122,15 +124,6 @@ private:
   void initPipeline();
 
   void updateScores();
-
-  /**
-   * \brief We sort all chromosomes of all populations together.
-   * We use the global thread index to index each chromosome, since each
-   * thread is responsible for one thread. Notice that in this function we only
-   * perform one sort, since we want the best chromosomes overall, so we do not
-   * perform a second sort to separate chromosomes by their population.
-   */
-  void globalSortChromosomes();
 
   void evaluateChromosomes();
 
