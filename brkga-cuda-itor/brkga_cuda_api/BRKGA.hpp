@@ -61,6 +61,8 @@ public:
   std::vector<unsigned> getBestChromosomeIndices() const;
 
 private:
+  static constexpr cudaStream_t defaultStream = nullptr;  // NOLINT(misc-misplaced-const)
+
   Instance* instance;
 
   float* mPopulation;
@@ -109,8 +111,6 @@ private:
 
   std::vector<cudaStream_t> streams;  // use one stream per population when doing pipelined version
 
-  static constexpr cudaStream_t defaultStream = nullptr;  // NOLINT(misc-misplaced-const)
-
   /**
    * \brief allocate the main data used by the BRKGA.
    */
@@ -120,6 +120,8 @@ private:
    * \brief Initialize parameters and structs used in the pipeline version
    */
   void initPipeline();
+
+  void updateScores();
 
   /**
    * \brief We sort all chromosomes of all populations together.
@@ -157,8 +159,6 @@ private:
    * \param pop_id is the index of the population to be sorted.
    */
   void sortChromosomesPipe(unsigned pop_id);
-
-  void sortChromosomesGenesPipe(unsigned pop_id);
 };
 
 #endif

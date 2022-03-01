@@ -170,6 +170,7 @@ void BRKGA::resetPopulation() {
   debug("reset all the populations");
   curandGenerateUniform(gen, mPopulation, numberOfChromosomes * chromosomeSize);
   CUDA_CHECK_LAST(0);
+  updateScores();
 }
 
 void BRKGA::evaluateChromosomes() {
@@ -353,10 +354,6 @@ void BRKGA::sortChromosomesGenes() {
   // mChromosomeGeneIdx); CUDA_CHECK_LAST(0);
 }
 
-void BRKGA::sortChromosomesGenesPipe(unsigned) {
-  throw std::runtime_error(__FUNCTION__ + std::string(" is not supported"));
-}
-
 /**
  * \brief Kernel function to compute a next population of a give population.
  * In this function each thread process one GENE.
@@ -424,18 +421,6 @@ __global__ void device_next_population_coalesced_pipe(const float* dPopulation,
 
 void BRKGA::evolve() {
   debug("Evolving the population");
-  // FIXME
-  assert(decodeType == DecodeType::DEVICE_SORTED || decodeType == DecodeType::HOST_SORTED);
-  sortChromosomesGenes();
-
-  for (unsigned p = 0; p < numberOfPopulations; p++) { evaluateChromosomesPipe(p); }
-
-  for (unsigned p = 0; p < numberOfPopulations; p++) {
-    // After this call the vector dScoresIdx
-    // has all chromosomes sorted by score
-    sortChromosomesPipe(p);
-  }
-
   // generate population here since sort chromosomes uses the temporary population
 
   // This next call initialize the whole area of the next population
@@ -466,7 +451,17 @@ void BRKGA::evolve() {
   std::swap(mPopulation, mPopulationTemp);
 
   for (unsigned p = 0; p < numberOfPopulations; ++p) CUDA_CHECK(cudaStreamSynchronize(streams[p]));
+  updateScores();
   debug("A new generation of the population was created");
+}
+
+void BRKGA::updateScores() {
+  debug("Updating the population scores");
+  assert(decodeType == DecodeType::DEVICE_SORTED || decodeType == DecodeType::HOST_SORTED);  // FIXME
+  sortChromosomesGenes();  // only required for sorted decode
+
+  for (unsigned p = 0; p < numberOfPopulations; ++p) evaluateChromosomesPipe(p);
+  for (unsigned p = 0; p < numberOfPopulations; ++p) sortChromosomesPipe(p);
 }
 
 /**
@@ -525,19 +520,12 @@ void BRKGA::sortChromosomes() {
 
 void BRKGA::sortChromosomesPipe(unsigned id) {
   // For each thread we store in dScoresIdx the global chromosome index and its population index.
-  device_set_idx_pipe<<<dimGridPipe, dimBlock, 0, streams[id]>>>(dScoresIdxPipe[id], id,
-                                                                         populationSize);
+  device_set_idx_pipe<<<dimGridPipe, dimBlock, 0, streams[id]>>>(dScoresIdxPipe[id], id, populationSize);
   CUDA_CHECK_LAST(streams[id]);
 
   thrust::device_ptr<float> keys(mScoresPipe[id]);
   thrust::device_ptr<PopIdxThreadIdxPair> vals(dScoresIdxPipe[id]);
-  // now sort all chromosomes by their scores (vals)
   thrust::stable_sort_by_key(thrust::cuda::par.on(streams[id]), keys, keys + populationSize, vals);
-  // We do not need this other sor anymore
-  // now sort all chromosomes by their population index
-  // in the sorting process it is used operator< above to compare two structs of
-  // this type
-  // thrust::stable_sort_by_key(vals, vals + numberOfChromosomes, keys);
 }
 
 /**
@@ -593,6 +581,8 @@ void BRKGA::exchangeElite(unsigned count) {
   device_exchange_elite<<<numberOfPopulations, count>>>(mPopulation, chromosomeSize, populationSize, numberOfPopulations,
                                                    mScoresIdx, count);
   CUDA_CHECK_LAST(0);
+
+  updateScores();
 }
 
 std::vector<float> BRKGA::getBestChromosomes() {
@@ -605,6 +595,7 @@ std::vector<float> BRKGA::getBestChromosomes() {
   // synchronize here to avoid an issue where the result is not saved
   CUDA_CHECK(cudaDeviceSynchronize());
 
+  updateScores();  // TODO remove the global sort so we can remove this update
   return best;
 }
 
