@@ -92,12 +92,13 @@ BrkgaConfiguration BrkgaConfiguration::Builder::build() const {
   config.decodeType = _decodeType;
 
 #ifndef NDEBUG
-  config.generations = 10;
+  config.generations = 20;
+  config.exchangeBestInterval = 3;
 #else
   config.generations = 1000;
+  config.exchangeBestInterval = 50;
 #endif  // NDEBUG
 
-  config.exchangeBestInterval = 50;
   config.exchangeBestCount = 2;
   config.resetPopulationInterval = 10000000;
   config.ompThreads = 0;

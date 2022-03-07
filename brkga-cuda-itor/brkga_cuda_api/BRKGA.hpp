@@ -56,7 +56,7 @@ public:
    * This function copys chromosomes directly from the pool of best solutions.
    * \param k is the number of chromosomes to return. The best k are returned.
    */
-  std::vector<float> getBestChromosomes();
+  std::vector<float> getBestChromosome();
 
   float getBestScore();
 
