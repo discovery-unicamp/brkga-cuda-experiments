@@ -27,8 +27,9 @@ void run(const std::function<void()>& runGenerations,
   float timeElapsedMs;
   cudaEventElapsedTime(&timeElapsedMs, start, stop);
 
-  info("Optimization finished");
-  std::cout << std::fixed << std::setprecision(3) << getBestFitness() << ' ' << timeElapsedMs / 1000 << ' '
+  float best = getBestFitness();
+  info("Optimization finished after", timeElapsedMs / 1000, "seconds with solution", best);
+  std::cout << std::fixed << std::setprecision(3) << best << ' ' << timeElapsedMs / 1000 << ' '
             << config.generations << ' ' << config.numberOfPopulations << ' ' << config.populationSize << ' '
             << config.eliteCount << ' ' << config.mutantsCount << ' ' << config.rho << ' '
             << getDecodeTypeAsString(config.decodeType) << '\n';

@@ -10,6 +10,7 @@
 #define BRKGA_H
 
 #include "BrkgaConfiguration.hpp"
+#include "CudaArray.cuh"
 #include "Instance.hpp"
 
 #include <curand.h>  // TODO check if this header is required here
@@ -67,15 +68,15 @@ private:
 
   Instance* instance;
 
-  float* mPopulation;
-  float* mPopulationTemp;
-  std::vector<float*> mPopulationPipe;  /// Device populations using evolvePipeline. One pointer is used to each population.
-  std::vector<float*> mPopulationPipeTemp;  /// Device populations using evolvePipeline. One pointer is used to each population.
+  CudaArray<float> mPopulation;
+  CudaArray<float> mPopulationTemp;
+  std::vector<CudaSubArray<float>> mPopulationPipe;  /// Device populations using evolvePipeline. One pointer is used to each population.
+  std::vector<CudaSubArray<float>> mPopulationPipeTemp;  /// Device populations using evolvePipeline. One pointer is used to each population.
 
-  float* mScores = nullptr;
-  PopIdxThreadIdxPair* mScoresIdx = nullptr;
-  std::vector<float*> mScoresPipe;  /// Pointer to each population device score of each chromosome
-  std::vector<PopIdxThreadIdxPair*> dScoresIdxPipe;
+  CudaArray<float> mScores;
+  CudaArray<PopIdxThreadIdxPair> mScoresIdx;
+  std::vector<CudaSubArray<float>> mScoresPipe;  /// Pointer to each population device score of each chromosome
+  std::vector<CudaSubArray<PopIdxThreadIdxPair>> dScoresIdxPipe;
 
   unsigned* mChromosomeGeneIdx = nullptr;  /// Table with indices for all chromosomes and each of its gene on device
   std::vector<unsigned*> mChromosomeGeneIdxPipe;  /// Pointer for each population for its table with indices for all
