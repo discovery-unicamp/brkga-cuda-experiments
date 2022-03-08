@@ -68,18 +68,18 @@ private:
 
   Instance* instance;
 
-  CudaArray<float> mPopulation;
-  CudaArray<float> mPopulationTemp;
-  std::vector<CudaSubArray<float>> mPopulationPipe;  /// Device populations using evolvePipeline. One pointer is used to each population.
-  std::vector<CudaSubArray<float>> mPopulationPipeTemp;  /// Device populations using evolvePipeline. One pointer is used to each population.
+  CudaArray<float> population;
+  CudaArray<float> populationTemp;
+  std::vector<CudaSubArray<float>> populationPipe;  /// Device populations using evolvePipeline. One pointer is used to each population.
+  std::vector<CudaSubArray<float>> populationPipeTemp;  /// Device populations using evolvePipeline. One pointer is used to each population.
 
   CudaArray<float> mScores;
   CudaArray<PopIdxThreadIdxPair> mScoresIdx;
   std::vector<CudaSubArray<float>> mScoresPipe;  /// Pointer to each population device score of each chromosome
   std::vector<CudaSubArray<PopIdxThreadIdxPair>> dScoresIdxPipe;
 
-  unsigned* mChromosomeGeneIdx = nullptr;  /// Table with indices for all chromosomes and each of its gene on device
-  std::vector<unsigned*> mChromosomeGeneIdxPipe;  /// Pointer for each population for its table with indices for all
+  CudaArray<unsigned> mChromosomeGeneIdx;  /// Table with indices for all chromosomes and each of its gene on device
+  std::vector<CudaSubArray<unsigned>> mChromosomeGeneIdxPipe;  /// Pointer for each population for its table with indices for all
                                                     /// chromosomes in the population and each of its gene on device
 
   float* dRandomEliteParent = nullptr;  /// a random number for each thread to choose its elite parent

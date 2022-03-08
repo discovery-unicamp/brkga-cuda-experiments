@@ -12,11 +12,18 @@
 #define USE_MANAGED_MEMORY
 
 #ifdef USE_MANAGED_MEMORY
+#define RAW_ONLY(cmd)
+#define MANAGED_OR_RAW(managed, raw) managed
+#else
+#define RAW_ONLY(cmd) cmd
+#define MANAGED_OR_RAW(managed, raw) raw
+#endif  // USE_MANAGED_MEMORY
 
 template <class T>
 inline T* cudaNew(std::size_t n) {
   T* ptr = nullptr;
-  CUDA_CHECK(cudaMallocManaged(&ptr, n * sizeof(T)));
+  CUDA_CHECK(
+      MANAGED_OR_RAW(cudaMallocManaged, cudaMalloc)(&ptr, n * sizeof(T)));
   return ptr;
 }
 
@@ -28,78 +35,126 @@ inline void cudaDelete(T* ptr) {
 template <class T>
 class CudaSubArray {
 public:
-  inline CudaSubArray() : size(0), memory(nullptr) {}
+#ifdef USE_MANAGED_MEMORY
+  inline CudaSubArray() : size(0), dMemory(nullptr) {}
+#else
+  inline CudaSubArray() : size(0), dMemory(nullptr), hMemory(nullptr) {}
+#endif  // USE_MANAGED_MEMORY
 
+#ifdef USE_MANAGED_MEMORY
   inline CudaSubArray(std::size_t _size, T* dPointer)
-      : size(_size), memory(dPointer) {
+      : size(_size),
+        dMemory(dPointer)
+#else
+  inline CudaSubArray(std::size_t _size, T* dPointer, T* hPointer)
+      : size(_size),
+        dMemory(dPointer),
+        hMemory(hPointer)
+#endif  // USE_MANAGED_MEMORY
+  {
     assert(size > 0);  // Size should be greater than 0
     assert(dPointer != nullptr);  // Cannot assign null
+    RAW_ONLY(assert(hPointer != nullptr));  // Cannot assign null
   }
 
   inline virtual ~CudaSubArray() = default;
 
   inline T* device() {
-    assert(memory != nullptr);  // Should be initialized
-    return memory;
+    checkInitialized();
+    return dMemory;
   }
 
   inline T* host() {
-    assert(memory != nullptr);  // Should be initialized
-    return memory;
+    checkInitialized();
+    return MANAGED_OR_RAW(dMemory, hMemory);
   }
 
-  // TODO prefetch memory to the desired location
+  // TODO prefetch dMemory to the desired location
   inline CudaSubArray& toDevice() {
-    assert(memory != nullptr);  // Should be initialized
+    checkInitialized();
+    RAW_ONLY(CUDA_CHECK(cudaMemcpy(dMemory, hMemory, size * sizeof(T),
+                                   cudaMemcpyHostToDevice)));
     return *this;
   }
 
   inline CudaSubArray& toHost() {
-    assert(memory != nullptr);  // Should be initialized
+    checkInitialized();
+    RAW_ONLY(CUDA_CHECK(cudaMemcpy(hMemory, dMemory, size * sizeof(T),
+                                   cudaMemcpyDeviceToHost)));
     return *this;
   }
 
   inline CudaSubArray subarray(std::size_t advance, std::size_t length) {
-    assert(memory != nullptr);  // Should be initialized
-    assert(advance + length <= size);  // Range outside the limits
-    return CudaSubArray(length, memory + advance);
+    checkInitialized();
+    if (advance + length > size) {
+      throw std::runtime_error("Subarray is out of range");
+    }
+    return MANAGED_OR_RAW(
+        CudaSubArray(length, dMemory + advance),
+        CudaSubArray(length, dMemory + advance, hMemory + advance));
   }
 
   inline void copyTo(CudaSubArray& that) const {
-    assert(memory != nullptr);  // Should be initialized
-    assert(size == that.size);  // Ensure the size is constant
-    CUDA_CHECK(cudaMemcpy(that.memory, this->memory, size * sizeof(T),
+    checkInitialized();
+    if (size != that.size) {
+      throw std::runtime_error("Cannot copy to CudaSubArray with diff size");
+    }
+    CUDA_CHECK(cudaMemcpy(that.dMemory, dMemory, size * sizeof(T),
                           cudaMemcpyDeviceToDevice));
   }
 
+  inline void copyTo(float* dest, bool host = true) const {
+    checkInitialized();
+    CUDA_CHECK(
+        cudaMemcpy(dest, dMemory, size * sizeof(T),
+                   host ? cudaMemcpyDeviceToHost : cudaMemcpyDeviceToDevice));
+  }
+
   inline void swap(CudaSubArray& that) {
-    assert(this->size == that.size);
-    T* temp = this->memory;
-    this->memory = that.memory;
-    that.memory = temp;
+    checkInitialized();
+    that.checkInitialized();
+    if (size != that.size) {
+      throw std::runtime_error("Cannot swap CudaSubArray with diff sizes");
+    }
+    T* temp = dMemory;
+    dMemory = that.dMemory;
+    that.dMemory = temp;
+
+    RAW_ONLY(temp = hMemory);
+    RAW_ONLY(hMemory = that.hMemory);
+    RAW_ONLY(that.hMemory = temp);
   }
 
 protected:
+  inline void checkInitialized() const {
+    if (dMemory == nullptr) {
+      throw std::runtime_error("CudaSubArray wasn't initialized");
+    }
+  }
+
   std::size_t size;
-  T* memory;
+  T* dMemory;
+  RAW_ONLY(T* hMemory);
 };
 
 template <class T>
 class CudaArray : public CudaSubArray<T> {
 public:
   inline CudaArray(std::size_t _size)
-      : CudaSubArray<T>(_size, cudaNew<T>(_size)) {}
+      : MANAGED_OR_RAW(
+          CudaSubArray<T>(_size, cudaNew<T>(_size)),
+          CudaSubArray<T>(_size, cudaNew<T>(_size), new T[_size])) {}
 
   CudaArray(const CudaArray&) = delete;
   CudaArray(CudaArray&&) = delete;
   CudaArray& operator=(const CudaArray&) = delete;
   CudaArray& operator=(CudaArray&&) = delete;
 
-  inline ~CudaArray() { cudaDelete(this->memory); }
+  inline ~CudaArray() {
+    cudaDelete(this->dMemory);
+    RAW_ONLY(delete[] this->hMemory);
+  }
 };
-
-#else  // NOT USE_MANAGED_MEMORY
-#endif  // USE_MANAGED_MEMORY
 
 namespace std {
 template <class T>
