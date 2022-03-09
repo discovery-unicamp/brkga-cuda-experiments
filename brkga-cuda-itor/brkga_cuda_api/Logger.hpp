@@ -5,6 +5,7 @@
 #define LOG_LEVEL 0
 #endif  // LOG_LEVEL
 
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -28,12 +29,12 @@
 #define BOLDWHITE "\033[1m\033[37m" /* Bold White */
 
 template <class T>
-std::string str(const std::vector<T>& v) {
+std::string str(const std::vector<T>& v, const std::string& sep = ", ") {
   std::stringstream ss;
   bool flag = false;
   ss << '[';
   for (auto& x : v) {
-    (flag ? ss << ", " : ss) << x;
+    (flag ? ss << sep : ss) << x;
     flag = true;
   }
   ss << ']';

@@ -1,4 +1,5 @@
 #include "BrkgaConfiguration.hpp"
+#include "Logger.hpp"
 
 #include <cmath>
 #include <stdexcept>
@@ -6,6 +7,21 @@
 BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::instance(Instance* i) {
   if (i == nullptr) throw std::invalid_argument("Instance can't be null");
   _instance = i;
+  return *this;
+}
+
+BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::generations(unsigned n) {
+  _generations = n;
+  return *this;
+}
+
+BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::exchangeBestInterval(unsigned k) {
+  _exchangeBestInterval = k;
+  return *this;
+}
+
+BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::exchangeBestCount(unsigned n) {
+  _exchangeBestCount = n;
   return *this;
 }
 
@@ -72,6 +88,8 @@ BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::decodeType(DecodeType 
 
 BrkgaConfiguration BrkgaConfiguration::Builder::build() const {
   if (_instance == nullptr) throw std::invalid_argument("Instance wasn't set");
+  if ((_exchangeBestInterval > 0) != (_exchangeBestCount > 0))
+    throw std::invalid_argument("Both exchange best interval and exchange count should be either zero or non-zero");
   if (_numberOfPopulations == 0) throw std::invalid_argument("Number of populations wasn't set");
   if (_populationSize == 0) throw std::invalid_argument("Population size wasn't set");
   if (_chromosomeLength == 0) throw std::invalid_argument("Chromosome length wasn't set");
@@ -80,8 +98,14 @@ BrkgaConfiguration BrkgaConfiguration::Builder::build() const {
   if (std::abs(_rho) < 1e-6) throw std::invalid_argument("Rho wasn't set");
   if (_decodeType == DecodeType::NONE) throw std::invalid_argument("Decode type wasn't set");
 
+  if (_generations == 0) warning("Number of generations is zero");
+  if (_populationSize % 256 != 0) warning("Population size is not a multiple of 256");
+
   BrkgaConfiguration config;
   config.instance = _instance;
+  config.generations = _generations;
+  config.exchangeBestInterval = _exchangeBestInterval;
+  config.exchangeBestCount = _exchangeBestCount;
   config.numberOfPopulations = _numberOfPopulations;
   config.populationSize = _populationSize;
   config.chromosomeLength = _chromosomeLength;
@@ -91,15 +115,7 @@ BrkgaConfiguration BrkgaConfiguration::Builder::build() const {
   config.seed = _seed;
   config.decodeType = _decodeType;
 
-#ifndef NDEBUG
-  config.generations = 20;
-  config.exchangeBestInterval = 3;
-#else
-  config.generations = 1000;
-  config.exchangeBestInterval = 50;
-#endif  // NDEBUG
-
-  config.exchangeBestCount = 2;
+  // FIXME this is ignored
   config.resetPopulationInterval = 10000000;
   config.ompThreads = 0;
   return config;

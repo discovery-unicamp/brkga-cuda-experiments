@@ -7,7 +7,7 @@
 #include <cuda_runtime.h>
 
 #include <cassert>
-#include <exception>
+#include <stdexcept>
 
 #define USE_MANAGED_MEMORY
 
@@ -52,9 +52,14 @@ public:
         hMemory(hPointer)
 #endif  // USE_MANAGED_MEMORY
   {
-    assert(size > 0);  // Size should be greater than 0
-    assert(dPointer != nullptr);  // Cannot assign null
-    RAW_ONLY(assert(hPointer != nullptr));  // Cannot assign null
+    if (size == 0)
+      throw std::invalid_argument("Size should be greater than 0");
+    if (dPointer == nullptr)
+      throw std::invalid_argument("Device pointer is null");
+    RAW_ONLY(
+      if (dPointer == nullptr)
+        throw std::invalid_argument("Host pointer is null")
+    );
   }
 
   inline virtual ~CudaSubArray() = default;

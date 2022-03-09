@@ -17,8 +17,12 @@ class Instance;
  */
 class BrkgaConfiguration {
 public:
-  struct Builder {
+  class Builder {
+  public:
     Builder& instance(Instance* i);
+    Builder& generations(unsigned n);
+    Builder& exchangeBestInterval(unsigned k);
+    Builder& exchangeBestCount(unsigned n);
     Builder& numberOfPopulations(unsigned n);
     Builder& populationSize(unsigned n);
     Builder& chromosomeLength(unsigned n);
@@ -34,6 +38,9 @@ public:
 
   private:
     Instance* _instance = nullptr;
+    unsigned _generations = 0;
+    unsigned _exchangeBestInterval = 0;
+    unsigned _exchangeBestCount = 0;
     unsigned _numberOfPopulations = 0;
     unsigned _populationSize = 0;
     unsigned _chromosomeLength = 0;
@@ -64,8 +71,6 @@ public:
   unsigned exchangeBestInterval;  ///< exchange best individuals at every exchangeBestInterval generations
   unsigned exchangeBestCount;  ///< exchange top exchangeBestCount best individuals
   unsigned resetPopulationInterval;  ///< restart strategy; reset all populations after this number of iterations
-
-  // FIXME this is unused
   unsigned ompThreads;  ///< number of threads to decode with openMP on CPU
 
 private:

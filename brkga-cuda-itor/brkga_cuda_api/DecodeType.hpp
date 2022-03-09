@@ -21,7 +21,23 @@ enum DecodeType {
   DEVICE_SORTED
 };
 
-[[nodiscard]] inline std::string getDecodeTypeAsString(DecodeType dt) {
+[[nodiscard]] inline DecodeType fromString(const std::string& str) {
+  if (str == "none") {
+    return NONE;
+  } else if (str == "host") {
+    return HOST;
+  } else if (str == "host-sorted") {
+    return HOST_SORTED;
+  } else if (str == "device") {
+    return DEVICE;
+  } else if (str == "device-sorted") {
+    return DEVICE_SORTED;
+  } else {
+    throw std::runtime_error("Unknown decode type: " + str);
+  }
+}
+
+[[nodiscard]] inline std::string toString(DecodeType dt) {
   switch (dt) {
     case NONE:
       return "none";

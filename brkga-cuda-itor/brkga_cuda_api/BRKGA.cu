@@ -23,8 +23,8 @@
 #include <thrust/sort.h>
 
 #include <algorithm>
-#include <exception>
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -36,19 +36,22 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
       mChromosomeGeneIdx(config.numberOfPopulations * config.populationSize * config.chromosomeLength) {
   // clang-format off
   info("Configuration received:",
-       "\n* Number of populations:", config.numberOfPopulations,
-       "\n* Population size:", config.populationSize,
-       "\n* Chromosome length:", config.chromosomeLength,
-       "\n* Elite count:", config.eliteCount, log_nosep("(", config.getEliteProbability() * 100, "%)"),
-       "\n* Mutants count:", config.mutantsCount, log_nosep("(", config.getMutantsProbability() * 100, "%)"),
-       "\n* Rho:", config.rho,
-       "\n* Seed:", config.seed,
-       "\n* Decode type:", config.decodeType, log_nosep("(", getDecodeTypeAsString(config.decodeType), ")"),
-       "\n* Generations:", config.generations,
-       "\n* Exchange interval:", config.exchangeBestInterval,
-       "\n* Exchange count:", config.exchangeBestCount,
-       "\n* Reset iterations:", config.resetPopulationInterval,
-       "\n* OMP threads:", config.ompThreads);
+       "\n - Number of populations:", config.numberOfPopulations,
+       "\n - Population size:", config.populationSize,
+       "\n - Chromosome length:", config.chromosomeLength,
+       "\n - Elite count:", config.eliteCount,
+              log_nosep("(", config.getEliteProbability() * 100, "%)"),
+       "\n - Mutants count:", config.mutantsCount,
+              log_nosep("(", config.getMutantsProbability() * 100, "%)"),
+       "\n - Rho:", config.rho,
+       "\n - Seed:", config.seed,
+       "\n - Decode type:", config.decodeType,
+              log_nosep("(", toString(config.decodeType), ")"),
+       "\n - Generations:", config.generations,
+       "\n - Exchange interval:", config.exchangeBestInterval,
+       "\n - Exchange count:", config.exchangeBestCount,
+       "\n - Reset iterations:", config.resetPopulationInterval,
+       "\n - OMP threads:", config.ompThreads);
   // clang-format on
 
   CUDA_CHECK_LAST(0);
@@ -152,14 +155,13 @@ void BRKGA::resetPopulation() {
 }
 
 void BRKGA::evaluateChromosomesPipe(unsigned id) {
-  debug("evaluating the chromosomes of the population no.", id, "with", getDecodeTypeAsString(decodeType));
+  debug("evaluating the chromosomes of the population no.", id, "with", toString(decodeType));
   assert(populationPipe[id].device() - population.device() == id * populationSize * chromosomeSize);  // wrong pair of pointers
 
   if (decodeType == DecodeType::DEVICE) {
     instance->evaluateChromosomesOnDevice(streams[id], populationSize, populationPipe[id].device(), mScoresPipe[id].device());
     CUDA_CHECK_LAST(streams[id]);
   } else if (decodeType == DecodeType::DEVICE_SORTED) {
-    sortChromosomesGenes();
     instance->evaluateIndicesOnDevice(streams[id], populationSize, mChromosomeGeneIdxPipe[id].device(), mScoresPipe[id].device());
     CUDA_CHECK_LAST(streams[id]);
 
@@ -197,7 +199,6 @@ void BRKGA::evaluateChromosomesPipe(unsigned id) {
     }
     */
   } else if (decodeType == DecodeType::HOST_SORTED) {
-    sortChromosomesGenes();
     instance->evaluateIndicesOnHost(populationSize, mChromosomeGeneIdxPipe[id].host(), mScoresPipe[id].host());
   } else if (decodeType == DecodeType::HOST) {
     instance->evaluateChromosomesOnHost(populationSize, populationPipe[id].host(), mScoresPipe[id].host());
@@ -389,17 +390,19 @@ void BRKGA::evolve() {
 
     std::swap(populationPipe[p], populationPipeTemp[p]);
   }
-
   std::swap(population, populationTemp);
 
-  for (unsigned p = 0; p < numberOfPopulations; ++p) CUDA_CHECK(cudaStreamSynchronize(streams[p]));
   updateScores();
   debug("A new generation of the population was created");
 }
 
 void BRKGA::updateScores() {
   debug("Updating the population scores");
-  assert(decodeType == DecodeType::DEVICE_SORTED || decodeType == DecodeType::HOST_SORTED);  // FIXME
+
+  // FIXME Sort is required for sorted decode, which sorts all chromosomes at the same time
+  assert(decodeType == DecodeType::DEVICE_SORTED || decodeType == DecodeType::HOST_SORTED);
+  sortChromosomesGenes();
+
   for (unsigned p = 0; p < numberOfPopulations; ++p) evaluateChromosomesPipe(p);
   for (unsigned p = 0; p < numberOfPopulations; ++p) sortChromosomesPipe(p);
 }
@@ -493,6 +496,8 @@ __global__ void device_exchange_elite(float* dPopulation,
 }
 
 void BRKGA::exchangeElite(unsigned count) {
+  // FIXME
+  throw std::runtime_error("Exchange elite isn't working");
   using std::range_error;
 
   debug("Sharing the", count, "best chromosomes of each one of the", numberOfPopulations, "populations");
@@ -525,9 +530,6 @@ std::vector<float> BRKGA::getBestChromosome() {
   std::vector<float> best(chromosomeSize + 1);
   best[0] = bestScore;
   populationPipe[bestPopulation].subarray(bestChromosome * chromosomeSize, chromosomeSize).copyTo(best.data() + 1);
-
-  // Synchronize here to avoid an issue where the result is not saved
-  CUDA_CHECK(cudaDeviceSynchronize());
 
   return best;
 }
