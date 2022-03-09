@@ -45,7 +45,8 @@ def run_experiment(
         logging.info(f'[{application}] Testing {instance}')
         for test in range(test_count):
             seed = test + 1
-            results.append(__run_test(executable, params, instance, seed))
+            ans = __run_test(application, executable, params, instance, seed)
+            results.append(ans)
 
     results = [{**r, **info} for r in results]
     results = pd.DataFrame(results)
@@ -134,9 +135,16 @@ def __run_test(
 
 
 def __get_instance_path(application: str, instance: str):
-    if instance[:2] == 'X-':
-        return INSTANCES_PATH.joinpath(application, 'set-x', f'{instance}.vrp')
-    raise ValueError(f'Unknown instance set `{instance}`')
+    group = None
+    ext = None
+    if application == 'cvrp':
+        ext = 'vrp'
+        if instance[:2] == 'X-':
+            group = 'set-x'
+
+    if group is None or ext is None:
+        raise ValueError(f'Unknown instance set `{instance}`')
+    return INSTANCES_PATH.joinpath(application, group, f'{instance}.{ext}')
 
 
 if __name__ == '__main__':

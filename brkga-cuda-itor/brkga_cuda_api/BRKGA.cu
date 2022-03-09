@@ -54,7 +54,7 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
        "\n - OMP threads:", config.ompThreads);
   // clang-format on
 
-  CUDA_CHECK_LAST(0);
+  CUDA_CHECK_LAST();
   instance = config.instance;
   numberOfPopulations = config.numberOfPopulations;
   populationSize = config.populationSize;
@@ -85,7 +85,7 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
   curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
   debug("Building BRKGA random generator with seed", config.seed);
   curandSetPseudoRandomGeneratorSeed(gen, config.seed);
-  CUDA_CHECK_LAST(0);
+  CUDA_CHECK_LAST();
 
   resetPopulation();
 }
@@ -135,8 +135,8 @@ size_t BRKGA::allocateData() {
 
 BRKGA::~BRKGA() {
   // Ensure we had no problem
-  for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK_LAST(streams[p]);
-  CUDA_CHECK_LAST(0);
+  for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK_LAST();
+  CUDA_CHECK_LAST();
 
   // Cleanup
   curandDestroyGenerator(gen);
@@ -150,7 +150,7 @@ BRKGA::~BRKGA() {
 void BRKGA::resetPopulation() {
   debug("reset all the populations");
   curandGenerateUniform(gen, population.device(), numberOfChromosomes * chromosomeSize);
-  CUDA_CHECK_LAST(0);
+  CUDA_CHECK_LAST();
   updateScores();
 }
 
@@ -160,10 +160,10 @@ void BRKGA::evaluateChromosomesPipe(unsigned id) {
 
   if (decodeType == DecodeType::DEVICE) {
     instance->evaluateChromosomesOnDevice(streams[id], populationSize, populationPipe[id].device(), mScoresPipe[id].device());
-    CUDA_CHECK_LAST(streams[id]);
+    CUDA_CHECK_LAST();
   } else if (decodeType == DecodeType::DEVICE_SORTED) {
     instance->evaluateIndicesOnDevice(streams[id], populationSize, mChromosomeGeneIdxPipe[id].device(), mScoresPipe[id].device());
-    CUDA_CHECK_LAST(streams[id]);
+    CUDA_CHECK_LAST();
 
     // FIXME refactor the code for better overlapping opportunities as in the following code
     /*
@@ -276,7 +276,7 @@ void BRKGA::sortChromosomesGenes() {
   const auto threads = THREADS_PER_BLOCK;
   const auto blocks = ceilDiv(numberOfChromosomes * chromosomeSize, threads);
   device_set_chromosome_geneIdx_pipe<<<blocks, threads>>>(mChromosomeGeneIdx.device(), chromosomeSize, numberOfChromosomes);
-  CUDA_CHECK_LAST(0);
+  CUDA_CHECK_LAST();
 
   // we use dPopulation2 to sort all genes by their values
   population.copyTo(populationTemp);
@@ -291,7 +291,7 @@ void BRKGA::sortChromosomesGenes() {
 
   auto status = bb_segsort(populationTemp.device(), mChromosomeGeneIdx.device(), (int)(numberOfChromosomes * chromosomeSize),
                            d_segs, (int)numberOfChromosomes);
-  CUDA_CHECK_LAST(0);
+  CUDA_CHECK_LAST();
   if (status != 0) throw std::runtime_error("bb_segsort exited with status " + std::to_string(status));
 
   CUDA_CHECK(cudaFree(d_segs));
@@ -376,7 +376,7 @@ void BRKGA::evolve() {
   // we already initialize random numbers for all populations
   curandGenerateUniform(gen, dRandomEliteParent, numberOfChromosomes);
   curandGenerateUniform(gen, dRandomParent, numberOfChromosomes);
-  CUDA_CHECK_LAST(0);
+  CUDA_CHECK_LAST();
 
   for (unsigned p = 0; p < numberOfPopulations; p++) {
     // Kernel function, where each thread process one chromosome of the
@@ -386,7 +386,7 @@ void BRKGA::evolve() {
     device_next_population_coalesced_pipe<<<dimGridGenePipe, dimBlock, 0, streams[p]>>>(
         populationPipe[p].device(), populationPipeTemp[p].device(), dRandomEliteParentPipe[p], dRandomParentPipe[p],
         chromosomeSize, populationSize, eliteSize, mutantsSize, rhoe, dScoresIdxPipe[p].device(), num_genes);
-    CUDA_CHECK_LAST(streams[p]);
+    CUDA_CHECK_LAST();
 
     std::swap(populationPipe[p], populationPipeTemp[p]);
   }
@@ -451,12 +451,12 @@ void BRKGA::sortChromosomesPipe(unsigned id) {
   assert(mScoresPipe[id].device() == mScores.device() + id * populationSize);
   device_set_idx<<<dimGridPipe, dimBlock>>>(dScoresIdxPipe[id].device(), populationSize, populationSize);
   // device_set_idx_pipe<<<dimGridPipe, dimBlock, 0, streams[id]>>>(dScoresIdxPipe[id].device(), id, populationSize);
-  CUDA_CHECK_LAST(streams[id]);
+  CUDA_CHECK_LAST();
 
   thrust::device_ptr<float> keys(mScoresPipe[id].device());
   thrust::device_ptr<PopIdxThreadIdxPair> vals(dScoresIdxPipe[id].device());
   thrust::stable_sort_by_key(thrust::cuda::par.on(streams[id]), keys, keys + populationSize, vals);
-  CUDA_CHECK_LAST(0);
+  CUDA_CHECK_LAST();
 }
 
 /**
@@ -510,7 +510,7 @@ void BRKGA::exchangeElite(unsigned count) {
 
   device_exchange_elite<<<numberOfPopulations, count>>>(population.device(), chromosomeSize, populationSize, numberOfPopulations,
                                                    mScoresIdx.device(), count);
-  CUDA_CHECK_LAST(0);
+  CUDA_CHECK_LAST();
 
   updateScores();
 }
