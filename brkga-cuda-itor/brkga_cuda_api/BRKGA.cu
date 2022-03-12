@@ -399,9 +399,14 @@ void BRKGA::evolve() {
 void BRKGA::updateScores() {
   debug("Updating the population scores");
 
-  // FIXME Sort is required for sorted decode, which sorts all chromosomes at the same time
-  assert(decodeType == DecodeType::DEVICE_SORTED || decodeType == DecodeType::HOST_SORTED);
-  sortChromosomesGenes();
+  // Sort is required for sorted decode, which sorts all chromosomes at the same time
+  if (decodeType == DecodeType::DEVICE_SORTED || decodeType == DecodeType::HOST_SORTED) {
+    // FIXME We should sort each score on its own thread to avoid synchonization
+    for (unsigned p = 0; p < numberOfPopulations; ++p)
+      CUDA_CHECK(cudaStreamSynchronize(streams[p]));
+    sortChromosomesGenes();
+    CUDA_CHECK(cudaDeviceSynchronize());
+  }
 
   for (unsigned p = 0; p < numberOfPopulations; ++p) evaluateChromosomesPipe(p);
   for (unsigned p = 0; p < numberOfPopulations; ++p) sortChromosomesPipe(p);
@@ -478,39 +483,45 @@ __global__ void device_exchange_elite(float* dPopulation,
                                       unsigned numberOfPopulations,
                                       PopIdxThreadIdxPair* dScoresIdx,
                                       unsigned count) {
-  unsigned tx = threadIdx.x;  // this thread value between 0 and count-1
-  unsigned idx = blockIdx.x;  // this thread population index, a value between 0 and numberOfPopulations-1
-  unsigned eliteIdx = idx * populationSize + tx;
-  unsigned eliteChromosomeIdx = dScoresIdx[eliteIdx].thIdx;
-  unsigned insideDestinyIdx =
-      populationSize - 1 - (count * idx) - tx;  // index of the destiny of this thread inside each population
+  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (unsigned i = 0; i < numberOfPopulations; ++i) {
-    if (i != idx) {
-      unsigned destiny_chromosomeIdx = dScoresIdx[i * populationSize + insideDestinyIdx].thIdx;
-      for (unsigned j = 0; j < chromosomeSize; j++)
-        dPopulation[destiny_chromosomeIdx * chromosomeSize + j] =
-            dPopulation[eliteChromosomeIdx * chromosomeSize + j];
+    for (unsigned j = 0; j < numberOfPopulations; ++j) {
+      if (i != j) {  // don't duplicate chromosomes
+        for (unsigned k = 0; k < count; ++k) {
+          // Position of the bad chromosome to be replaced
+          // Note that `j < i` is due the condition above
+          // Over the iterations of each population, `p` will be:
+          //  `size`, `size - 1`, `size - 2`, ...
+          const auto p = populationSize - (i - (j < i)) * count - k - 1;
+
+          // Global position of source/destination chromosomes
+          const auto src = i * populationSize + dScoresIdx[i * populationSize + k].thIdx;
+          const auto dest = j * populationSize + dScoresIdx[j * populationSize + p].thIdx;
+
+          // Copy the chromosome
+          dPopulation[dest * chromosomeSize + tid] = dPopulation[src * chromosomeSize + tid];
+        }
+      }
     }
   }
 }
 
 void BRKGA::exchangeElite(unsigned count) {
-  // FIXME
-  throw std::runtime_error("Exchange elite isn't working");
-  using std::range_error;
-
-  debug("Sharing the", count, "best chromosomes of each one of the", numberOfPopulations, "populations");
-  if (count > eliteSize) throw range_error("Exchange count is greater than elite size.");
+  info("Sharing the", count, "best chromosomes of each one of the", numberOfPopulations, "populations");
+  if (count > eliteSize) throw std::range_error("Exchange count is greater than elite size.");
   if (count * numberOfPopulations > populationSize) {
-    throw range_error("Exchange count will replace the entire population: it should be at most"
-                      " [population size] / [number of populations] ("
-                      + std::to_string(populationSize / numberOfPopulations) + ").");
+    throw std::range_error("Exchange count will replace the entire population: it should be at most"
+                           " [population size] / [number of populations] ("
+                           + std::to_string(populationSize / numberOfPopulations) + ").");
   }
 
-  device_exchange_elite<<<numberOfPopulations, count>>>(population.device(), chromosomeSize, populationSize, numberOfPopulations,
-                                                   mScoresIdx.device(), count);
-  CUDA_CHECK_LAST();
+  for (unsigned p = 0; p < numberOfPopulations; ++p)
+    CUDA_CHECK(cudaStreamSynchronize(streams[p]));
+
+  device_exchange_elite<<<1, chromosomeSize, 0, defaultStream>>>(
+    population.device(), chromosomeSize, populationSize, numberOfPopulations, mScoresIdx.device(), count);
+  CUDA_CHECK(cudaDeviceSynchronize());
 
   updateScores();
 }

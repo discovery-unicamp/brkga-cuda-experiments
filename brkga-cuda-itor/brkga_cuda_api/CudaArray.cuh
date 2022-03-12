@@ -75,18 +75,16 @@ public:
   }
 
   // TODO prefetch dMemory to the desired location
-  inline CudaSubArray& toDevice() {
+  inline void toDevice() {
     checkInitialized();
     RAW_ONLY(CUDA_CHECK(cudaMemcpy(dMemory, hMemory, size * sizeof(T),
                                    cudaMemcpyHostToDevice)));
-    return *this;
   }
 
-  inline CudaSubArray& toHost() {
+  inline void toHost() {
     checkInitialized();
     RAW_ONLY(CUDA_CHECK(cudaMemcpy(hMemory, dMemory, size * sizeof(T),
                                    cudaMemcpyDeviceToHost)));
-    return *this;
   }
 
   inline CudaSubArray subarray(std::size_t advance, std::size_t length) {

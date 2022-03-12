@@ -2,16 +2,16 @@ import datetime
 import logging
 from pathlib import Path
 import subprocess
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 import pandas as pd
 
 
 SOURCE_PATH = Path('applications')
 INSTANCES_PATH = Path('instances')
-OUTPUT_PATH = Path('experiments')
+OUTPUT_PATH = Path('experiments', 'results')
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="[%(asctime)s] [%(levelname)8s]"
            " %(filename)s:%(lineno)s: %(message)s",
     datefmt='%Y-%m-%dT%H:%M:%S',
@@ -24,7 +24,7 @@ def run_experiment(
         instances: List[str],
         test_count: int,
         mode: str = 'release',
-        ):
+        ) -> Optional[pd.DataFrame]:
     default_columns = ['test_date', 'tool', 'problem', 'instance',
                        'ans', 'elapsed', 'seed']
     for p in default_columns:
@@ -56,11 +56,7 @@ def run_experiment(
 
     columns = [c for c in results.columns if c not in default_columns]
     results = results[default_columns + columns]
-
-    output = OUTPUT_PATH.joinpath('results', application)
-    output.mkdir(parents=True, exist_ok=True)
-    results.to_csv(output.joinpath(f'{test_date}.tsv'),
-                   index=False, sep='\t')
+    return results
 
 
 def __compile(application: str, mode: str) -> Path:
@@ -105,7 +101,12 @@ def __shell(cmd: str, get: bool = True) -> str:
             logging.info(f'Script failed: stdout:\n{error.stdout}')
         raise
 
-    return process.stdout.strip() if get else ''
+    if not get:
+        return ''
+
+    output = process.stdout.strip()
+    logging.debug(f'Script output:\n--- begin ---\n{output}\n==== end ====')
+    return output
 
 
 def __run_test(
@@ -142,16 +143,18 @@ def __get_instance_path(application: str, instance: str):
         if instance[:2] == 'X-':
             group = 'set-x'
 
-    if group is None or ext is None:
+    if ext is None:
+        raise ValueError(f'Unknown application `{instance}`')
+    if group is None:
         raise ValueError(f'Unknown instance set `{instance}`')
     return INSTANCES_PATH.joinpath(application, group, f'{instance}.{ext}')
 
 
-if __name__ == '__main__':
+def main():
     mode = 'release'
     params = {
         'generations': 1000,
-        'exchange-interval': 5000,
+        'exchange-interval': 50,
         'exchange-count': 2,
         'pop_count': 3,
         'pop_size': 256,
@@ -165,5 +168,15 @@ if __name__ == '__main__':
         params['generations'] = 10
         params['exchange-interval'] = 2
 
-    instances = ['X-n1001-k43'] * 5
-    run_experiment('cvrp', params, instances, test_count=1, mode=mode)
+    instances = ['X-n1001-k43']
+    results = run_experiment('cvrp', params, instances, test_count=10, mode=mode)
+    if results is not None and not results.empty:
+        output = OUTPUT_PATH.joinpath('cvrp')
+        output.mkdir(parents=True, exist_ok=True)
+        test_date = results.iloc[0]['test_date']
+        results.to_csv(output.joinpath(f'{test_date}.tsv'),
+                    index=False, sep='\t')
+
+
+if __name__ == '__main__':
+    main()
