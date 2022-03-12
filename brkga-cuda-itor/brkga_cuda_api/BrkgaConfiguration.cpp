@@ -10,6 +10,11 @@ BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::instance(Instance* i) 
   return *this;
 }
 
+BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::threadsPerBlock(unsigned k) {
+  _threadsPerBlock = k;
+  return *this;
+}
+
 BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::generations(unsigned n) {
   _generations = n;
   return *this;
@@ -88,6 +93,7 @@ BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::decodeType(DecodeType 
 
 BrkgaConfiguration BrkgaConfiguration::Builder::build() const {
   if (_instance == nullptr) throw std::invalid_argument("Instance wasn't set");
+  if (_threadsPerBlock == 0) throw std::invalid_argument("Threads per block wasn't set");
   if ((_exchangeBestInterval > 0) != (_exchangeBestCount > 0))
     throw std::invalid_argument("Both exchange best interval and exchange count should be either zero or non-zero");
   if (_numberOfPopulations == 0) throw std::invalid_argument("Number of populations wasn't set");
@@ -103,6 +109,7 @@ BrkgaConfiguration BrkgaConfiguration::Builder::build() const {
 
   BrkgaConfiguration config;
   config.instance = _instance;
+  config.threadsPerBlock = _threadsPerBlock;
   config.generations = _generations;
   config.exchangeBestInterval = _exchangeBestInterval;
   config.exchangeBestCount = _exchangeBestCount;
@@ -115,8 +122,5 @@ BrkgaConfiguration BrkgaConfiguration::Builder::build() const {
   config.seed = _seed;
   config.decodeType = _decodeType;
 
-  // FIXME this is ignored
-  config.resetPopulationInterval = 10000000;
-  config.ompThreads = 0;
   return config;
 }

@@ -62,6 +62,8 @@ int main(int argc, char** argv) {
       instance.reset(new CvrpInstance(CvrpInstance::fromFile(value)));
       configBuilder.instance(instance.get())
                    .chromosomeLength(instance->numberOfClients);
+    } else if (arg == "--threads") {
+      configBuilder.threadsPerBlock(std::stoi(value));
     } else if (arg == "--generations") {
       configBuilder.generations(std::stoi(value));
     } else if (arg == "--exchange-interval") {

@@ -97,8 +97,10 @@ def __shell(cmd: str, get: bool = True) -> str:
         process = subprocess.run(
                 cmd, stdout=stdout, text=True, shell=True, check=True)
     except subprocess.CalledProcessError as error:
-        if get:
-            logging.info(f'Script failed: stdout:\n{error.stdout}')
+        output = error.stdout.strip() if get else ''
+        if output:
+            logging.info(f'Script output before error:\n'
+                         f'--- begin ---\n{output}\n==== end ====')
         raise
 
     if not get:
@@ -153,6 +155,7 @@ def __get_instance_path(application: str, instance: str):
 def main():
     mode = 'release'
     params = {
+        'threads': 256,
         'generations': 1000,
         'exchange-interval': 50,
         'exchange-count': 2,

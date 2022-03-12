@@ -11,15 +11,12 @@
 
 class Instance;
 
-/**
- * \brief BrkgaConfiguration contains all parameters to execute the algorithm. These parameters are read from a
- * config.txt file.
- */
 class BrkgaConfiguration {
 public:
   class Builder {
   public:
     Builder& instance(Instance* i);
+    Builder& threadsPerBlock(unsigned k);
     Builder& generations(unsigned n);
     Builder& exchangeBestInterval(unsigned k);
     Builder& exchangeBestCount(unsigned n);
@@ -39,6 +36,7 @@ public:
   private:
     Instance* _instance = nullptr;
     unsigned _generations = 0;
+    unsigned _threadsPerBlock = 0;
     unsigned _exchangeBestInterval = 0;
     unsigned _exchangeBestCount = 0;
     unsigned _numberOfPopulations = 0;
@@ -57,6 +55,7 @@ public:
   [[nodiscard]] inline float getEliteProbability() const { return (float)eliteCount / (float)populationSize; }
 
   Instance* instance;
+  unsigned threadsPerBlock;
   unsigned numberOfPopulations;  ///< number of different independent populations
   unsigned populationSize;  ///< size of population, example 256 individuals
   unsigned chromosomeLength;  ///< the length of the chromosome to be generated
@@ -70,8 +69,6 @@ public:
   unsigned generations;  ///< execute algorithm for generations generations
   unsigned exchangeBestInterval;  ///< exchange best individuals at every exchangeBestInterval generations
   unsigned exchangeBestCount;  ///< exchange top exchangeBestCount best individuals
-  unsigned resetPopulationInterval;  ///< restart strategy; reset all populations after this number of iterations
-  unsigned ompThreads;  ///< number of threads to decode with openMP on CPU
 
 private:
   friend Builder;

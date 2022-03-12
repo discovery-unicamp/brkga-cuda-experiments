@@ -17,8 +17,6 @@
 
 #include <vector>
 
-#define THREADS_PER_BLOCK 256  // TODO move to the user configuration
-
 enum DecodeType;
 class PopIdxThreadIdxPair;
 

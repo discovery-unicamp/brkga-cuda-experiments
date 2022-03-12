@@ -37,6 +37,7 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
   // clang-format off
   info("Configuration received:",
        "\n - Number of populations:", config.numberOfPopulations,
+       "\n - Threads per block:", config.threadsPerBlock,
        "\n - Population size:", config.populationSize,
        "\n - Chromosome length:", config.chromosomeLength,
        "\n - Elite count:", config.eliteCount,
@@ -49,9 +50,7 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
               log_nosep("(", toString(config.decodeType), ")"),
        "\n - Generations:", config.generations,
        "\n - Exchange interval:", config.exchangeBestInterval,
-       "\n - Exchange count:", config.exchangeBestCount,
-       "\n - Reset iterations:", config.resetPopulationInterval,
-       "\n - OMP threads:", config.ompThreads);
+       "\n - Exchange count:", config.exchangeBestCount);
   // clang-format on
 
   CUDA_CHECK_LAST();
@@ -70,13 +69,13 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
 
   info("Total memory used in GPU", memoryUsed, "bytes", log_nosep("(~", (double)memoryUsed / (1 << 20), "MB)"));
 
-  this->dimBlock.x = THREADS_PER_BLOCK;
+  this->dimBlock.x = config.threadsPerBlock;
 
   // Grid dimension when having one thread per chromosome
-  this->dimGrid.x = ceilDiv(numberOfChromosomes, THREADS_PER_BLOCK);
+  this->dimGrid.x = ceilDiv(numberOfChromosomes, config.threadsPerBlock);
 
   // Grid dimension when having one thread per gene
-  this->dimGridGene.x = ceilDiv(numberOfGenes, THREADS_PER_BLOCK);
+  this->dimGridGene.x = ceilDiv(numberOfGenes, config.threadsPerBlock);
 
   initPipeline();
 
@@ -93,9 +92,9 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
 void BRKGA::initPipeline() {
   // Grid dimension when using pipeline
   // One thread per chromosome of 1 population
-  dimGridPipe.x = ceilDiv(populationSize, THREADS_PER_BLOCK);
+  dimGridPipe.x = ceilDiv(populationSize, this->dimBlock.x);  // FIXME dimBlock.x is threadsPerBlock
   // One thread per gene of 1 population
-  dimGridGenePipe.x = ceilDiv(chromosomeSize * populationSize, THREADS_PER_BLOCK);
+  dimGridGenePipe.x = ceilDiv(chromosomeSize * populationSize, this->dimBlock.x);  // FIXME dimBlock.x is threadsPerBlock
 
   // Allocate one streams for each population
   streams.resize(numberOfPopulations);
@@ -273,7 +272,7 @@ __global__ void set_index_order(const unsigned numberOfChromosomes,
 
 void BRKGA::sortChromosomesGenes() {
   // First set for each gene, its chromosome index and its original index in the chromosome
-  const auto threads = THREADS_PER_BLOCK;
+  const auto threads = dimBlock.x;  // FIXME dimBlock.x is threadsPerBlock
   const auto blocks = ceilDiv(numberOfChromosomes * chromosomeSize, threads);
   device_set_chromosome_geneIdx_pipe<<<blocks, threads>>>(mChromosomeGeneIdx.device(), chromosomeSize, numberOfChromosomes);
   CUDA_CHECK_LAST();
@@ -508,7 +507,7 @@ __global__ void device_exchange_elite(float* dPopulation,
 }
 
 void BRKGA::exchangeElite(unsigned count) {
-  info("Sharing the", count, "best chromosomes of each one of the", numberOfPopulations, "populations");
+  debug("Sharing the", count, "best chromosomes of each one of the", numberOfPopulations, "populations");
   if (count > eliteSize) throw std::range_error("Exchange count is greater than elite size.");
   if (count * numberOfPopulations > populationSize) {
     throw std::range_error("Exchange count will replace the entire population: it should be at most"
