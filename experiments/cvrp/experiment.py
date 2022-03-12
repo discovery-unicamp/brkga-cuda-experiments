@@ -127,6 +127,9 @@ def __run_test(
     result = dict(tuple(r.split('=')) for r in __shell(cmd).split())
 
     str_params = {key: str(value) for key, value in params.items()}
+    if 'convergence' in result and result['convergence'] == '[]':
+        result['convergence'] = '?'
+
     return {
         **str_params,
         'seed': str(seed),
@@ -166,6 +169,7 @@ def main():
         'rho': .7,
         'decode': 'host-sorted',
         'tool': 'brkga-cuda',
+        'log-step': 25,
     }
     if mode == 'debug':
         params['generations'] = 10

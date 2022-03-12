@@ -2,6 +2,7 @@
 #include "GpuBrkgaWrapper.hpp"
 #include <brkga_cuda_api/BRKGA.hpp>
 #include <brkga_cuda_api/Logger.hpp>
+#include <brkga_cuda_api/MathUtils.hpp>
 #include <getopt.h>
 
 #include <fstream>
@@ -30,15 +31,14 @@ void run(const std::function<std::vector<float>()>& runGenerations,
   float best = getBestFitness();
   info("Optimization finished after", timeElapsedMs / 1000, "seconds with solution", best);
   std::cout << std::fixed << std::setprecision(3) << "ans=" << best
-            << " elapsed=" << timeElapsedMs / 1000;
-
-  if (!convergence.empty())
-    std::cout << " convergence=" << str(convergence, ",");
-  std::cout << '\n';
+            << " elapsed=" << timeElapsedMs / 1000
+            << " convergence=" << str(convergence, ",")
+            << '\n';
 }
 
 int main(int argc, char** argv) {
   std::string tool;
+  unsigned logStep = 0;
   std::unique_ptr<CvrpInstance> instance;
   BrkgaConfiguration::Builder configBuilder;
   for (int i = 1; i < argc; i += 2) {
@@ -86,6 +86,8 @@ int main(int argc, char** argv) {
       configBuilder.decodeType(fromString(value));
     } else if (arg == "--tool") {
       tool = value;
+    } else if (arg == "--log-step") {
+      logStep = std::stoi(value);
     } else {
       error("Unknown argument:", arg);
       abort();
@@ -96,24 +98,34 @@ int main(int argc, char** argv) {
     error("Missing the algorithm name");
     abort();
   }
+  if (logStep == 0) {
+    error("Missing the log-step (it should be greater than 0)");
+    abort();
+  }
 
   auto config = configBuilder.build();
   if (tool == "brkga-cuda") {
     BRKGA brkga(config);
 
     auto runGenerations = [&]() {
-      // std::vector<float> convergence;
-      // convergence.reserve(config.generations);
+      std::vector<float> convergence;
+      convergence.reserve(ceilDiv(config.generations, logStep) + 1);
+      convergence.push_back(brkga.getBestScore());
+
       for (unsigned generation = 1; generation <= config.generations; ++generation) {
-        // float best = brkga.getBestScore();
-        // std::clog << "Generation " << generation << "; best: " << best << '\r';
-        // convergence.push_back(best);
         brkga.evolve();
-        if (generation % config.exchangeBestInterval == 0) brkga.exchangeElite(config.exchangeBestCount);
+        if (generation % config.exchangeBestInterval == 0) {
+          brkga.exchangeElite(config.exchangeBestCount);
+        }
+        if (generation % logStep == 0 || generation == config.generations) {
+          float best = brkga.getBestScore();
+          std::clog << "Generation " << generation << "; best: " << best << '\r';
+          convergence.push_back(best);
+        }
       }
       std::clog << '\n';
-      // return convergence;
-      return std::vector<float>();
+
+      return convergence;
     };
 
     auto getBestFitness = [&]() {
