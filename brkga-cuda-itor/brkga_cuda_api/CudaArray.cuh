@@ -106,7 +106,7 @@ public:
                           cudaMemcpyDeviceToDevice));
   }
 
-  inline void copyTo(float* dest, bool host = true) const {
+  inline void copyTo(T* dest, bool host = true) const {
     checkInitialized();
     CUDA_CHECK(
         cudaMemcpy(dest, dMemory, size * sizeof(T),

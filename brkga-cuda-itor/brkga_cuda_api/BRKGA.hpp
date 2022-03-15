@@ -57,9 +57,9 @@ public:
    */
   std::vector<float> getBestChromosome();
 
-  float getBestScore();
+  std::vector<unsigned> getBestIndices();
 
-  std::vector<unsigned> getBestChromosomeIndices() const;
+  float getBestScore();
 
 private:
   static constexpr cudaStream_t defaultStream = nullptr;  // NOLINT(misc-misplaced-const)

@@ -56,10 +56,13 @@ def run_experiment(
 
     columns = [c for c in results.columns if c not in default_columns]
     results = results[default_columns + columns]
+
+    logging.info('Experiment finished')
     return results
 
 
 def __compile(application: str, mode: str) -> Path:
+    logging.info(f'Compiling {application} with {mode} mode')
     mode = mode.lower()
     folder = f'build-{mode}'
     target = f'brkga-{application}'
@@ -85,7 +88,7 @@ def __get_system_info() -> Dict[str, str]:
         'gpu-cores': 'unknown',
         'gpu-memory': __shell("nvidia-smi -q | grep -m1 Total | awk '{print $3}'")
                 + 'MiB',
-        'nvcc': __shell('nvcc --version | grep "release"'),
+        'nvcc': __shell('nvcc --version | grep "release" | grep -o "V.*"'),
         'g++': __shell('g++ --version | grep "g++"'),
     }
 
@@ -118,6 +121,8 @@ def __run_test(
         instance: str,
         seed: int,
         ) -> Dict[str, str]:
+    logging.info(f'Test instance {instance} of {application}'
+                 f' ({str(executable)}) with params {params} and seed {seed}')
     instance_path = __get_instance_path(application, instance)
 
     cmd = str(executable.absolute())

@@ -537,9 +537,26 @@ std::vector<float> BRKGA::getBestChromosome() {
     }
   }
 
-  std::vector<float> best(chromosomeSize + 1);
-  best[0] = bestScore;
-  populationPipe[bestPopulation].subarray(bestChromosome * chromosomeSize, chromosomeSize).copyTo(best.data() + 1);
+  std::vector<float> best(chromosomeSize);
+  populationPipe[bestPopulation].subarray(bestChromosome * chromosomeSize, chromosomeSize).copyTo(best.data());
+
+  return best;
+}
+
+std::vector<unsigned> BRKGA::getBestIndices() {
+  unsigned bestPopulation = 0;
+  unsigned bestChromosome = dScoresIdxPipe[0].device()[0].thIdx;
+  float bestScore = mScoresPipe[0].host()[0];
+  for (unsigned p = 1; p < numberOfPopulations; ++p) {
+    if (mScoresPipe[p].host()[0] < bestScore) {
+      bestScore = mScoresPipe[p].host()[0];
+      bestPopulation = p;
+      bestChromosome = dScoresIdxPipe[p].host()[0].thIdx;
+    }
+  }
+
+  std::vector<unsigned> best(chromosomeSize);
+  mChromosomeGeneIdxPipe[bestPopulation].subarray(bestChromosome * chromosomeSize, chromosomeSize).copyTo(best.data());
 
   return best;
 }

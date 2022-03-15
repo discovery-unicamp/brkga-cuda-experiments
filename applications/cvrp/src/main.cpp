@@ -9,6 +9,7 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -114,7 +115,7 @@ int main(int argc, char** argv) {
 
       for (unsigned generation = 1; generation <= config.generations; ++generation) {
         brkga.evolve();
-        if (generation % config.exchangeBestInterval == 0) {
+        if (generation % config.exchangeBestInterval == 0 && generation != config.generations) {
           brkga.exchangeElite(config.exchangeBestCount);
         }
         if (generation % logStep == 0 || generation == config.generations) {
@@ -129,10 +130,23 @@ int main(int argc, char** argv) {
     };
 
     auto getBestFitness = [&]() {
-      auto best = brkga.getBestChromosome();
+      auto fitness = brkga.getBestScore();
+
       info("Validating the best solution found");
-      instance->validateChromosome(std::vector(best.begin() + 1, best.begin() + config.chromosomeLength + 1), best[0]);
-      return best[0];
+      auto bestSorted = brkga.getBestIndices();
+      instance->validateSolution(bestSorted, fitness, /* has depot: */ false);
+
+      info("Validating the chromosome");
+      auto bestChromosome = brkga.getBestChromosome();
+      for (unsigned i = 1; i < config.chromosomeLength; ++i) {
+        const auto a = bestSorted[i - 1];
+        const auto b = bestSorted[i];
+        if (bestChromosome[a] > bestChromosome[b]) {
+          throw std::runtime_error("Chromosome wasn't sorted correctly");
+        }
+      }
+
+      return fitness;
     };
 
     run(runGenerations, getBestFitness, config);
