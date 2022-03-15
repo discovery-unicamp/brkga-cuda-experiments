@@ -11,6 +11,7 @@ Makefile
 config.txt
 
 # generated
+__pycache__
 *build*
 prof.txt
 *.qdrep
