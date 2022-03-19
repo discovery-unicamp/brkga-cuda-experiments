@@ -18,7 +18,6 @@
 #include <vector>
 
 enum DecodeType;
-class PopIdxThreadIdxPair;
 
 class BRKGA {
 public:
@@ -80,21 +79,21 @@ public:
 
 private:
   /**
-   * @brief Call the decode method to the population `pop_id`.
+   * @brief Call the decode method to the population `p`.
    *
-   * @param pop_id The index of the population to decode.
+   * @param p The index of the population to decode.
    */
-  void evaluateChromosomesPipe(unsigned pop_id);
+  void evaluateChromosomesPipe(unsigned p);
 
   /// Sorts the indices of the chromosomes in case of sorted decode
   void sortChromosomesGenes();
 
   /**
-   * @brief Sorts the population `pop_id`.
+   * @brief Sorts the population `p`.
    *
-   * @param pop_id The index of the population to sort.
+   * @param p The index of the population to sort.
    */
-  void sortChromosomesPipe(unsigned pop_id);
+  void sortChromosomesPipe(unsigned p);
 
   /**
    * @brief Ensures the fitness is sorted.
@@ -111,9 +110,9 @@ private:
   CudaMatrix<float> population;  /// All the chromosomes
   CudaMatrix<float> populationTemp;  /// Temp memory for chromosomes
 
-  CudaMatrix<float> fitness;  /// The fitness of each chromosome
-  CudaMatrix<PopIdxThreadIdxPair> fitnessIdx;  /// Index if population was sorted
-  CudaMatrix<unsigned> chromosomeIdx;  /// Index of the genes if sorted
+  CudaMatrix<float> fitness;  /// The (sorted) fitness of each chromosome
+  CudaMatrix<unsigned> fitnessIdx;  /// Index of the chromosome with cur fitness
+  CudaMatrix<unsigned> chromosomeIdx;  /// Index of the genes when sorted
 
   CudaMatrix<float> randomEliteParent;  /// The elite parent
   CudaMatrix<float> randomParent;  /// The non-elite parent

@@ -9,12 +9,6 @@
 #ifndef COMMONSTRUCTS_H
 #define COMMONSTRUCTS_H
 
-// Used to save for each cuda thread its population index
-struct PopIdxThreadIdxPair {
-  unsigned popIdx;
-  unsigned thIdx;
-};
-
 // Given a chromosome, some decoders need to sort it by gene values
 // This struct saves for each chromosome the original gene index in that
 // chromosome before sorting it.
