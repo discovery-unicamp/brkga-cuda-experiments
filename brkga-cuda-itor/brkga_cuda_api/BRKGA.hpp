@@ -79,12 +79,6 @@ public:
   std::vector<unsigned> getBestIndices();
 
 private:
-  // Initializers
-  // TODO Simplify them to a single constructor.
-
-  void resetPopulation();
-  void initPipeline();
-
   /**
    * @brief Call the decode method to the population `pop_id`.
    *
@@ -141,10 +135,6 @@ private:
   // Dimensions
 
   dim3 dimBlock;
-  dim3 dimGrid;  /// Grid dimension when having one thread per chromosome
-  dim3 dimGridGene;  /// Grid dimension when we have one thread per gene
-                     /// (coalesced used)
-
   dim3 dimGridPipe;  /// Grid dimension when having one thread per chromosome
   dim3 dimGridGenePipe;  /// Grid dimension when we have one thread per gene
                          /// (coalesced used)

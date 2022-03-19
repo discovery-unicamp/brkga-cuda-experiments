@@ -67,55 +67,36 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
   rhoe = config.rho;
   decodeType = config.decodeType;
 
-  this->dimBlock.x = config.threadsPerBlock;
+  dimBlock.x = config.threadsPerBlock;
+  dimGridPipe.x = ceilDiv(populationSize, config.threadsPerBlock);
+  dimGridGenePipe.x = ceilDiv(chromosomeSize * populationSize, config.threadsPerBlock);
 
-  // Grid dimension when having one thread per chromosome
-  this->dimGrid.x = ceilDiv(numberOfChromosomes, config.threadsPerBlock);
+  // One stream for each population
+  streams.resize(numberOfPopulations);
+  for (unsigned p = 0; p < numberOfPopulations; ++p)
+    CUDA_CHECK(cudaStreamCreate(&streams[p]));
 
-  // Grid dimension when having one thread per gene
-  this->dimGridGene.x = ceilDiv(numberOfGenes, config.threadsPerBlock);
-
-  initPipeline();
-
-  // Create pseudo-random number generator
+  debug("Building random generator with seed", config.seed);
   gen = nullptr;
   curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
-  debug("Building BRKGA random generator with seed", config.seed);
+  CUDA_CHECK_LAST();
   curandSetPseudoRandomGeneratorSeed(gen, config.seed);
   CUDA_CHECK_LAST();
 
-  resetPopulation();
-  debug("Finished the BRKGA setup");
-}
-
-void BRKGA::initPipeline() {
-  // Grid dimension when using pipeline
-  // One thread per chromosome of 1 population
-  dimGridPipe.x = ceilDiv(populationSize, this->dimBlock.x);  // FIXME dimBlock.x is threadsPerBlock
-  // One thread per gene of 1 population
-  dimGridGenePipe.x = ceilDiv(chromosomeSize * populationSize, this->dimBlock.x);  // FIXME dimBlock.x is threadsPerBlock
-
-  // Allocate one streams for each population
-  streams.resize(numberOfPopulations);
-  for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK(cudaStreamCreate(&streams[p]));
+  debug("Building the initial populations");
+  curandGenerateUniform(gen, population.device(), numberOfChromosomes * chromosomeSize);
+  CUDA_CHECK_LAST();
+  updateFitness();
 }
 
 BRKGA::~BRKGA() {
   // Ensure we had no problem
-  for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK_LAST();
+  for (unsigned p = 0; p < numberOfPopulations; ++p) CUDA_CHECK_LAST();
   CUDA_CHECK_LAST();
 
-  // Cleanup
   curandDestroyGenerator(gen);
-
-  for (unsigned p = 0; p < numberOfPopulations; p++) CUDA_CHECK(cudaStreamDestroy(streams[p]));
-}
-
-void BRKGA::resetPopulation() {
-  debug("reset all the populations");
-  curandGenerateUniform(gen, population.device(), numberOfChromosomes * chromosomeSize);
-  CUDA_CHECK_LAST();
-  updateFitness();
+  for (unsigned p = 0; p < numberOfPopulations; ++p)
+    CUDA_CHECK(cudaStreamDestroy(streams[p]));
 }
 
 void BRKGA::evaluateChromosomesPipe(unsigned id) {
@@ -134,13 +115,13 @@ void BRKGA::evaluateChromosomesPipe(unsigned id) {
     cudaMemPrefetchAsync(a, tile_size * sizeof(size_t), 0, s2);
     cudaEventRecord(e1, s2);
 
-    for (int i = 0; i < num_tiles; i++) {
+    for (int i = 0; i < num_tiles; ++i) {
       // make sure previous kernel and current tile copy both completed
       cudaEventSynchronize(e1);
       cudaEventSynchronize(e2);
 
       // run multiple kernels on current tile
-      for (int j = 0; j < num_kernels; j++)
+      for (int j = 0; j < num_kernels; ++j)
         kernel<<<1024, 1024, 0, s1>>>(tile_size, a + tile_size * i);
       cudaEventRecord(e1, s1);
 
@@ -341,7 +322,7 @@ void BRKGA::evolve() {
   curandGenerateUniform(gen, randomParent.device(), numberOfChromosomes);
   CUDA_CHECK_LAST();
 
-  for (unsigned p = 0; p < numberOfPopulations; p++) {
+  for (unsigned p = 0; p < numberOfPopulations; ++p) {
     // Kernel function, where each thread process one chromosome of the
     // next population.
     unsigned num_genes = populationSize * chromosomeSize;  // number of genes in one population
