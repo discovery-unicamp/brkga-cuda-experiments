@@ -5,18 +5,14 @@
  *
  *
  */
-#include <bb_segsort.h>
-#undef CUDA_CHECK
-
+#include "BBSegSort.cuh"
 #include "BRKGA.hpp"
 #include "BrkgaConfiguration.hpp"
-#include "CommonStructs.h"
 #include "CudaError.cuh"
 #include "DecodeType.hpp"
 #include "Instance.hpp"
 #include "Logger.hpp"
 #include "MathUtils.hpp"
-#include "nvtx.cuh"
 
 #include <curand.h>
 #include <thrust/device_ptr.h>
@@ -108,40 +104,6 @@ void BRKGA::evaluateChromosomesPipe(unsigned p) {
   } else if (decodeType == DecodeType::DEVICE_SORTED) {
     instance->evaluateIndicesOnDevice(streams[p], populationSize, chromosomeIdx.deviceRow(p), fitness.deviceRow(p));
     CUDA_CHECK_LAST();
-
-    // FIXME refactor the code for better overlapping opportunities as in the following code
-    /*
-    // prefetch first tile
-    cudaMemPrefetchAsync(a, tile_size * sizeof(size_t), 0, s2);
-    cudaEventRecord(e1, s2);
-
-    for (int i = 0; i < num_tiles; ++i) {
-      // make sure previous kernel and current tile copy both completed
-      cudaEventSynchronize(e1);
-      cudaEventSynchronize(e2);
-
-      // run multiple kernels on current tile
-      for (int j = 0; j < num_kernels; ++j)
-        kernel<<<1024, 1024, 0, s1>>>(tile_size, a + tile_size * i);
-      cudaEventRecord(e1, s1);
-
-      // prefetch next tile to the gpu in a separate streams
-      if (i < num_tiles-1) {
-        // make sure the streams is idle to force non-deferred HtoD prefetches first
-        cudaStreamSynchronize(s2);
-        cudaMemPrefetchAsync(a + tile_size * (i+1), tile_size * sizeof(size_t), 0, s2);
-        cudaEventRecord(e2, s2);
-      }
-
-      // offload current tile to the cpu after the kernel is completed using the deferred path
-      cudaMemPrefetchAsync(a + tile_size * i, tile_size * sizeof(size_t), cudaCpuDeviceId, s1);
-
-      // rotate streams and swap events
-      st = s1; s1 = s2; s2 = st;
-      st = s2; s2 = s3; s3 = st;
-      et = e1; e1 = e2; e2 = et;
-    }
-    */
   } else if (decodeType == DecodeType::HOST_SORTED) {
     instance->evaluateIndicesOnHost(populationSize, chromosomeIdx.hostRow(p), fitness.hostRow(p));
   } else if (decodeType == DecodeType::HOST) {
@@ -149,23 +111,6 @@ void BRKGA::evaluateChromosomesPipe(unsigned p) {
   } else {
     throw std::domain_error("Function decode type is unknown");
   }
-}
-
-/**
- * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used, then this method
- * saves for each gene of each chromosome, the chromosome
- * index, and the original gene index. Used later to sort all chromosomes by
- * gene values. We save gene indexes to preserve this information after sorting.
- * \param m_chromosome_geneIdx_pop is an array containing a struct for all
- * chromosomes of the population being processed.
- * \param chromosomeSize is the size of each chromosome.
- * \param p is the index of the population to work on.
- */
-__global__ void device_set_chromosome_geneIdx_pipe(unsigned* indices,
-                                                    const unsigned chromosomeSize,
-                                                    const unsigned populationSize) {
-  auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid < chromosomeSize * populationSize) indices[tid] = tid % chromosomeSize;
 }
 
 __global__ void set_index_order(const unsigned numberOfChromosomes,
@@ -205,7 +150,7 @@ __global__ void set_index_order(const unsigned numberOfChromosomes,
  * \param p is the index of the population to process.
  *
  */
-__global__ void device_next_population_coalesced_pipe(const float* dPopulation,
+__global__ void device_evolve(const float* dPopulation,
                                                       float* dPopulationTemp,
                                                       const float* randomEliteParent,
                                                       const float* randomParent,
@@ -214,10 +159,9 @@ __global__ void device_next_population_coalesced_pipe(const float* dPopulation,
                                                       unsigned eliteSize,
                                                       unsigned mutantsSize,
                                                       float rhoe,
-                                                      unsigned* dFitnessIdx,
-                                                      unsigned numberOfGenes) {
+                                                      unsigned* dFitnessIdx) {
   unsigned tx = blockIdx.x * blockDim.x + threadIdx.x;  // thread index pointing to some gene of some chromosome
-  if (tx < numberOfGenes) {  // tx < last gene of this population
+  if (tx < populationSize * chromosomeSize) {  // tx < last gene of this population
     unsigned chromosomeIdx = tx / chromosomeSize;  //  chromosome in this population having this gene
     unsigned geneIdx = tx % chromosomeSize;  // the index of this gene in this chromosome
     // if chromosomeIdx < eliteSize then the chromosome is elite, so we copy
@@ -251,28 +195,14 @@ __global__ void device_next_population_coalesced_pipe(const float* dPopulation,
 
 void BRKGA::evolve() {
   debug("Evolving the population");
-  // generate population here since sort chromosomes uses the temporary population
-
-  // This next call initialize the whole area of the next population
-  // dPopulation2 with random values. So mutants are already build.
-  // For the non mutants we use the random values generated here to
-  // perform the crossover on the current population dPopulation.
   curandGenerateUniform(gen, populationTemp.device(), numberOfChromosomes * chromosomeSize);
-
-  // generate random numbers to index parents used for crossover
-  // we already initialize random numbers for all populations
   curandGenerateUniform(gen, randomEliteParent.device(), numberOfChromosomes);
   curandGenerateUniform(gen, randomParent.device(), numberOfChromosomes);
-  CUDA_CHECK_LAST();
 
   for (unsigned p = 0; p < numberOfPopulations; ++p) {
-    // Kernel function, where each thread process one chromosome of the
-    // next population.
-    unsigned num_genes = populationSize * chromosomeSize;  // number of genes in one population
-
-    device_next_population_coalesced_pipe<<<dimGridGenePipe, dimBlock, 0, streams[p]>>>(
+    device_evolve<<<dimGridGenePipe, dimBlock, 0, streams[p]>>>(
         population.deviceRow(p), populationTemp.deviceRow(p), randomEliteParent.deviceRow(p), randomParent.deviceRow(p),
-        chromosomeSize, populationSize, eliteSize, mutantsSize, rhoe, fitnessIdx.deviceRow(p), num_genes);
+        chromosomeSize, populationSize, eliteSize, mutantsSize, rhoe, fitnessIdx.deviceRow(p));
     CUDA_CHECK_LAST();
   }
   std::swap(population, populationTemp);
@@ -294,13 +224,31 @@ void BRKGA::updateFitness() {
   for (unsigned p = 0; p < numberOfPopulations; ++p) sortChromosomesPipe(p);
 }
 
+/**
+ * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used, then this method
+ * saves for each gene of each chromosome, the chromosome
+ * index, and the original gene index. Used later to sort all chromosomes by
+ * gene values. We save gene indexes to preserve this information after sorting.
+ * \param m_chromosome_geneIdx_pop is an array containing a struct for all
+ * chromosomes of the population being processed.
+ * \param chromosomeSize is the size of each chromosome.
+ * \param p is the index of the population to work on.
+ */
+__global__ void deviceSetIdx(unsigned* indices,
+                                                    const unsigned chromosomeSize,
+                                                    const unsigned populationSize) {
+  auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid < chromosomeSize * populationSize) indices[tid] = tid % chromosomeSize;
+}
+
 void BRKGA::sortChromosomesGenes() {
   const auto threads = dimBlock.x;  // FIXME dimBlock.x is threadsPerBlock
   const auto blocks = ceilDiv(populationSize * chromosomeSize, threads);
   for (unsigned p = 0; p < numberOfPopulations; ++p)
-    device_set_chromosome_geneIdx_pipe<<<blocks, threads, 0, streams[p]>>>(chromosomeIdx.deviceRow(p), chromosomeSize, populationSize);
+    deviceSetIdx<<<blocks, threads, 0, streams[p]>>>(chromosomeIdx.deviceRow(p), chromosomeSize, populationSize);
   CUDA_CHECK_LAST();
 
+  // Copy to temp memory since the sort modifies the original array
   for (unsigned p = 0; p < numberOfPopulations; ++p) {
     CudaSubArray<float> temp = populationTemp.row(p);
     population.row(p).copyTo(temp, streams[p]);
@@ -311,28 +259,7 @@ void BRKGA::sortChromosomesGenes() {
   for (unsigned p = 0; p < numberOfPopulations; ++p)
     CUDA_CHECK(cudaStreamSynchronize(streams[p]));
 
-  // TODO save this vector and the following in the class
-  CudaArray<int> segs(numberOfChromosomes);
-  int* hSegs = segs.host();
-  for (unsigned i = 0; i < numberOfChromosomes; ++i)
-    hSegs[i] = i * chromosomeSize;
-
-  segs.toDevice();
-  auto status = bb_segsort(populationTemp.device(), chromosomeIdx.device(), (int)(numberOfChromosomes * chromosomeSize),
-                           segs.device(), (int)numberOfChromosomes);
-  if (status != 0) throw std::runtime_error("bb_segsort exited with status " + std::to_string(status));
-
-  // for (unsigned p = 0; p < numberOfPopulations; ++p) {
-  //   thrust::device_ptr<float> keys(populationTemp.deviceRow(p));
-  //   thrust::device_ptr<unsigned> values(chromosomeIdx.deviceRow(p));
-  //   thrust::stable_sort_by_key(thrust::cuda::par.on(streams[p]), keys, keys + populationSize * chromosomeSize, values);
-  //   CUDA_CHECK(cudaStreamSynchronize(streams[p]));
-  //   unsigned* a = chromosomeIdx.hostRow(p);
-  //   auto b = std::vector<unsigned>(a, a + chromosomeSize);
-  //   std::sort(b.begin(), b.end());
-  //   warning(str(b));
-  // }
-  // CUDA_CHECK_LAST();
+  bbSegSort(populationTemp.device(), chromosomeIdx.device(), numberOfChromosomes * chromosomeSize, chromosomeSize);
 }
 
 /**
@@ -342,13 +269,13 @@ void BRKGA::sortChromosomesGenes() {
  * where chromosome index and its population index is saved.
  * \param population size is the size of each population.
  */
-__global__ void device_set_idx(unsigned* dFitnessIdx, unsigned populationSize) {
+__global__ void deviceSetIdx(unsigned* dFitnessIdx, unsigned populationSize) {
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid < populationSize) dFitnessIdx[tid] = tid;
 }
 
 void BRKGA::sortChromosomesPipe(unsigned p) {
-  device_set_idx<<<dimGridPipe, dimBlock, 0, streams[p]>>>(fitnessIdx.deviceRow(p), populationSize);
+  deviceSetIdx<<<dimGridPipe, dimBlock, 0, streams[p]>>>(fitnessIdx.deviceRow(p), populationSize);
   CUDA_CHECK_LAST();
 
   thrust::device_ptr<float> keys(fitness.deviceRow(p));

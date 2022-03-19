@@ -11,6 +11,7 @@ enable_language(CUDA)
 include_directories(SYSTEM "${CUDA_INCLUDE_DIRS}")
 
 add_compile_definitions(LOG_LEVEL=2)
+# add_compile_definitions(BRKGA_DEBUG)
 
 if(USE_NVTX)
   message("Compiling to use NVTX!")
@@ -19,12 +20,15 @@ if(USE_NVTX)
 endif()
 
 add_library(brkga-cuda
+  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BBSegSort.cuh
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BRKGA.cu
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BRKGA.hpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BrkgaConfiguration.cpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BrkgaConfiguration.hpp
-  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/CommonStructs.h
+  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/CudaContainers.cuh
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/CudaError.cuh
+  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/DecodeType.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/Logger.hpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/Instance.hpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/MathUtils.hpp
 )

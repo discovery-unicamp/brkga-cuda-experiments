@@ -17,6 +17,7 @@ set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/bb_segsort.h PROPERTIES LA
 
 set_target_properties(bb_segsort PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(bb_segsort PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_target_properties(bb_segsort PROPERTIES COMPILE_FLAGS "-w")  # disable all warnings
 set_property(TARGET bb_segsort PROPERTY CUDA_STANDARD 17)
 set_property(TARGET bb_segsort PROPERTY CUDA_ARCHITECTURES 61)
 

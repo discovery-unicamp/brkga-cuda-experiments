@@ -138,12 +138,14 @@ int main(int argc, char** argv) {
 
       info("Validating the chromosome");
       auto bestChromosome = brkga.getBestChromosome();
+      for (unsigned i = 0; i < config.chromosomeLength; ++i)
+        if (bestChromosome[i] < 0 || bestChromosome[i] > 1)
+          throw std::runtime_error("Chromosome is out of range [0, 1]");
       for (unsigned i = 1; i < config.chromosomeLength; ++i) {
         const auto a = bestSorted[i - 1];
         const auto b = bestSorted[i];
-        if (bestChromosome[a] > bestChromosome[b]) {
+        if (bestChromosome[a] > bestChromosome[b])
           throw std::runtime_error("Chromosome wasn't sorted correctly");
-        }
       }
 
       return fitness;

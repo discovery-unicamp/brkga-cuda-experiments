@@ -95,11 +95,9 @@ public:
         dMemory(dPointer)
 #endif  // BRKGA_USE_RAW_MEMORY
   {
-    if (size == 0) throw std::invalid_argument("Size should be greater than 0");
-    if (dPointer == nullptr)
-      throw std::invalid_argument("Device pointer is null");
-    _RAW_ONLY(if (dPointer == nullptr) throw std::invalid_argument(
-        "Host pointer is null"));
+    BRKGA_CHECK(size > 0, "Empty array");
+    BRKGA_CHECK(dPointer != nullptr, "Can't build with null");
+    _RAW_ONLY(BRKGA_CHECK(hPointer != nullptr, "Can't build with null"));
   }
 
   /// dtor
@@ -111,8 +109,7 @@ public:
    * @throw `std::runtime_error` If this object wasn't initialized.
    */
   inline T* device() {
-    if (dMemory == nullptr)
-      throw std::runtime_error("Device pointer wasn't initialized");
+    BRKGA_CHECK(dMemory != nullptr, "Device pointer wasn't initialized");
     return dMemory;
   }
 
@@ -122,8 +119,7 @@ public:
    * @throw `std::runtime_error` If this object wasn't initialized.
    */
   inline const T* device() const {
-    if (dMemory == nullptr)
-      throw std::runtime_error("Device pointer wasn't initialized");
+    BRKGA_CHECK(dMemory != nullptr, "Device pointer wasn't initialized");
     return dMemory;
   }
 
@@ -134,8 +130,7 @@ public:
    */
   inline T* host() {
     T* ptr = _MANAGED_OR_RAW(dMemory, hMemory);
-    if (ptr == nullptr)
-      throw std::runtime_error("Host pointer wasn't initialized");
+    BRKGA_CHECK(ptr != nullptr, "Host pointer wasn't initialized");
     return ptr;
   }
 
@@ -146,8 +141,7 @@ public:
    */
   inline const T* host() const {
     T* ptr = _MANAGED_OR_RAW(dMemory, hMemory);
-    if (ptr == nullptr)
-      throw std::runtime_error("Host pointer wasn't initialized");
+    BRKGA_CHECK(ptr != nullptr, "Host pointer wasn't initialized");
     return ptr;
   }
 
@@ -172,9 +166,7 @@ public:
    * @throw `std::runtime_error` If the subarray is outside this pointer range.
    */
   inline CudaSubArray subarray(std::size_t advance, std::size_t length) {
-    if (advance + length > size) {
-      throw std::runtime_error("Subarray is out of range");
-    }
+    BRKGA_CHECK(advance + length <= size, "Subarray is out of range");
     return _MANAGED_OR_RAW(
         CudaSubArray(length, device() + advance),
         CudaSubArray(length, device() + advance, host() + advance));
@@ -183,12 +175,11 @@ public:
   /**
    * @brief Copy data from this device memory to @p that device memory.
    * @param that The destination of the copy.
+   * @param stream The stream to run the copy method.
    * @throw `std::runtime_error` If the size of @p that is different from this.
    */
-  inline void copyTo(CudaSubArray& that, cudaStream_t stream = nullptr) const {
-    if (size != that.size) {
-      throw std::runtime_error("Cannot copy to CudaSubArray with diff size");
-    }
+  inline void copyTo(CudaSubArray& that, cudaStream_t stream) const {
+    BRKGA_CHECK(size == that.size, "Cannot copy to array");
     if (stream) {
       CUDA_CHECK(cudaMemcpyAsync(that.device(), device(), size * sizeof(T),
                                  cudaMemcpyDeviceToDevice, stream));
@@ -216,9 +207,7 @@ public:
    * @throw `std::runtime_error` If the size of @p that is different from this.
    */
   inline void swap(CudaSubArray& that) {
-    if (size != that.size) {
-      throw std::runtime_error("Cannot swap CudaSubArray with diff sizes");
-    }
+    BRKGA_CHECK(size == that.size, "Cannot swap with diff size");
     std::swap(dMemory, that.dMemory);
     _RAW_ONLY(std::swap(hMemory, that.hMemory));
   }
@@ -267,8 +256,9 @@ public:
    * @throw `std::runtime_error` If the row is outside this matrix range.
    */
   inline T* deviceRow(std::size_t row) {
-    if (row * columnSize >= this->size)
-      throw std::runtime_error("Row exceeds the matrix dimensions");
+    BRKGA_CHECK(row * columnSize < this->size,
+                "Row %lu doesn't exist; max = %lu", row,
+                this->size / columnSize);
     return this->device() + row * columnSize;
   }
 
@@ -279,14 +269,16 @@ public:
    * @throw `std::runtime_error` If the row is outside this matrix range.
    */
   inline T* hostRow(std::size_t row) {
-    if (row * columnSize >= this->size)
-      throw std::runtime_error("Row exceeds the matrix dimensions");
+    BRKGA_CHECK(row * columnSize < this->size,
+                "Row %lu doesn't exist; max = %lu", row,
+                this->size / columnSize);
     return this->host() + row * columnSize;
   }
 
   inline CudaSubArray<T> row(std::size_t row) {
-    if (row * columnSize >= this->size)
-      throw std::runtime_error("Row exceeds the matrix dimensions");
+    BRKGA_CHECK(row * columnSize < this->size,
+                "Row %lu doesn't exist; max = %lu", row,
+                this->size / columnSize);
     return this->subarray(row * columnSize, columnSize);
   }
 
@@ -296,9 +288,7 @@ public:
    * @throw `std::runtime_error` If the size of @p that is different from this.
    */
   inline void swap(CudaMatrix& that) {
-    if (columnSize != that.columnSize) {
-      throw std::runtime_error("Column size differ");
-    }
+    BRKGA_CHECK(columnSize == that.columnSize, "Cannot swap with diff size");
     CudaArray<T>::swap(that);
   }
 

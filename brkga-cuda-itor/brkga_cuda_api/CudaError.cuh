@@ -1,30 +1,56 @@
-/**
- * \file  cuda_error.cuh
- * \brief CUDA Error checking macros and functions.
- */
-#ifndef _CUDA_ERROR_H
-#define _CUDA_ERROR_H
+#ifndef BRKGA_CUDA_API_CUDAERROR_CUH
+#define BRKGA_CUDA_API_CUDAERROR_CUH
+
+#include <stdio.h>
 
 #include <cuda.h>
+
 #include <iostream>
+#include <string>
 
-/**
- * \brief Check if a CUDA error was raised.
- * \param cmd command return value.
- */
-#define CUDA_CHECK(cmd) check_cuda_error(cmd, __FILE__, __LINE__)
-
-/**
- * \brief Check if a CUDA error was raised during the previous operation.
- */
-#define CUDA_CHECK_LAST() check_cuda_error(cudaPeekAtLastError(), __FILE__, __LINE__)
-
-static inline void check_cuda_error(cudaError_t status, const char* file, const int line) {
-  // check call errors
+static inline void _cudaCheck(cudaError_t status,
+                              const char* file,
+                              const int line) {
   if (status != cudaSuccess) {
-    std::cerr << file << ':' << line << ": " << cudaGetErrorString(status) << '\n';
-    exit(status);
+    std::cerr << file << ':' << line << ": " << cudaGetErrorString(status)
+              << '\n';
+    abort();
   }
 }
 
-#endif /* _CUDA_ERROR_H */
+template <class... T>
+static inline void _brkgaFail(const char* expr,
+                              const char* file,
+                              int line,
+                              const char* func,
+                              const std::string& message) {
+  std::cerr << "Assertion `" << expr << "` failed\n";
+  std::cerr << "  " << file << ": " << line << ": on " << func << ": "
+            << message << '\n';
+  abort();
+}
+
+#endif  // BRKGA_CUDA_API_CUDAERROR_CUH
+
+// Like assert, define outside to allow including multiple times
+
+#undef CUDA_CHECK
+#undef CUDA_CHECK_LAST
+#undef BRKGA_CHECK
+
+#ifdef BRKGA_DEBUG
+#define CUDA_CHECK(statement) _cudaCheck(statement, __FILE__, __LINE__)
+#define CUDA_CHECK_LAST() _cudaCheck(cudaPeekAtLastError(), __FILE__, __LINE__)
+#define BRKGA_CHECK(expr, ...)                                         \
+  do {                                                                 \
+    if (!static_cast<bool>(expr)) {                                    \
+      std::string buf((1 << 16), '.');                                 \
+      snprintf((char*)buf.data(), buf.size(), __VA_ARGS__);            \
+      _brkgaFail(#expr, __FILE__, __LINE__, __PRETTY_FUNCTION__, buf); \
+    }                                                                  \
+  } while (false)
+#else
+#define CUDA_CHECK(statement) statement
+#define CUDA_CHECK_LAST() void(nullptr)
+#define BRKGA_CHECK(expr, ...) void(nullptr)
+#endif  // BRKGA_DEBUG
