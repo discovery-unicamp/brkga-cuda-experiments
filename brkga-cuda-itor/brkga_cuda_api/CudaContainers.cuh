@@ -279,6 +279,12 @@ public:
     return this->host() + row * columnSize;
   }
 
+  inline CudaSubArray<T> row(std::size_t row) {
+    if (row * columnSize >= this->size)
+      throw std::runtime_error("Row exceeds the matrix dimensions");
+    return this->subarray(row * columnSize, columnSize);
+  }
+
   /**
    * @brief Swaps this with @p that.
    * @param that The object to swap.

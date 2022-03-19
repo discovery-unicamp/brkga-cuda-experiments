@@ -10,7 +10,7 @@
 #define BRKGA_H
 
 #include "BrkgaConfiguration.hpp"
-#include "CudaArray.cuh"
+#include "CudaContainers.cuh"
 #include "Instance.hpp"
 
 #include <curand.h>  // TODO check if this header is required here
@@ -83,7 +83,6 @@ private:
   // TODO Simplify them to a single constructor.
 
   void resetPopulation();
-  size_t allocateData();
   void initPipeline();
 
   /**
@@ -113,68 +112,31 @@ private:
   /// The main stream to run the operations indenpendently
   constexpr static cudaStream_t defaultStream = nullptr;
 
-  /// The instance of the problem optimized by this object
-  Instance* instance;
+  Instance* instance;  /// The instance of the problem
 
-  /// Stores all the chromosomes
-  CudaArray<float> population;
+  CudaMatrix<float> population;  /// All the chromosomes
+  CudaMatrix<float> populationTemp;  /// Temp memory for chromosomes
 
-  /// Stores the chromosomes, split by population
-  std::vector<CudaSubArray<float>> populationPipe;
+  CudaMatrix<float> fitness;  /// The fitness of each chromosome
+  CudaMatrix<PopIdxThreadIdxPair> fitnessIdx;  /// Index if population was sorted
+  CudaMatrix<unsigned> chromosomeIdx;  /// Index of the genes if sorted
 
-  /// Temporary memory to store all the chromosomes, avoiding many allocations
-  CudaArray<float> populationTemp;
+  CudaMatrix<float> randomEliteParent;  /// The elite parent
+  CudaMatrix<float> randomParent;  /// The non-elite parent
 
-  /// Stores the temporary chromosomes, split by population
-  std::vector<CudaSubArray<float>> populationPipeTemp;
+  unsigned numberOfChromosomes;  /// Total number of chromosomes
+  unsigned numberOfGenes;  /// Total number of genes
 
-  /// The fitness of each chromosome
-  CudaArray<float> mFitness;
+  unsigned chromosomeSize;  /// The size of each chromosome
+  unsigned populationSize;  /// The size of each population
+  unsigned eliteSize;  /// The number of elites in the population
+  unsigned mutantsSize;  /// The number of mutants in the population
+  unsigned numberOfPopulations;  /// The number of populations
+  float rhoe;  /// The bias to accept the elite chromosome
+  DecodeType decodeType;  /// The decode method
+  std::vector<cudaStream_t> streams;  /// The streams to process the populations
 
-  /// The fitness of each chromosome, split by population
-  std::vector<CudaSubArray<float>> mFitnessPipe;
-
-  /// The index of the chromosomes if they were sorted by fitness
-  CudaArray<PopIdxThreadIdxPair> mFitnessIdx;
-
-  /// The index of the chromosomes if they were sorted by fitness,
-  /// split by population
-  std::vector<CudaSubArray<PopIdxThreadIdxPair>> dFitnessIdxPipe;
-
-  /// Indices of the chromosomes, in case of sorted decode
-  CudaArray<unsigned> mChromosomeGeneIdx;
-
-  /// Indices of the chromosomes, split by population
-  std::vector<CudaSubArray<unsigned>> mChromosomeGeneIdxPipe;
-
-  /// Stores a number indicating the elite parent, avoiding reallocation
-  float* dRandomEliteParent = nullptr;
-
-  /// The elite parent, split by population
-  std::vector<float*> dRandomEliteParentPipe;
-
-  /// Stores a number indicating the non-elite parent, avoiding reallocation
-  float* dRandomParent = nullptr;
-
-  /// The non-elite parent, split by population
-  std::vector<float*> dRandomParentPipe;
-
-  /// Total number of chromosomes on all populations
-  unsigned numberOfChromosomes;
-
-  /// Total number of genes on all populations
-  unsigned numberOfGenes;
-
-  // Default parameters
-  unsigned chromosomeSize;
-  unsigned populationSize;
-  unsigned eliteSize;
-  unsigned mutantsSize;
-  unsigned numberOfPopulations;
-  float rhoe;
-
-  /// Random number generator for initial population and parent
-  curandGenerator_t gen;
+  curandGenerator_t gen;  /// Generator for initial population and parent
 
   // Dimensions
 
@@ -186,12 +148,6 @@ private:
   dim3 dimGridPipe;  /// Grid dimension when having one thread per chromosome
   dim3 dimGridGenePipe;  /// Grid dimension when we have one thread per gene
                          /// (coalesced used)
-
-  /// How to decode the chromosomes
-  DecodeType decodeType;
-
-  /// Use one stream per population
-  std::vector<cudaStream_t> streams;
 };
 
 #endif
