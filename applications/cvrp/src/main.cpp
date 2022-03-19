@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
     auto runGenerations = [&]() {
       std::vector<float> convergence;
       convergence.reserve(ceilDiv(config.generations, logStep) + 1);
-      convergence.push_back(brkga.getBestScore());
+      convergence.push_back(brkga.getBestFitness());
 
       for (unsigned generation = 1; generation <= config.generations; ++generation) {
         brkga.evolve();
@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
           brkga.exchangeElite(config.exchangeBestCount);
         }
         if (generation % logStep == 0 || generation == config.generations) {
-          float best = brkga.getBestScore();
+          float best = brkga.getBestFitness();
           std::clog << "Generation " << generation << "; best: " << best << '\r';
           convergence.push_back(best);
         }
@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
     };
 
     auto getBestFitness = [&]() {
-      auto fitness = brkga.getBestScore();
+      auto fitness = brkga.getBestFitness();
 
       info("Validating the best solution found");
       auto bestSorted = brkga.getBestIndices();

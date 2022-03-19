@@ -20,77 +20,152 @@
 enum DecodeType;
 class PopIdxThreadIdxPair;
 
-/**
- * \brief BRKGA class contains the main interface of the BRKGA algorithm.
- */
 class BRKGA {
 public:
+  /**
+   * @brief Construct a new BRKGA object.
+   *
+   * @param config The configuration to run the algorithm.
+   */
   BRKGA(BrkgaConfiguration& config);
+
+  /// Checks for CUDA errors and releases memory
   ~BRKGA();
 
   /**
-   * \brief Generates random alleles for all chromosomes on GPU.
-   *        d_population points to the memory where the chromosomes are.
-   */
-  void resetPopulation();
-
-  /**
-   * \brief Main function of the BRKGA algorithm.
-   * It evolves K populations for one generation.
-   * \param num_generatios The number of evolutions to perform on all populations.
+   * @brief Evolve the population to the next generation.
    */
   void evolve();
 
   /**
-   * \brief Exchange M individuals among the different populations.
-   * \param M is the number of elite individuals to be exchanged.
+   * @brief Copy the elites from/to all populations.
+   *
+   * This method will simply copy the @p count elites from one population to all
+   * the others. It will not copy to the same population, which avoids
+   * generating duplicated chromsomes.
+   *
+   * This operation blocks the CPU until it is finished.
+   *
+   * @param count The number of elites to copy from each population.
    */
   void exchangeElite(unsigned count);
 
   /**
-   * \brief This method returns a vector of vectors, where each vector corresponds
-   * to a chromosome, where in position 0 we have its score and in positions 1 to
-   * chromosomeSize the aleles values of the chromosome.
+   * @brief Get the fitness of the best chromosome found so far.
    *
-   * This function copys chromosomes directly from the pool of best solutions.
-   * \param k is the number of chromosomes to return. The best k are returned.
+   * This operation blocks the CPU until it is finished.
+   *
+   * @return The fitness of the best chromsome.
+   */
+  float getBestFitness();
+
+  /**
+   * @brief Get the best chromosome.
+   *
+   * This operation blocks the CPU until it is finished.
+   *
+   * @return The best chromsome.
    */
   std::vector<float> getBestChromosome();
 
+  /**
+   * @brief Get the best chromosome when sorted.
+   *
+   * This operation blocks the CPU until it is finished.
+   *
+   * @return The best chromsome when sorted.
+   * @throw `std::runtime_error` If the decode type is a non-sorted one.
+   */
   std::vector<unsigned> getBestIndices();
 
-  float getBestScore();
-
 private:
-  static constexpr cudaStream_t defaultStream = nullptr;  // NOLINT(misc-misplaced-const)
+  // Initializers
+  // TODO Simplify them to a single constructor.
 
+  void resetPopulation();
+  size_t allocateData();
+  void initPipeline();
+
+  /**
+   * @brief Call the decode method to the population `pop_id`.
+   *
+   * @param pop_id The index of the population to decode.
+   */
+  void evaluateChromosomesPipe(unsigned pop_id);
+
+  /// Sorts the indices of the chromosomes in case of sorted decode
+  void sortChromosomesGenes();
+
+  /**
+   * @brief Sorts the population `pop_id`.
+   *
+   * @param pop_id The index of the population to sort.
+   */
+  void sortChromosomesPipe(unsigned pop_id);
+
+  /**
+   * @brief Ensures the fitness is sorted.
+   *
+   * This operation should be executed after each change to any chromosome.
+   */
+  void updateFitness();
+
+  /// The main stream to run the operations indenpendently
+  constexpr static cudaStream_t defaultStream = nullptr;
+
+  /// The instance of the problem optimized by this object
   Instance* instance;
 
+  /// Stores all the chromosomes
   CudaArray<float> population;
+
+  /// Stores the chromosomes, split by population
+  std::vector<CudaSubArray<float>> populationPipe;
+
+  /// Temporary memory to store all the chromosomes, avoiding many allocations
   CudaArray<float> populationTemp;
-  std::vector<CudaSubArray<float>> populationPipe;  /// Device populations using evolvePipeline. One pointer is used to each population.
-  std::vector<CudaSubArray<float>> populationPipeTemp;  /// Device populations using evolvePipeline. One pointer is used to each population.
 
-  CudaArray<float> mScores;
-  CudaArray<PopIdxThreadIdxPair> mScoresIdx;
-  std::vector<CudaSubArray<float>> mScoresPipe;  /// Pointer to each population device score of each chromosome
-  std::vector<CudaSubArray<PopIdxThreadIdxPair>> dScoresIdxPipe;
+  /// Stores the temporary chromosomes, split by population
+  std::vector<CudaSubArray<float>> populationPipeTemp;
 
-  CudaArray<unsigned> mChromosomeGeneIdx;  /// Table with indices for all chromosomes and each of its gene on device
-  std::vector<CudaSubArray<unsigned>> mChromosomeGeneIdxPipe;  /// Pointer for each population for its table with indices for all
-                                                    /// chromosomes in the population and each of its gene on device
+  /// The fitness of each chromosome
+  CudaArray<float> mFitness;
 
-  float* dRandomEliteParent = nullptr;  /// a random number for each thread to choose its elite parent
-                                           /// during crossover
-  float* dRandomParent = nullptr;  /// a random number for each thread to choose
-                                     /// its non-elite parent during crossover
-  std::vector<float*> dRandomEliteParentPipe;  /// A pointer to each population where random numbers for each
-                                                 /// thread to choose its elite parent during crossover
-  std::vector<float*> dRandomParentPipe;  /// A pointer to each population to random numbers for each thread
-                                           /// to choose its non-elite parent during crossover
+  /// The fitness of each chromosome, split by population
+  std::vector<CudaSubArray<float>> mFitnessPipe;
 
-  unsigned numberOfChromosomes;  /// total number of chromosomes in all K populations
-  unsigned numberOfGenes;  /// total number of genes in all K populations
+  /// The index of the chromosomes if they were sorted by fitness
+  CudaArray<PopIdxThreadIdxPair> mFitnessIdx;
+
+  /// The index of the chromosomes if they were sorted by fitness,
+  /// split by population
+  std::vector<CudaSubArray<PopIdxThreadIdxPair>> dFitnessIdxPipe;
+
+  /// Indices of the chromosomes, in case of sorted decode
+  CudaArray<unsigned> mChromosomeGeneIdx;
+
+  /// Indices of the chromosomes, split by population
+  std::vector<CudaSubArray<unsigned>> mChromosomeGeneIdxPipe;
+
+  /// Stores a number indicating the elite parent, avoiding reallocation
+  float* dRandomEliteParent = nullptr;
+
+  /// The elite parent, split by population
+  std::vector<float*> dRandomEliteParentPipe;
+
+  /// Stores a number indicating the non-elite parent, avoiding reallocation
+  float* dRandomParent = nullptr;
+
+  /// The non-elite parent, split by population
+  std::vector<float*> dRandomParentPipe;
+
+  /// Total number of chromosomes on all populations
+  unsigned numberOfChromosomes;
+
+  /// Total number of genes on all populations
+  unsigned numberOfGenes;
+
+  // Default parameters
   unsigned chromosomeSize;
   unsigned populationSize;
   unsigned eliteSize;
@@ -98,59 +173,25 @@ private:
   unsigned numberOfPopulations;
   float rhoe;
 
-  curandGenerator_t gen;  /// cuda random number generator
+  /// Random number generator for initial population and parent
+  curandGenerator_t gen;
+
+  // Dimensions
+
   dim3 dimBlock;
   dim3 dimGrid;  /// Grid dimension when having one thread per chromosome
   dim3 dimGridGene;  /// Grid dimension when we have one thread per gene
-                      /// (coalesced used)
+                     /// (coalesced used)
 
   dim3 dimGridPipe;  /// Grid dimension when having one thread per chromosome
   dim3 dimGridGenePipe;  /// Grid dimension when we have one thread per gene
-                           /// (coalesced used)
+                         /// (coalesced used)
 
-  DecodeType decodeType;  /// How to decode each chromosome
+  /// How to decode the chromosomes
+  DecodeType decodeType;
 
-  std::vector<cudaStream_t> streams;  // use one stream per population when doing pipelined version
-
-  /**
-   * \brief allocate the main data used by the BRKGA.
-   */
-  size_t allocateData();
-
-  /**
-   * \brief Initialize parameters and structs used in the pipeline version
-   */
-  void initPipeline();
-
-  void updateScores();
-
-  void evaluateChromosomes();
-
-  void evaluateChromosomesPipe(unsigned pop_id);
-
-  /**
-   * \brief If DEVICE_DECODE_CHROMOSOME_SORTED, then we
-   * we perform 2 stable_sort sorts: first we sort all genes of all
-   * chromosomes by their values, and then we sort by the chromosomes index, and
-   * since stable_sort is used, for each chromosome we will have its genes sorted
-   * by their values.
-   */
-  void sortChromosomesGenes();
-
-  /**
-   * \brief Sort chromosomes for each population.
-   * We use the thread index to index each population, and perform 2 stable_sort
-   * sorts: first we sort by the chromosome scores, and then by their population
-   * index, and since stable_sort is used in each population the chromosomes are
-   * sorted by scores.
-   */
-  void sortChromosomes();
-
-  /**
-   * \brief Sort chromosomes for each population.
-   * \param pop_id is the index of the population to be sorted.
-   */
-  void sortChromosomesPipe(unsigned pop_id);
+  /// Use one stream per population
+  std::vector<cudaStream_t> streams;
 };
 
 #endif
