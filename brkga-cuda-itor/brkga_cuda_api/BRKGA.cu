@@ -168,37 +168,6 @@ __global__ void device_set_chromosome_geneIdx_pipe(unsigned* indices,
   if (tid < chromosomeSize * populationSize) indices[tid] = tid % chromosomeSize;
 }
 
-#ifndef NDEBUG
-__global__ void assert_is_sorted(unsigned number_of_chromosomes,
-                                 unsigned chromosome_length,
-                                 const unsigned* indices,
-                                 const float* chromosomes,
-                                 const float* originalChromosomes) {
-  const unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid >= chromosome_length) return;
-
-  __shared__ bool seen[2000];
-  for (unsigned i = 0; i < number_of_chromosomes; ++i) {
-    unsigned k = i * chromosome_length;
-
-    assert(indices[k + tid] < chromosome_length);
-
-    seen[tid] = false;
-    __syncthreads();
-
-    const auto gene = indices[k + tid];
-    seen[gene] = true;
-    __syncthreads();
-
-    assert(seen[tid]);  // checks if some index is missing
-    __syncthreads();
-
-    if (tid != 0) assert(chromosomes[k + tid - 1] <= chromosomes[k + tid]);
-    assert(chromosomes[k + tid] == originalChromosomes[k + indices[k + tid]]);
-  }
-}
-#endif  // NDEBUG
-
 __global__ void set_index_order(const unsigned numberOfChromosomes,
                                 const unsigned chromosomeLength,
                                 unsigned* indices) {
@@ -213,32 +182,6 @@ __global__ void set_index_order(const unsigned numberOfChromosomes,
 
     indices[k + index] = tid;
   }
-}
-
-void BRKGA::sortChromosomesGenes() {
-  // First set for each gene, its chromosome index and its original index in the chromosome
-  const auto threads = dimBlock.x;  // FIXME dimBlock.x is threadsPerBlock
-  const auto blocks = ceilDiv(numberOfChromosomes * chromosomeSize, threads);
-  device_set_chromosome_geneIdx_pipe<<<blocks, threads>>>(chromosomeIdx.device(), chromosomeSize, numberOfChromosomes);
-  CUDA_CHECK_LAST();
-
-  // we use dPopulation2 to sort all genes by their values
-  population.copyTo(populationTemp);
-
-  // TODO save this vector and the following in the class
-  std::vector<int> segs(numberOfChromosomes);
-  for (unsigned i = 0; i < numberOfChromosomes; ++i) segs[i] = i * chromosomeSize;
-
-  int* d_segs = nullptr;
-  CUDA_CHECK(cudaMalloc(&d_segs, segs.size() * sizeof(int)));
-  CUDA_CHECK(cudaMemcpy(d_segs, segs.data(), segs.size() * sizeof(int), cudaMemcpyHostToDevice));
-
-  auto status = bb_segsort(populationTemp.device(), chromosomeIdx.device(), (int)(numberOfChromosomes * chromosomeSize),
-                           d_segs, (int)numberOfChromosomes);
-  CUDA_CHECK_LAST();
-  if (status != 0) throw std::runtime_error("bb_segsort exited with status " + std::to_string(status));
-
-  CUDA_CHECK(cudaFree(d_segs));
 }
 
 /**
@@ -341,17 +284,55 @@ void BRKGA::evolve() {
 void BRKGA::updateFitness() {
   debug("Updating the population fitness");
 
-  // Sort is required for sorted decode, which sorts all chromosomes at the same time
-  if (decodeType == DecodeType::DEVICE_SORTED || decodeType == DecodeType::HOST_SORTED) {
-    // FIXME We should sort each fitness on its own thread to avoid synchonization
-    for (unsigned p = 0; p < numberOfPopulations; ++p)
-      CUDA_CHECK(cudaStreamSynchronize(streams[p]));
+  if (decodeType == DecodeType::DEVICE_SORTED
+      || decodeType == DecodeType::HOST_SORTED) {
+    // Required for sorted decode
     sortChromosomesGenes();
-    CUDA_CHECK(cudaDeviceSynchronize());
   }
 
   for (unsigned p = 0; p < numberOfPopulations; ++p) evaluateChromosomesPipe(p);
   for (unsigned p = 0; p < numberOfPopulations; ++p) sortChromosomesPipe(p);
+}
+
+void BRKGA::sortChromosomesGenes() {
+  const auto threads = dimBlock.x;  // FIXME dimBlock.x is threadsPerBlock
+  const auto blocks = ceilDiv(populationSize * chromosomeSize, threads);
+  for (unsigned p = 0; p < numberOfPopulations; ++p)
+    device_set_chromosome_geneIdx_pipe<<<blocks, threads, 0, streams[p]>>>(chromosomeIdx.deviceRow(p), chromosomeSize, populationSize);
+  CUDA_CHECK_LAST();
+
+  for (unsigned p = 0; p < numberOfPopulations; ++p) {
+    CudaSubArray<float> temp = populationTemp.row(p);
+    population.row(p).copyTo(temp, streams[p]);
+  }
+  CUDA_CHECK_LAST();
+
+  // FIXME We should sort each fitness on its own thread to avoid synchonization
+  for (unsigned p = 0; p < numberOfPopulations; ++p)
+    CUDA_CHECK(cudaStreamSynchronize(streams[p]));
+
+  // TODO save this vector and the following in the class
+  CudaArray<int> segs(numberOfChromosomes);
+  int* hSegs = segs.host();
+  for (unsigned i = 0; i < numberOfChromosomes; ++i)
+    hSegs[i] = i * chromosomeSize;
+
+  segs.toDevice();
+  auto status = bb_segsort(populationTemp.device(), chromosomeIdx.device(), (int)(numberOfChromosomes * chromosomeSize),
+                           segs.device(), (int)numberOfChromosomes);
+  if (status != 0) throw std::runtime_error("bb_segsort exited with status " + std::to_string(status));
+
+  // for (unsigned p = 0; p < numberOfPopulations; ++p) {
+  //   thrust::device_ptr<float> keys(populationTemp.deviceRow(p));
+  //   thrust::device_ptr<unsigned> values(chromosomeIdx.deviceRow(p));
+  //   thrust::stable_sort_by_key(thrust::cuda::par.on(streams[p]), keys, keys + populationSize * chromosomeSize, values);
+  //   CUDA_CHECK(cudaStreamSynchronize(streams[p]));
+  //   unsigned* a = chromosomeIdx.hostRow(p);
+  //   auto b = std::vector<unsigned>(a, a + chromosomeSize);
+  //   std::sort(b.begin(), b.end());
+  //   warning(str(b));
+  // }
+  // CUDA_CHECK_LAST();
 }
 
 /**

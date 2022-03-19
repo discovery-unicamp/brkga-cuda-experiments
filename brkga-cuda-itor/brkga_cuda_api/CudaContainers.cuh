@@ -185,12 +185,17 @@ public:
    * @param that The destination of the copy.
    * @throw `std::runtime_error` If the size of @p that is different from this.
    */
-  inline void copyTo(CudaSubArray& that) const {
+  inline void copyTo(CudaSubArray& that, cudaStream_t stream = nullptr) const {
     if (size != that.size) {
       throw std::runtime_error("Cannot copy to CudaSubArray with diff size");
     }
-    CUDA_CHECK(cudaMemcpy(that.device(), device(), size * sizeof(T),
-                          cudaMemcpyDeviceToDevice));
+    if (stream) {
+      CUDA_CHECK(cudaMemcpyAsync(that.device(), device(), size * sizeof(T),
+                                 cudaMemcpyDeviceToDevice, stream));
+    } else {
+      CUDA_CHECK(cudaMemcpy(that.device(), device(), size * sizeof(T),
+                            cudaMemcpyDeviceToDevice));
+    }
   }
 
   /**
