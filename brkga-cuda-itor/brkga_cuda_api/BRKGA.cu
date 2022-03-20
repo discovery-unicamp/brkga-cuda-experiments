@@ -18,6 +18,7 @@
 #include <curand.h>
 
 #include <algorithm>
+#include <cassert>
 #include <limits>
 #include <random>
 #include <stdexcept>
@@ -148,47 +149,35 @@ __global__ void deviceEvolve(const float* population,
                              unsigned mutantsSize,
                              float rhoe,
                              unsigned* fitnessIdx) {
-  unsigned tx =
-      blockIdx.x * blockDim.x
-      + threadIdx.x;  // thread index pointing to some gene of some chromosome
-  if (tx
-      < populationSize * chromosomeSize) {  // tx < last gene of this population
-    unsigned chromosomeIdx =
-        tx / chromosomeSize;  //  chromosome in this population having this gene
-    unsigned geneIdx =
-        tx % chromosomeSize;  // the index of this gene in this chromosome
-    // if chromosomeIdx < eliteSize then the chromosome is elite, so we copy
-    // elite gene
-    if (chromosomeIdx < eliteSize) {
-      unsigned eliteChromosomeIdx =
-          fitnessIdx[chromosomeIdx];  // original elite chromosome index
-      // corresponding to this chromosome
-      populationTemp[tx] =
-          population[eliteChromosomeIdx * chromosomeSize + geneIdx];
-    } else if (chromosomeIdx < populationSize - mutantsSize) {
-      // thread is responsible to crossover of this gene of this chromosomeIdx.
-      // Below are the inside population random indexes of a elite parent and
-      // regular parent for crossover
-      auto insideParentEliteIdx =
-          (unsigned)((1 - randomEliteParent[chromosomeIdx]) * eliteSize);
-      auto insideParentIdx = (unsigned)(eliteSize
-                                        + (1 - randomParent[chromosomeIdx])
-                                              * (populationSize - eliteSize));
-      assert(insideParentEliteIdx < eliteSize);
-      assert(eliteSize <= insideParentIdx && insideParentIdx < populationSize);
+  unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid >= populationSize * chromosomeSize) return;
 
-      unsigned eliteChromosomeIdx = fitnessIdx[insideParentEliteIdx];
-      unsigned parentChromosomeIdx = fitnessIdx[insideParentIdx];
-      if (populationTemp[tx] <= rhoe)
-        // copy gene from elite parent
-        populationTemp[tx] =
-            population[eliteChromosomeIdx * chromosomeSize + geneIdx];
-      else
-        // copy allele from regular parent
-        populationTemp[tx] =
-            population[parentChromosomeIdx * chromosomeSize + geneIdx];
-    }  // in the else case the thread corresponds to a mutant and nothing is
-    // done.
+  unsigned chromosome = tid / chromosomeSize;
+  unsigned gene = tid % chromosomeSize;
+  if (chromosome < eliteSize) {
+    // Copy the elite
+    const auto elite = fitnessIdx[chromosome];
+    populationTemp[tid] = population[elite * chromosomeSize + gene];
+  } else if (chromosome < populationSize - mutantsSize) {
+    // Combine elite with non-elite
+    const auto eliteOrder =
+        (unsigned)(randomEliteParent[chromosome] * eliteSize);
+    const auto nonEliteOrder =
+        (unsigned)(eliteSize
+                   + randomParent[chromosome] * (populationSize - eliteSize));
+
+    // This validation is due to the uncertainty with the random generator,
+    //  which may return 0 and 1
+    assert(eliteOrder < eliteSize);
+    assert(eliteSize <= nonEliteOrder);
+    assert(nonEliteOrder < populationSize);
+
+    const auto elite = fitnessIdx[eliteOrder];
+    const auto nonElite = fitnessIdx[nonEliteOrder];
+    const auto parent = populationTemp[tid] <= rhoe ? elite : nonElite;
+    populationTemp[tid] = population[parent * chromosomeSize + gene];
+  } else {
+    // This is mutant, with the random values already set (the values for rhoe).
   }
 }
 

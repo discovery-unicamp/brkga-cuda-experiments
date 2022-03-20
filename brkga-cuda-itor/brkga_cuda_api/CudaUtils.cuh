@@ -57,7 +57,11 @@ inline void iotaMod(unsigned* arr,
 }
 
 /**
- * @brief Set all values of an array to random values in range (0, 1].
+ * @brief Set all values of an array to random values in range [0, 1].
+ *
+ * Although the library says the range is (0, 1], the 0 still appear in the
+ * generator.
+ *
  * @param generator The generator of random values.
  * @param arr The array to set the values.
  * @param n The length of the array.
