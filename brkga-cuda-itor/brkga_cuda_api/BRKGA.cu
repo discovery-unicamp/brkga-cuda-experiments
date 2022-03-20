@@ -160,17 +160,14 @@ __global__ void deviceEvolve(const float* population,
     populationTemp[tid] = population[elite * chromosomeSize + gene];
   } else if (chromosome < populationSize - mutantsSize) {
     // Combine elite with non-elite
-    const auto eliteOrder =
-        (unsigned)(randomEliteParent[chromosome] * eliteSize);
-    const auto nonEliteOrder =
+    auto eliteOrder = (unsigned)(randomEliteParent[chromosome] * eliteSize);
+    auto nonEliteOrder =
         (unsigned)(eliteSize
                    + randomParent[chromosome] * (populationSize - eliteSize));
 
-    // This validation is due to the uncertainty with the random generator,
-    //  which may return 0 and 1
-    assert(eliteOrder < eliteSize);
-    assert(eliteSize <= nonEliteOrder);
-    assert(nonEliteOrder < populationSize);
+    // On rare cases, the generator will return 1.0
+    if (eliteOrder == eliteSize) --eliteOrder;
+    if (nonEliteOrder == populationSize) --nonEliteOrder;
 
     const auto elite = fitnessIdx[eliteOrder];
     const auto nonElite = fitnessIdx[nonEliteOrder];
