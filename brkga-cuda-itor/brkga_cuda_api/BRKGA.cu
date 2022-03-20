@@ -8,28 +8,31 @@
 #include "BBSegSort.cuh"
 #include "BRKGA.hpp"
 #include "BrkgaConfiguration.hpp"
+#include "CudaContainers.cuh"
 #include "CudaError.cuh"
+#include "CudaUtils.cuh"
 #include "DecodeType.hpp"
 #include "Instance.hpp"
 #include "Logger.hpp"
-#include "MathUtils.hpp"
 
 #include <curand.h>
-#include <thrust/device_ptr.h>
-#include <thrust/sort.h>
 
 #include <algorithm>
 #include <limits>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 BRKGA::BRKGA(BrkgaConfiguration& config)
-    : population(config.numberOfPopulations, config.populationSize * config.chromosomeLength),
-      populationTemp(config.numberOfPopulations, config.populationSize * config.chromosomeLength),
+    : population(config.numberOfPopulations,
+                 config.populationSize * config.chromosomeLength),
+      populationTemp(config.numberOfPopulations,
+                     config.populationSize * config.chromosomeLength),
       fitness(config.numberOfPopulations, config.populationSize),
       fitnessIdx(config.numberOfPopulations, config.populationSize),
-      chromosomeIdx(config.numberOfPopulations, config.populationSize * config.chromosomeLength),
+      chromosomeIdx(config.numberOfPopulations,
+                    config.populationSize * config.chromosomeLength),
       randomEliteParent(config.numberOfPopulations, config.populationSize),
       randomParent(config.numberOfPopulations, config.populationSize) {
   // clang-format off
@@ -62,10 +65,7 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
   mutantsSize = config.mutantsCount;
   rhoe = config.rho;
   decodeType = config.decodeType;
-
-  dimBlock.x = config.threadsPerBlock;
-  dimGridPipe.x = ceilDiv(populationSize, config.threadsPerBlock);
-  dimGridGenePipe.x = ceilDiv(chromosomeSize * populationSize, config.threadsPerBlock);
+  threadsPerBlock = config.threadsPerBlock;
 
   // One stream for each population
   streams.resize(numberOfPopulations);
@@ -73,15 +73,19 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
     CUDA_CHECK(cudaStreamCreate(&streams[p]));
 
   debug("Building random generator with seed", config.seed);
-  gen = nullptr;
-  curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
-  CUDA_CHECK_LAST();
-  curandSetPseudoRandomGeneratorSeed(gen, config.seed);
-  CUDA_CHECK_LAST();
+  std::mt19937 rng(config.seed);
+  std::uniform_int_distribution<std::mt19937::result_type> uid;
+  generators.resize(numberOfPopulations);
+  for (unsigned p = 0; p < numberOfPopulations; ++p) {
+    curandCreateGenerator(&generators[p], CURAND_RNG_PSEUDO_DEFAULT);
+    curandSetPseudoRandomGeneratorSeed(generators[p], uid(rng));
+  }
 
   debug("Building the initial populations");
-  curandGenerateUniform(gen, population.device(), numberOfChromosomes * chromosomeSize);
-  CUDA_CHECK_LAST();
+  for (unsigned p = 0; p < numberOfPopulations; ++p)
+    CudaUtils::random(generators[p], population.deviceRow(p),
+                      populationSize * chromosomeSize, streams[p]);
+
   updateFitness();
 }
 
@@ -90,104 +94,99 @@ BRKGA::~BRKGA() {
   for (unsigned p = 0; p < numberOfPopulations; ++p) CUDA_CHECK_LAST();
   CUDA_CHECK_LAST();
 
-  curandDestroyGenerator(gen);
+  for (unsigned p = 0; p < numberOfPopulations; ++p)
+    curandDestroyGenerator(generators[p]);
   for (unsigned p = 0; p < numberOfPopulations; ++p)
     CUDA_CHECK(cudaStreamDestroy(streams[p]));
 }
 
 void BRKGA::evaluateChromosomesPipe(unsigned p) {
-  debug("evaluating the chromosomes of the population no.", p, "with", toString(decodeType));
+  debug("evaluating the chromosomes of the population no.", p, "with",
+        toString(decodeType));
 
   if (decodeType == DecodeType::DEVICE) {
-    instance->evaluateChromosomesOnDevice(streams[p], populationSize, population.deviceRow(p), fitness.deviceRow(p));
+    instance->evaluateChromosomesOnDevice(streams[p], populationSize,
+                                          population.deviceRow(p),
+                                          fitness.deviceRow(p));
     CUDA_CHECK_LAST();
   } else if (decodeType == DecodeType::DEVICE_SORTED) {
-    instance->evaluateIndicesOnDevice(streams[p], populationSize, chromosomeIdx.deviceRow(p), fitness.deviceRow(p));
+    instance->evaluateIndicesOnDevice(streams[p], populationSize,
+                                      chromosomeIdx.deviceRow(p),
+                                      fitness.deviceRow(p));
     CUDA_CHECK_LAST();
   } else if (decodeType == DecodeType::HOST_SORTED) {
-    instance->evaluateIndicesOnHost(populationSize, chromosomeIdx.hostRow(p), fitness.hostRow(p));
+    instance->evaluateIndicesOnHost(populationSize, chromosomeIdx.hostRow(p),
+                                    fitness.hostRow(p));
   } else if (decodeType == DecodeType::HOST) {
-    instance->evaluateChromosomesOnHost(populationSize, population.hostRow(p), fitness.hostRow(p));
+    instance->evaluateChromosomesOnHost(populationSize, population.hostRow(p),
+                                        fitness.hostRow(p));
   } else {
     throw std::domain_error("Function decode type is unknown");
   }
 }
 
-__global__ void set_index_order(const unsigned numberOfChromosomes,
-                                const unsigned chromosomeLength,
-                                unsigned* indices) {
-  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid >= chromosomeLength) return;
-
-  for (unsigned i = 0; i < numberOfChromosomes; ++i) {
-    const auto k = i * chromosomeLength;
-    const auto index = indices[k + tid];
-    // FIXME will not work for bigger chromosomes
-    __syncthreads();
-
-    indices[k + index] = tid;
-  }
-}
-
 /**
- * \brief Kernel function to compute a next population of a give population.
- * In this function each thread process one GENE.
- * \param dPopulation is the array of chromosomes in the current population.
- * \param dPopulation2 is the array where the next population will be set.
- * \param randomParent is an array with random values to compute indices of
- * parents for crossover.
- * \param randomEliteParent is an array with random
- * values to compute indices of ELITE parents for crossover.
- * \param chromosomeSize is the size of each individual.
- * \param populationSize is the size of each population.
- * \param eliteSize is the number of elite
- * chromosomes.
- * \param mutantsSize is the number of mutants chromosomes.
- * \param rhoe is the parameter used to decide if a gene is inherited from the
- * ELITE parent or the normal parent. \param dFitnessIdx contains the original
- * index of a chromosome in its population, and this struct is ordered by the
- * chromosomes fitness.
- * \param p is the index of the population to process.
- *
+ * @brief Evolves the population to a new generation.
+ * @param population The population to evolve.
+ * @param populationTemp The bias factor (and the new population destination).
+ * @param randomEliteParent The elite parent of each chromosome.
+ * @param randomParent The non-elite parent of each chromosome.
+ * @param chromosomeSize The size of the chromosomes.
+ * @param populationSize The number of chromosomes on each population.
+ * @param eliteSize The number of elites.
+ * @param mutantsSize The number of mutants.
+ * @param rhoe The bias to choose the elite genes.
+ * @param fitnessIdx The order of the chromosomes, increasing by fitness.
  */
-__global__ void device_evolve(const float* dPopulation,
-                                                      float* dPopulationTemp,
-                                                      const float* randomEliteParent,
-                                                      const float* randomParent,
-                                                      unsigned chromosomeSize,
-                                                      unsigned populationSize,
-                                                      unsigned eliteSize,
-                                                      unsigned mutantsSize,
-                                                      float rhoe,
-                                                      unsigned* dFitnessIdx) {
-  unsigned tx = blockIdx.x * blockDim.x + threadIdx.x;  // thread index pointing to some gene of some chromosome
-  if (tx < populationSize * chromosomeSize) {  // tx < last gene of this population
-    unsigned chromosomeIdx = tx / chromosomeSize;  //  chromosome in this population having this gene
-    unsigned geneIdx = tx % chromosomeSize;  // the index of this gene in this chromosome
+__global__ void deviceEvolve(const float* population,
+                             float* populationTemp,
+                             const float* randomEliteParent,
+                             const float* randomParent,
+                             unsigned chromosomeSize,
+                             unsigned populationSize,
+                             unsigned eliteSize,
+                             unsigned mutantsSize,
+                             float rhoe,
+                             unsigned* fitnessIdx) {
+  unsigned tx =
+      blockIdx.x * blockDim.x
+      + threadIdx.x;  // thread index pointing to some gene of some chromosome
+  if (tx
+      < populationSize * chromosomeSize) {  // tx < last gene of this population
+    unsigned chromosomeIdx =
+        tx / chromosomeSize;  //  chromosome in this population having this gene
+    unsigned geneIdx =
+        tx % chromosomeSize;  // the index of this gene in this chromosome
     // if chromosomeIdx < eliteSize then the chromosome is elite, so we copy
     // elite gene
     if (chromosomeIdx < eliteSize) {
-      unsigned eliteChromosomeIdx = dFitnessIdx[chromosomeIdx];  // original elite chromosome index
+      unsigned eliteChromosomeIdx =
+          fitnessIdx[chromosomeIdx];  // original elite chromosome index
       // corresponding to this chromosome
-      dPopulationTemp[tx] = dPopulation[eliteChromosomeIdx * chromosomeSize + geneIdx];
+      populationTemp[tx] =
+          population[eliteChromosomeIdx * chromosomeSize + geneIdx];
     } else if (chromosomeIdx < populationSize - mutantsSize) {
       // thread is responsible to crossover of this gene of this chromosomeIdx.
       // Below are the inside population random indexes of a elite parent and
       // regular parent for crossover
-      auto insideParentEliteIdx = (unsigned)((1 - randomEliteParent[chromosomeIdx]) * eliteSize);
-      auto insideParentIdx =
-          (unsigned)(eliteSize + (1 - randomParent[chromosomeIdx]) * (populationSize - eliteSize));
+      auto insideParentEliteIdx =
+          (unsigned)((1 - randomEliteParent[chromosomeIdx]) * eliteSize);
+      auto insideParentIdx = (unsigned)(eliteSize
+                                        + (1 - randomParent[chromosomeIdx])
+                                              * (populationSize - eliteSize));
       assert(insideParentEliteIdx < eliteSize);
       assert(eliteSize <= insideParentIdx && insideParentIdx < populationSize);
 
-      unsigned eliteChromosomeIdx = dFitnessIdx[insideParentEliteIdx];
-      unsigned parentChromosomeIdx = dFitnessIdx[insideParentIdx];
-      if (dPopulationTemp[tx] <= rhoe)
+      unsigned eliteChromosomeIdx = fitnessIdx[insideParentEliteIdx];
+      unsigned parentChromosomeIdx = fitnessIdx[insideParentIdx];
+      if (populationTemp[tx] <= rhoe)
         // copy gene from elite parent
-        dPopulationTemp[tx] = dPopulation[eliteChromosomeIdx * chromosomeSize + geneIdx];
+        populationTemp[tx] =
+            population[eliteChromosomeIdx * chromosomeSize + geneIdx];
       else
         // copy allele from regular parent
-        dPopulationTemp[tx] = dPopulation[parentChromosomeIdx * chromosomeSize + geneIdx];
+        populationTemp[tx] =
+            population[parentChromosomeIdx * chromosomeSize + geneIdx];
     }  // in the else case the thread corresponds to a mutant and nothing is
     // done.
   }
@@ -195,14 +194,24 @@ __global__ void device_evolve(const float* dPopulation,
 
 void BRKGA::evolve() {
   debug("Evolving the population");
-  curandGenerateUniform(gen, populationTemp.device(), numberOfChromosomes * chromosomeSize);
-  curandGenerateUniform(gen, randomEliteParent.device(), numberOfChromosomes);
-  curandGenerateUniform(gen, randomParent.device(), numberOfChromosomes);
+  for (unsigned p = 0; p < numberOfPopulations; ++p)
+    CudaUtils::random(generators[p], populationTemp.deviceRow(p),
+                      populationSize * chromosomeSize, streams[p]);
+  for (unsigned p = 0; p < numberOfPopulations; ++p)
+    CudaUtils::random(generators[p], randomEliteParent.deviceRow(p),
+                      populationSize, streams[p]);
+  for (unsigned p = 0; p < numberOfPopulations; ++p)
+    CudaUtils::random(generators[p], randomParent.deviceRow(p), populationSize,
+                      streams[p]);
 
   for (unsigned p = 0; p < numberOfPopulations; ++p) {
-    device_evolve<<<dimGridGenePipe, dimBlock, 0, streams[p]>>>(
-        population.deviceRow(p), populationTemp.deviceRow(p), randomEliteParent.deviceRow(p), randomParent.deviceRow(p),
-        chromosomeSize, populationSize, eliteSize, mutantsSize, rhoe, fitnessIdx.deviceRow(p));
+    deviceEvolve<<<CudaUtils::blocks(chromosomeSize * populationSize,
+                                     threadsPerBlock),
+                   threadsPerBlock, 0, streams[p]>>>(
+        population.deviceRow(p), populationTemp.deviceRow(p),
+        randomEliteParent.deviceRow(p), randomParent.deviceRow(p),
+        chromosomeSize, populationSize, eliteSize, mutantsSize, rhoe,
+        fitnessIdx.deviceRow(p));
     CUDA_CHECK_LAST();
   }
   std::swap(population, populationTemp);
@@ -224,29 +233,11 @@ void BRKGA::updateFitness() {
   for (unsigned p = 0; p < numberOfPopulations; ++p) sortChromosomesPipe(p);
 }
 
-/**
- * \brief If DEVICE_DECODE_CHROMOSOME_SORTED is used, then this method
- * saves for each gene of each chromosome, the chromosome
- * index, and the original gene index. Used later to sort all chromosomes by
- * gene values. We save gene indexes to preserve this information after sorting.
- * \param m_chromosome_geneIdx_pop is an array containing a struct for all
- * chromosomes of the population being processed.
- * \param chromosomeSize is the size of each chromosome.
- * \param p is the index of the population to work on.
- */
-__global__ void deviceSetIdx(unsigned* indices,
-                                                    const unsigned chromosomeSize,
-                                                    const unsigned populationSize) {
-  auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid < chromosomeSize * populationSize) indices[tid] = tid % chromosomeSize;
-}
-
 void BRKGA::sortChromosomesGenes() {
-  const auto threads = dimBlock.x;  // FIXME dimBlock.x is threadsPerBlock
-  const auto blocks = ceilDiv(populationSize * chromosomeSize, threads);
   for (unsigned p = 0; p < numberOfPopulations; ++p)
-    deviceSetIdx<<<blocks, threads, 0, streams[p]>>>(chromosomeIdx.deviceRow(p), chromosomeSize, populationSize);
-  CUDA_CHECK_LAST();
+    CudaUtils::iotaMod(chromosomeIdx.deviceRow(p),
+                       populationSize * chromosomeSize, chromosomeSize,
+                       threadsPerBlock, streams[p]);
 
   // Copy to temp memory since the sort modifies the original array
   for (unsigned p = 0; p < numberOfPopulations; ++p) {
@@ -259,50 +250,35 @@ void BRKGA::sortChromosomesGenes() {
   for (unsigned p = 0; p < numberOfPopulations; ++p)
     CUDA_CHECK(cudaStreamSynchronize(streams[p]));
 
-  bbSegSort(populationTemp.device(), chromosomeIdx.device(), numberOfChromosomes * chromosomeSize, chromosomeSize);
-}
-
-/**
- * \brief Kernel function that sets for each chromosome its global index (among
- * all populations) and its population index.
- * \param dFitnessIdx is the struct
- * where chromosome index and its population index is saved.
- * \param population size is the size of each population.
- */
-__global__ void deviceSetIdx(unsigned* dFitnessIdx, unsigned populationSize) {
-  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid < populationSize) dFitnessIdx[tid] = tid;
+  bbSegSort(populationTemp.device(), chromosomeIdx.device(),
+            numberOfChromosomes * chromosomeSize, chromosomeSize);
 }
 
 void BRKGA::sortChromosomesPipe(unsigned p) {
-  deviceSetIdx<<<dimGridPipe, dimBlock, 0, streams[p]>>>(fitnessIdx.deviceRow(p), populationSize);
-  CUDA_CHECK_LAST();
-
-  thrust::device_ptr<float> keys(fitness.deviceRow(p));
-  thrust::device_ptr<unsigned> vals(fitnessIdx.deviceRow(p));
-  thrust::stable_sort_by_key(thrust::cuda::par.on(streams[p]), keys, keys + populationSize, vals);
-  CUDA_CHECK_LAST();
+  CudaUtils::iota(fitnessIdx.deviceRow(p), populationSize);
+  CudaUtils::sortByKey(fitness.deviceRow(p), fitnessIdx.deviceRow(p),
+                       populationSize, streams[p]);
 }
 
 /**
- * \brief Kernel function to operate the exchange of elite chromosomes.
- * It must be launched count*numberOfPopulations threads.
- * For each population each one of count threads do the copy of an elite
- * chromosome of its own population into the other populations.
- * To do: make kernel save in local memory the chromosome and then copy to each
- * other population. \param dPopulation is the array containing all chromosomes
- * of all populations. \param chromosomeSize is the size of each
- * individual/chromosome. \param populationSize is the size of each population.
- * \param numberOfPopulations is the number of independent populations.
- * \param dFitness_ids is the struct sorted by chromosomes fitness.
- * \param count is the number of elite chromosomes to exchange.
+ * @brief Exchanges the best chromosomes between the populations.
+ *
+ * This method replaces the worsts chromosomes by the elite ones of the other
+ * populations.
+ *
+ * @param population The population to exchange.
+ * @param chromosomeSize To size of the chromosomes.
+ * @param populationSize The number of chromosomes on each population.
+ * @param numberOfPopulations The nuber of populations.
+ * @param fitnessIdx The order of the chromosomes, increasing by fitness.
+ * @param count The number of elites to copy.
  */
-__global__ void device_exchange_elite(float* dPopulation,
-                                      unsigned chromosomeSize,
-                                      unsigned populationSize,
-                                      unsigned numberOfPopulations,
-                                      unsigned* dFitnessIdx,
-                                      unsigned count) {
+__global__ void deviceExchangeElite(float* population,
+                                    unsigned chromosomeSize,
+                                    unsigned populationSize,
+                                    unsigned numberOfPopulations,
+                                    unsigned* fitnessIdx,
+                                    unsigned count) {
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (unsigned i = 0; i < numberOfPopulations; ++i) {
@@ -316,11 +292,14 @@ __global__ void device_exchange_elite(float* dPopulation,
           const auto p = populationSize - (i - (j < i)) * count - k - 1;
 
           // Global position of source/destination chromosomes
-          const auto src = i * populationSize + dFitnessIdx[i * populationSize + k];
-          const auto dest = j * populationSize + dFitnessIdx[j * populationSize + p];
+          const auto src =
+              i * populationSize + fitnessIdx[i * populationSize + k];
+          const auto dest =
+              j * populationSize + fitnessIdx[j * populationSize + p];
 
           // Copy the chromosome
-          dPopulation[dest * chromosomeSize + tid] = dPopulation[src * chromosomeSize + tid];
+          population[dest * chromosomeSize + tid] =
+              population[src * chromosomeSize + tid];
         }
       }
     }
@@ -328,19 +307,24 @@ __global__ void device_exchange_elite(float* dPopulation,
 }
 
 void BRKGA::exchangeElite(unsigned count) {
-  debug("Sharing the", count, "best chromosomes of each one of the", numberOfPopulations, "populations");
-  if (count > eliteSize) throw std::range_error("Exchange count is greater than elite size.");
+  debug("Sharing the", count, "best chromosomes of each one of the",
+        numberOfPopulations, "populations");
+  if (count > eliteSize)
+    throw std::range_error("Exchange count is greater than elite size.");
   if (count * numberOfPopulations > populationSize) {
-    throw std::range_error("Exchange count will replace the entire population: it should be at most"
-                           " [population size] / [number of populations] ("
-                           + std::to_string(populationSize / numberOfPopulations) + ").");
+    throw std::range_error(
+        "Exchange count will replace the entire population: it should be at "
+        "most"
+        " [population size] / [number of populations] ("
+        + std::to_string(populationSize / numberOfPopulations) + ").");
   }
 
   for (unsigned p = 0; p < numberOfPopulations; ++p)
     CUDA_CHECK(cudaStreamSynchronize(streams[p]));
 
-  device_exchange_elite<<<1, chromosomeSize, 0, defaultStream>>>(
-    population.device(), chromosomeSize, populationSize, numberOfPopulations, fitnessIdx.device(), count);
+  deviceExchangeElite<<<1, chromosomeSize, 0, defaultStream>>>(
+      population.device(), chromosomeSize, populationSize, numberOfPopulations,
+      fitnessIdx.device(), count);
   CUDA_CHECK(cudaDeviceSynchronize());
 
   updateFitness();
@@ -360,7 +344,9 @@ std::vector<float> BRKGA::getBestChromosome() {
   }
 
   std::vector<float> best(chromosomeSize);
-  population.row(bestPopulation).subarray(bestChromosome * chromosomeSize, chromosomeSize).copyTo(best.data());
+  population.row(bestPopulation)
+      .subarray(bestChromosome * chromosomeSize, chromosomeSize)
+      .copyTo(best.data());
 
   return best;
 }
@@ -384,7 +370,9 @@ std::vector<unsigned> BRKGA::getBestIndices() {
   }
 
   std::vector<unsigned> best(chromosomeSize);
-  chromosomeIdx.row(bestPopulation).subarray(bestChromosome * chromosomeSize, chromosomeSize).copyTo(best.data());
+  chromosomeIdx.row(bestPopulation)
+      .subarray(bestChromosome * chromosomeSize, chromosomeSize)
+      .copyTo(best.data());
 
   return best;
 }
@@ -393,8 +381,7 @@ float BRKGA::getBestFitness() {
   float bestFitness = fitness.hostRow(0)[0];
   for (unsigned p = 1; p < numberOfPopulations; ++p) {
     float pFitness = fitness.hostRow(p)[0];
-    if (pFitness < bestFitness)
-      bestFitness = pFitness;
+    if (pFitness < bestFitness) bestFitness = pFitness;
   }
   return bestFitness;
 }

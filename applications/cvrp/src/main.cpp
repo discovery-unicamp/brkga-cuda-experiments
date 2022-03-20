@@ -2,7 +2,6 @@
 #include "GpuBrkgaWrapper.hpp"
 #include <brkga_cuda_api/BRKGA.hpp>
 #include <brkga_cuda_api/Logger.hpp>
-#include <brkga_cuda_api/MathUtils.hpp>
 #include <getopt.h>
 
 #include <fstream>
@@ -110,7 +109,6 @@ int main(int argc, char** argv) {
 
     auto runGenerations = [&]() {
       std::vector<float> convergence;
-      convergence.reserve(ceilDiv(config.generations, logStep) + 1);
       convergence.push_back(brkga.getBestFitness());
 
       for (unsigned generation = 1; generation <= config.generations; ++generation) {

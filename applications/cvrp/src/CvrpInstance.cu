@@ -4,7 +4,7 @@
 
 #include <brkga_cuda_api/CudaError.cuh>
 #include <brkga_cuda_api/Logger.hpp>
-#include <brkga_cuda_api/MathUtils.hpp>
+#include <brkga_cuda_api/CudaUtils.cuh>
 
 #include <algorithm>
 #include <cassert>
@@ -497,7 +497,7 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
   CUDA_CHECK(cudaMalloc(&bestCost, (total + 1) * sizeof(float)));
 
   const unsigned threads = 256;
-  const unsigned blocks = ceilDiv(numberOfChromosomes, threads);
+  const unsigned blocks = CudaUtils::blocks(numberOfChromosomes, threads);
   setupDemands<<<blocks, threads, 0, stream>>>(accDemand, numberOfChromosomes, chromosomeLength, dIndices, dDemands);
 
   setupCosts<<<blocks, threads, 0, stream>>>(accCost, numberOfChromosomes, chromosomeLength, dIndices, dDistances);

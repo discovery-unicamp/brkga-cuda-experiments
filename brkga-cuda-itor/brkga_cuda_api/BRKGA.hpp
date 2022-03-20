@@ -11,13 +11,13 @@
 
 #include "BrkgaConfiguration.hpp"
 #include "CudaContainers.cuh"
-#include "Instance.hpp"
 
 #include <curand.h>  // TODO check if this header is required here
 
 #include <vector>
 
 enum DecodeType;
+class Instance;
 
 class BRKGA {
 public:
@@ -128,15 +128,9 @@ private:
   float rhoe;  /// The bias to accept the elite chromosome
   DecodeType decodeType;  /// The decode method
   std::vector<cudaStream_t> streams;  /// The streams to process the populations
+  std::vector<curandGenerator_t> generators;  /// Random generators
 
-  curandGenerator_t gen;  /// Generator for initial population and parent
-
-  // Dimensions
-
-  dim3 dimBlock;
-  dim3 dimGridPipe;  /// Grid dimension when having one thread per chromosome
-  dim3 dimGridGenePipe;  /// Grid dimension when we have one thread per gene
-                         /// (coalesced used)
+  unsigned threadsPerBlock;  /// Number of device threads to use
 };
 
 #endif
