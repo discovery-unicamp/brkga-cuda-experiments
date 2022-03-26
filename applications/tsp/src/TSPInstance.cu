@@ -6,279 +6,87 @@
  *
  */
 #include "TSPInstance.h"
-#include <CommonStructs.h>
+
+#include <thrust/device_ptr.h>
+#include <thrust/execution_policy.h>
+#include <thrust/sort.h>
+
+#include <algorithm>
 #include <cstdio>
 #include <iostream>
-#include <thrust/sort.h>
-#include <thrust/execution_policy.h>
-#include <thrust/device_ptr.h>
-#include <algorithm>
 
-extern texture<float, 2, cudaReadModeElementType> tex;
+float hostDecode(const float* chromosome,
+                 const unsigned n,
+                 const float* distances) {
+  std::vector<std::pair<float, unsigned>> indices(n);
+  for (unsigned i = 0; i < n; ++i) indices[i] = std::pair(chromosome[i], i);
 
-__device__ void insertionSort(ValueIndexPair* arr, int n);
+  std::sort(indices.begin(), indices.end());
 
-/***
-  Used by host_decode
-***/
-bool comparator(const ValueIndexPair& l, const ValueIndexPair& r) { return l.first < r.first; }
-
-/***
-	Implement this function if you want to decode cromossomes on the host.
-  Parameters are chromosome pointer, its size n, and instance information used to decode.
-***/
-float host_decode(const float* chromosome, int n, void* instance_info) {
-  float score = 0;
-  ValueIndexPair* valInd = (ValueIndexPair*) malloc(n * sizeof(ValueIndexPair));
-  if (valInd == NULL)
-    printf("\nMemory error in host_decode!\n");
-  for (int i = 0; i < n; i++) {
-    valInd[i].first = chromosome[i]; //order by the value of genes
-    valInd[i].second = i; //original index of gene
-  }
-
-  std::sort(valInd, valInd + n, comparator);
-
-  score = 0;
-  float* adjMatrix = (float*) instance_info;
-  for (int i = 0; i < n - 1; i++)
-    score = score + adjMatrix[valInd[i].second * n + valInd[i + 1].second];
-  score = score + adjMatrix[valInd[0].second * n + valInd[n - 1].second];
-
-  free(valInd);
-  return score;
-}
-
-void TSPInstance::evaluateChromosomesOnHost(
-    unsigned int numberOfChromosomes,
-    const float* chromosomes,
-    float* results) const {
-  for (unsigned i = 0; i < numberOfChromosomes; ++i) {
-    results[i] = host_decode(chromosomes + i * chromosomeLength(), (int) chromosomeLength(), distances);
-  }
-}
-
-/***
-	Implement this function if you want to decode cromossomes on the device in such a way that you will receive a chromosome
-	with its genes already sorted in increase order by their values. The struct ChromosomeGeneIdxPair contains the genes
-	sorted with their original index in the chromosome saved in geneIdx.
-  Parameters are chromosome pointer, its size n, and instance information used to decode.
-***/
-__device__ float
-device_decode_chromosome_sorted(const ChromosomeGeneIdxPair* chromosome, int n, const void* d_instance_info) {
-  float score = 0;
-  float* adjMatrix = (float*) d_instance_info;
-  for (int i = 0; i < n - 1; i++) {
-    //if(chromosome[i].geneIdx < n  &&  chromosome[i+1].geneIdx <n)
-    score = score + adjMatrix[chromosome[i].geneIdx * n + chromosome[i + 1].geneIdx];
-  }
-  score = score + adjMatrix[chromosome[0].geneIdx * n + chromosome[n - 1].geneIdx];
+  float score = distances[indices[0].second * n + indices[n - 1].second];
+  for (unsigned i = 1; i < n; ++i)
+    score += distances[indices[i - 1].second * n + indices[i].second];
 
   return score;
 }
 
-__global__ void tspEvaluateIndicesOnDevice(
-    unsigned int numberOfChromosomes,
-    unsigned int chromosomeLength,
-    const float* distances,
-    const ChromosomeGeneIdxPair* indices,
-    float* results
-) {
-  unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
+void TSPInstance::evaluateChromosomesOnHost(const unsigned numberOfChromosomes,
+                                            const float* chromosomes,
+                                            float* results) const {
+  for (unsigned i = 0; i < numberOfChromosomes; ++i)
+    results[i] = hostDecode(chromosomes + i * chromosomeLength(),
+                            chromosomeLength(), distances);
+}
+
+void evaluateChromosomesOnDevice(cudaStream_t stream,
+                                 unsigned numberOfChromosomes,
+                                 const float* dChromosomes,
+                                 float* dResults) const {
+  const auto length = numberOfChromosomes * chromosomeLength();
+
+  float* chromosomesCopy = nullptr;
+  CUDA_CHECK(cudaMalloc(&chromosomesCopy, length * sizeof(float)));
+  CUDA_CHECK(cudaMemcpy(chromosomesCopy, dChromosomes, length * sizeof(float),
+                        cudaMemcpyDeviceToDevice));
+
+  unsigned* indices = nullptr;
+  CUDA_CHECK(cudaMalloc(&indices, length * sizeof(unsigned)));
+  CudaUtils::iotaMod(indices.data(), length, chromosomeLength(),
+                     THREADS_PER_BLOCK, stream);
+
+  CudaUtils::sortByKey(keys, indices, length, stream);
+
+  evaluateIndicesOnDevice(stream, numberOfChromosomes, indices, dResults);
+}
+
+__device__ float deviceDecodeSorted(const unsigned* indices,
+                                    const unsigned n,
+                                    const float* distances) {
+  float score = distances[indices[0] * n + indices[n - 1]];
+  for (unsigned i = 1; i < n; ++i)
+    score += distances[indices[i - 1] * n + indices[i]];
+
+  return score;
+}
+
+__global__ void tspDecodeSorted(const unsigned numberOfChromosomes,
+                                const unsigned chromosomeLength,
+                                const float* distances,
+                                const unsigned* indices,
+                                float* results) {
+  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= numberOfChromosomes) return;
 
-  auto* chromosome = indices + tid * chromosomeLength;
-  results[tid] = device_decode_chromosome_sorted(chromosome, (int)chromosomeLength, distances);
+  auto* curIndices = indices + tid * chromosomeLength;
+  results[tid] = deviceDecodeSorted(curIndices, chromosomeLength, distances);
 }
 
-void TSPInstance::evaluateIndicesOnDevice(
-    unsigned int numberOfChromosomes,
-    const ChromosomeGeneIdxPair* indices,
-    float* results) const {
-  const unsigned block = THREADS_PER_BLOCK;
-  const unsigned grid = (numberOfChromosomes + block + 1) / block;
-  tspEvaluateIndicesOnDevice<<<grid, block>>>(numberOfChromosomes, chromosomeLength(),
-                                                   dDistances, indices, results);
-}
-
-/***
-	Identical to the above except that texture memory is used. If there is some type of locality access on d_instance_info
-	then this version may be faster than the device_decode_chromosome_sorted.
-
-	Implement this function if you want to decode cromossomes on the device in such a way that you will receive a chromosome
-	with its genes already sorted in increase order by their values. The struct ChromosomeGeneIdxPair contains the genes
-	sorted with their original index in the chromosome saved in geneIdx.
-  Parameters are chromosome pointer, its size n, and instance information used to decode.
-***/
-__device__ float
-device_decode_chromosome_sorted_texture(ChromosomeGeneIdxPair* chromosome, int n, void* d_instance_info) {
-  float score = 0;
-  unsigned row, col;
-  for (int i = 0; i < n - 1; i++) {
-    row = chromosome[i].geneIdx;
-    col = chromosome[i + 1].geneIdx;
-    score = score + tex2D(tex, col, row);
-  }
-  row = chromosome[0].geneIdx;
-  col = chromosome[n - 1].geneIdx;
-  score = score + tex2D(tex, col, row);
-
-  return score;
-  //return floor(score);
-
-}
-
-/***
-	Implement this function if you want to decode cromossomes on the device.
-  Parameters are chromosome pointer, its size n, and instance information used to decode.
-***/
-__device__ float device_decode(const float* chromosome, int n, const void* d_instance_info) {
-  ValueIndexPair* valInd = (ValueIndexPair*) malloc(n * sizeof(ValueIndexPair));
-  if (valInd == NULL) {
-    printf("\nMemory error: could not alloc memory in device_decode!\n");
-    return 0;
-  }
-  for (int i = 0; i < n; i++) {
-    valInd[i].first = chromosome[i];
-    valInd[i].second = i;
-  }
-
-  insertionSort(valInd, n);
-  //sorting with thrust on device only work with small instances
-  //otherwise there are memory allocation problems
-  //thrust::device_ptr<ValueIndexPair> vals(valInd);
-  //thrust::sort(thrust::device, vals, vals+n, comparator2);
-
-  float score = 0;
-  float* adjMatrix = (float*) d_instance_info;
-  for (int i = 0; i < n - 1; i++)
-    score = score + adjMatrix[valInd[i].second * n + valInd[i + 1].second];
-  score = score + adjMatrix[valInd[0].second * n + valInd[n - 1].second];
-
-  free(valInd);
-  return score;
-}
-
-__global__ void tspEvaluateChromosomesOnDevice(
-    unsigned int numberOfChromosomes,
-    unsigned int chromosomeLength,
-    const float* distances,
-    const float* chromosomes,
-    float* results
-) {
-  unsigned tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid >= numberOfChromosomes) return;
-
-  auto* chromosome = chromosomes + tid * chromosomeLength;
-  results[tid] = device_decode(chromosome, chromosomeLength, distances);
-}
-
-void TSPInstance::evaluateChromosomesOnDevice(
-    unsigned int numberOfChromosomes,
-    const float* chromosomes,
-    float* results
-) const {
-  const unsigned block = THREADS_PER_BLOCK;
-  const unsigned grid = (numberOfChromosomes + block + 1) / block;
-  tspEvaluateChromosomesOnDevice<<<grid, block>>>(numberOfChromosomes, chromosomeLength(),
-                                               dDistances, chromosomes, results);
-}
-
-//Used with thrust sort in the device
-__device__ bool comparator2(const ValueIndexPair& lhs, const ValueIndexPair& rhs) {
-  return lhs.first < rhs.first;
-}
-
-/**
- Just for the purpose of an examplo of using device_decode. This version is slow.
-**/
-__device__ void insertionSort(ValueIndexPair* arr, int n) {
-  int i, j;
-  ValueIndexPair key;
-  for (i = 1; i < n; i++) {
-    key = arr[i];
-    j = i - 1;
-    while (j >= 0 && arr[j].first > key.first) {
-      arr[j + 1] = arr[j];
-      j = j - 1;
-    }
-    arr[j + 1] = key;
-  }
-}
-
-/***
-	In this function a block of threads process each cromossome. So the user needs to take care of which
-	cromossome is being decoded (given by blockIds.x, since gridSize is equal to the total number of cromossomes).
-  The struct ChromosomeGeneIdxPair contains the genes sorted with their original index in the chromosome saved in geneIdx.
-***/
-__global__ void
-device_decode_chromosome_sorted_coalesced(ChromosomeGeneIdxPair* chromosomes, int n, void* d_instance_info,
-                                          float* m_scores) {
-  unsigned tx = threadIdx.x;
-  float* adjMatrix = (float*) d_instance_info;
-  ChromosomeGeneIdxPair* chromosome =
-      chromosomes + blockIdx.x * n; //pointer to begnning of the chromosome this thread works on
-
-  //All threads in the block work toguether to decode this chromosome
-  __shared__ float sm[THREADS_PER_BLOCK];
-  int total;//number of segments in the chromosome to be worked by the threads in this block
-  if (n % THREADS_PER_BLOCK == 0)
-    total = n / THREADS_PER_BLOCK;
-  else
-    total = n / THREADS_PER_BLOCK + 1;
-  sm[tx] = 0;
-  __syncthreads();
-
-  for (int i = 0; i < total; i++) {
-    unsigned id = i * THREADS_PER_BLOCK + tx;
-    if (id + 1 < n) {
-      unsigned c1 = chromosome[id].geneIdx;
-      unsigned c2 = chromosome[id + 1].geneIdx;
-      sm[tx] += adjMatrix[c1 * n + c2];
-    }
-  }
-  if ((n % THREADS_PER_BLOCK) - 1 == tx) //last id of this tx is id==n-1
-    sm[tx] += adjMatrix[chromosome[n - 1].geneIdx * n + chromosome[0].geneIdx];
-  __syncthreads();
-
-  //do reduction sum of shared memory
-  for (unsigned s = THREADS_PER_BLOCK / 2; s > 0; s >>= 1) {
-    if (tx < s) {
-      sm[tx] += sm[tx + s];
-    }
-    __syncthreads();
-  }
-
-  // write result for this block to global mem
-  if (tx == 0) {
-    m_scores[blockIdx.x] = sm[0];
-  }
-}
-
-/*
- The functions below were writen to test the efficiency of decoding on the device x host
- if the decoding functions are cheap (in this case are linear time functions)
- in the size of the chromosome.
-*/
-float host_decode2(float* chromosome, int n, void* instance_info) {
-  float aux = 0;
-  for (int i = 0; i < n; i++) {
-    aux += chromosome[i];
-  }
-  float* adjMatrix = (float*) instance_info;
-  int i = (int) aux * n;
-  i = i % n;
-  //returns the distante between city 0 and i \in [0,..,n-1]
-  return adjMatrix[0 + i];
-}
-
-__device__ float device_decode2(float* chromosome, int n, void* d_instance_info) {
-  float aux = 0;
-  for (int i = 0; i < n; i++) {
-    aux += chromosome[i];
-  }
-  float* adjMatrix = (float*) d_instance_info;
-  int i = (int) aux * n;
-  i = i % n;
-  return adjMatrix[0 + i];
+void TSPInstance::evaluateIndicesOnDevice(cudaStream_t stream,
+                                          const unsigned numberOfChromosomes,
+                                          const unsigned* dIndices,
+                                          float* dResults) const {
+  const auto threads = THREADS_PER_BLOCK;
+  const auto blocks = (numberOfChromosomes + threads - 1) / threads;
+  tspDecodeSorted<<<blocks, threads, 0, stream>>>(
+      numberOfChromosomes, chromosomeLength(), dDistances, dIndices, dResults);
 }

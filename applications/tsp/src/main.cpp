@@ -6,109 +6,156 @@
  *
  */
 
-#include <iostream>
-#include <string>
+#include "TSPInstance.h"
+#include <brkga_cuda_api/BRKGA.hpp>
+#include <brkga_cuda_api/Logger.hpp>
 #include <unistd.h>
 
-#include "BRKGA.h"
-#include "ConfigFile.h"
-#include "TSPInstance.h"
+#include <iostream>
+#include <string>
 
-int main(int argc, char *argv[]) {
-  char *par_file = NULL, *inst_file = NULL;
-  bool evolve_coalesced = false, evolve_pipeline = false;
-  int option;
-  unsigned num_pop_pipe = 0, rand_seed = 0;
+void run(const std::function<std::vector<float>()>& runGenerations,
+         const std::function<float()>& getBestFitness,
+         const BrkgaConfiguration& config) {
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+  cudaEventRecord(start);
 
-  while ((option = getopt(argc, argv, "p:i:l:r:c")) !=
-         -1) { // get option from the getopt() method
-    switch (option) {
-    case 'p':
-      if (optarg == NULL) {
-        std::cout << "No config file with parameters supplied: -p configfile"
-                  << std::endl;
-        return 0;
-      }
-      par_file = optarg;
-      break;
-    case 'i':
-      if (optarg == NULL) {
-        std::cout << "No instance file supplied: -i instance" << std::endl;
-        return 0;
-      }
-      inst_file = optarg;
-      break;
-    case 'c':
-      evolve_coalesced = true;
-      break;
-    case 'l':
-      evolve_pipeline = true;
-      if (optarg == NULL)
-        num_pop_pipe = 0;
-      else {
-        std::cout << optarg << std::endl;
-        num_pop_pipe = std::stoi(optarg);
-      }
-      break;
-    case 'r':
-      if (optarg == NULL)
-        rand_seed = 1;
-      else
-        rand_seed = std::stoi(optarg);
+  auto convergence = runGenerations();
+
+  cudaEventRecord(stop);
+  cudaEventSynchronize(stop);
+
+  float timeElapsedMs;
+  cudaEventElapsedTime(&timeElapsedMs, start, stop);
+
+  float best = getBestFitness();
+  info("Optimization finished after", timeElapsedMs / 1000,
+       "seconds with solution", best);
+  std::cout << std::fixed << std::setprecision(3) << "ans=" << best
+            << " elapsed=" << timeElapsedMs / 1000
+            << " convergence=" << str(convergence, ",") << '\n';
+}
+
+int main(int argc, char* argv[]) {
+  std::string tool;
+  unsigned logStep = 0;
+  std::unique_ptr<TspInstance> instance;
+  BrkgaConfiguration::Builder configBuilder;
+  for (int i = 1; i < argc; i += 2) {
+    std::string arg = argv[i];
+    if (arg.substr(0, 2) != "--") {
+      error("All arguments should start with --; found", arg);
+      abort();
+    }
+    if (i + 1 == argc) {
+      error("Missing value for", arg);
+      abort();
+    }
+
+    std::string value = argv[i + 1];
+    if (value.substr(0, 2) == "--") {
+      error("Argument value for", arg, "starts with --:", value);
+      abort();
+    }
+
+    if (arg == "--instance") {
+      instance.reset(new TspInstance(value));
+      configBuilder.instance(instance.get()).chromosomeLength(instance->nNodes);
+    } else if (arg == "--threads") {
+      configBuilder.threadsPerBlock(std::stoi(value));
+    } else if (arg == "--generations") {
+      configBuilder.generations(std::stoi(value));
+    } else if (arg == "--exchange-interval") {
+      configBuilder.exchangeBestInterval(std::stoi(value));
+    } else if (arg == "--exchange-count") {
+      configBuilder.exchangeBestCount(std::stoi(value));
+    } else if (arg == "--pop_count") {
+      configBuilder.numberOfPopulations(std::stoi(value));
+    } else if (arg == "--pop_size") {
+      configBuilder.populationSize(std::stoi(value));
+    } else if (arg == "--elite") {
+      configBuilder.eliteProportion(std::stof(value));
+    } else if (arg == "--mutant") {
+      configBuilder.mutantsProportion(std::stof(value));
+    } else if (arg == "--rho") {
+      configBuilder.rho(std::stof(value));
+    } else if (arg == "--seed") {
+      configBuilder.seed(std::stoi(value));
+    } else if (arg == "--decode") {
+      configBuilder.decodeType(fromString(value));
+    } else if (arg == "--tool") {
+      tool = value;
+    } else if (arg == "--log-step") {
+      logStep = std::stoi(value);
+    } else {
+      error("Unknown argument:", arg);
+      abort();
     }
   }
-  if (par_file == NULL || inst_file == NULL) {
-    std::cout << "Usage: -p configfile -i instance_file" << std::endl;
-    std::cout << "Optional: -c Use coalesced memory." << std::endl;
-    std::cout
-        << "Optional: -l n Use pipeline with n populations decoded on GPU."
-        << std::endl;
-    std::cout << "Optional: -r s Sets s as the random seed." << std::endl;
-    return 0;
+
+  if (tool.empty()) {
+    error("Missing the algorithm name");
+    abort();
   }
-  const std::string instanceFile = std::string(inst_file);
-  std::cout << "Instance file: " << instanceFile << std::endl;
-
-  // Read the instance:
-  TSPInstance instance(instanceFile); // initialize the instance
-
-  long unsigned n = instance.getNumNodes();
-  std::cout << "Instance read; here's the info:"
-            << "\n\tDimension: " << n << std::endl;
-
-  BrkgaConfiguration config(par_file);
-  BRKGA alg(&instance, config, evolve_coalesced, evolve_pipeline, num_pop_pipe, rand_seed);
-
-  // alg.setInstanceInfo2D(adjMatrix, n,n, sizeof(float));
-  for (unsigned i = 1; i <= config.MAX_GENS; i++) {
-    alg.evolve();
-    std::cout << "Evolution: " << i << std::endl;
-    if (i % config.X_INTVL == 0) {
-      std::cout << "Exchanged top " << config.X_NUMBER << " best individuals!"
-                << std::endl;
-      alg.exchangeElite(config.X_NUMBER);
-    }
-    if (i % config.RESET_AFTER == 0) {
-      std::cout << "All populations reseted!" << std::endl;
-      alg.saveBestChromosomes();
-      alg.reset_population();
-    }
-    // std::vector<std::vector <float>> res = alg.getkBestChromosomes(1);
-    // std::cout<<"Value of cuda score: " << res[0][0] << std::endl;
-    // i += 1;
+  if (logStep == 0) {
+    error("Missing the log-step (it should be greater than 0)");
+    abort();
   }
 
-  std::vector<std::vector<float>> res2 = alg.getBestChromosomes(3);
+  auto config = configBuilder.build();
+  if (tool == "brkga-cuda") {
+    BRKGA brkga(config);
 
-  std::vector<float> aux;
-  // aux will be the vector with best solution
-  for (int i = 1; i < res2[0].size(); i++) {
-    aux.push_back(res2[0][i]);
+    auto runGenerations = [&]() {
+      std::vector<float> convergence;
+      convergence.push_back(brkga.getBestFitness());
+
+      for (unsigned generation = 1; generation <= config.generations;
+           ++generation) {
+        brkga.evolve();
+        if (generation % config.exchangeBestInterval == 0
+            && generation != config.generations) {
+          brkga.exchangeElite(config.exchangeBestCount);
+        }
+        if (generation % logStep == 0 || generation == config.generations) {
+          float best = brkga.getBestFitness();
+          std::clog << "Generation " << generation << "; best: " << best
+                    << "   \r";
+          convergence.push_back(best);
+        }
+      }
+      std::clog << '\n';
+
+      return convergence;
+    };
+
+    auto getBestFitness = [&]() {
+      auto fitness = brkga.getBestFitness();
+
+      info("Validating the best solution found");
+      auto bestSorted = brkga.getBestIndices();
+      instance->validateSolution(bestSorted, fitness, /* has depot: */ false);
+
+      info("Validating the chromosome");
+      auto bestChromosome = brkga.getBestChromosome();
+      for (unsigned i = 0; i < config.chromosomeLength; ++i)
+        if (bestChromosome[i] < 0 || bestChromosome[i] > 1)
+          throw std::runtime_error("Chromosome is out of range [0, 1]");
+      for (unsigned i = 1; i < config.chromosomeLength; ++i) {
+        const auto a = bestSorted[i - 1];
+        const auto b = bestSorted[i];
+        if (bestChromosome[a] > bestChromosome[b])
+          throw std::runtime_error("Chromosome wasn't sorted correctly");
+      }
+
+      return fitness;
+    };
+
+    run(runGenerations, getBestFitness, config);
+  } else {
+    info("Invalid tool:", tool);
+    abort();
   }
-  printf("\n");
-  printf("Value of best solution: %.2f\n", res2[0][0]);
-
-  float bestSolutionValue = -1;
-  instance.evaluateChromosomesOnHost(1, aux.data(), &bestSolutionValue);
-  printf("Value of best solution: %.2f\n", bestSolutionValue);
 }

@@ -30,16 +30,17 @@
 #ifndef TSPINSTANCE_H
 #define TSPINSTANCE_H
 
-#include <Instance.hpp>
-#include <BRKGA.h>
-#include <cuda_error.cuh>
+#include <brkga_cuda_api/Instance.hpp>
+
+#include <cuda_runtime.h>
+
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
-#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -54,30 +55,33 @@ public:
   // Getters:
   unsigned getNumNodes() const;
 
-  [[nodiscard]]
-  inline unsigned int chromosomeLength() const override {
+  [[nodiscard]] inline unsigned int chromosomeLength() const override {
     return getNumNodes();
   }
 
   // Returns the distance from node i to node j:
   float getDistance(unsigned i, unsigned j) const;
 
-  void evaluateChromosomesOnHost(
-      unsigned int numberOfChromosomes,
-      const float* chromosomes,
-      float* results) const override;
+  void evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
+                                 const float* chromosomes,
+                                 float* results) const override;
 
-  void evaluateChromosomesOnDevice(
-      unsigned int numberOfChromosomes,
-      const float* chromosomes,
-      float* results) const override;
+  void evaluateChromosomesOnDevice(cudaStream_t stream,
+                                   unsigned numberOfChromosomes,
+                                   const float* dChromosomes,
+                                   float* dResults) const override;
 
-  void evaluateIndicesOnDevice(
-      unsigned int numberOfChromosomes,
-      const ChromosomeGeneIdxPair* indices,
-      float* results) const override;
+  void evaluateIndicesOnHost(unsigned numberOfChromosomes,
+                             const unsigned* indices,
+                             float* results) const override {
+    throw std::runtime_error("TSP `evaluateIndicesOnHost` wasn't implemented");
+  }
 
-private:
+  void evaluateIndicesOnDevice(cudaStream_t stream,
+                               unsigned numberOfChromosomes,
+                               const unsigned* dIndices,
+                               float* dResults) const override;
+
   unsigned nNodes;
 
   class Coord2D {

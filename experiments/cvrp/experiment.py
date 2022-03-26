@@ -5,13 +5,15 @@ import subprocess
 from typing import Dict, List, Optional, Union
 import pandas as pd
 
+from instance import get_instance_path
+
 
 SOURCE_PATH = Path('applications')
 INSTANCES_PATH = Path('instances')
 OUTPUT_PATH = Path('experiments', 'results')
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="[%(asctime)s] [%(levelname)8s]"
            " %(filename)s:%(lineno)s: %(message)s",
     datefmt='%Y-%m-%dT%H:%M:%S',
@@ -24,7 +26,7 @@ def run_experiment(
         instances: List[str],
         test_count: int,
         mode: str = 'release',
-        ) -> Optional[pd.DataFrame]:
+) -> Optional[pd.DataFrame]:
     default_columns = ['test_date', 'tool', 'problem', 'instance',
                        'ans', 'elapsed', 'seed']
     for p in default_columns:
@@ -80,14 +82,14 @@ def __get_system_info() -> Dict[str, str]:
         'commit': __shell('git log --format="%H" -n 1'),
         'system': __shell('uname -v'),
         'cpu': __shell('cat /proc/cpuinfo | grep "model name"'
-                ' | uniq | cut -d" " -f 3-'),
+                       ' | uniq | cut -d" " -f 3-'),
         'cpu-cores': __shell('nproc'),
         'host-memory': __shell('grep MemTotal /proc/meminfo'
-                " | awk '{print $2 / 1024}'") + 'MiB',
+                               " | awk '{print $2 / 1024}'") + 'MiB',
         'gpu': __shell('lspci | grep " VGA " | cut -d" " -f 5-'),
         'gpu-cores': 'unknown',
-        'gpu-memory': __shell("nvidia-smi -q | grep -m1 Total | awk '{print $3}'")
-                + 'MiB',
+        'gpu-memory': __shell('nvidia-smi -q | grep -m1 Total'
+                              " | awk '{print $3}'") + 'MiB',
         'nvcc': __shell('nvcc --version | grep "release" | grep -o "V.*"'),
         'g++': __shell('g++ --version | grep "g++"'),
     }
@@ -98,7 +100,7 @@ def __shell(cmd: str, get: bool = True) -> str:
     try:
         stdout = subprocess.PIPE if get else None
         process = subprocess.run(
-                cmd, stdout=stdout, text=True, shell=True, check=True)
+            cmd, stdout=stdout, text=True, shell=True, check=True)
     except subprocess.CalledProcessError as error:
         output = error.stdout.strip() if get else ''
         if output:
@@ -120,10 +122,10 @@ def __run_test(
         params: Dict[str, Union[str, float, int]],
         instance: str,
         seed: int,
-        ) -> Dict[str, str]:
+) -> Dict[str, str]:
     logging.info(f'Test instance {instance} of {application}'
                  f' ({str(executable)}) with params {params} and seed {seed}')
-    instance_path = __get_instance_path(application, instance)
+    instance_path = get_instance_path(application, instance)
 
     cmd = str(executable.absolute())
     cmd += ''.join(f' --{arg} {value}' for arg, value in params.items())
@@ -145,33 +147,18 @@ def __run_test(
     }
 
 
-def __get_instance_path(application: str, instance: str):
-    group = None
-    ext = None
-    if application == 'cvrp':
-        ext = 'vrp'
-        if instance[:2] == 'X-':
-            group = 'set-x'
-
-    if ext is None:
-        raise ValueError(f'Unknown application `{instance}`')
-    if group is None:
-        raise ValueError(f'Unknown instance set `{instance}`')
-    return INSTANCES_PATH.joinpath(application, group, f'{instance}.{ext}')
-
-
 def main():
     mode = 'release'
     params = {
         'threads': 256,
-        'generations': 1000,
-        'exchange-interval': 50,
-        'exchange-count': 2,
+        'generations': 2000,
+        'exchange-interval': 25,
+        'exchange-count': 5,
         'pop_count': 3,
         'pop_size': 256,
         'elite': .1,
         'mutant': .1,
-        'rho': .7,
+        'rho': .75,
         'decode': 'host-sorted',
         'tool': 'brkga-cuda',
         'log-step': 25,
@@ -180,14 +167,39 @@ def main():
         params['generations'] = 10
         params['exchange-interval'] = 2
 
-    instances = ['X-n1001-k43']
-    results = run_experiment('cvrp', params, instances, test_count=10, mode=mode)
+    instances = [
+        'X-n219-k73',
+        'X-n266-k58',
+        'X-n317-k53',
+        'X-n336-k84',
+        'X-n376-k94',
+        'X-n384-k52',
+        'X-n420-k130',
+        'X-n429-k61',
+        'X-n469-k138',
+        'X-n480-k70',
+        'X-n548-k50',
+        'X-n586-k159',
+        'X-n599-k92',
+        'X-n655-k131',
+        'X-n733-k159',
+        'X-n749-k98',
+        'X-n819-k171',
+        'X-n837-k142',
+        'X-n856-k95',
+        'X-n916-k207',
+        'X-n957-k87',
+        'X-n979-k58',
+        'X-n1001-k43',
+    ]
+    results = run_experiment('cvrp', params, instances,
+                             test_count=10, mode=mode)
     if results is not None and not results.empty:
         output = OUTPUT_PATH.joinpath('cvrp')
         output.mkdir(parents=True, exist_ok=True)
         test_date = results.iloc[0]['test_date']
         results.to_csv(output.joinpath(f'{test_date}.tsv'),
-                    index=False, sep='\t')
+                       index=False, sep='\t')
 
 
 if __name__ == '__main__':

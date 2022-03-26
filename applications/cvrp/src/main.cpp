@@ -2,7 +2,6 @@
 #include "GpuBrkgaWrapper.hpp"
 #include <brkga_cuda_api/BRKGA.hpp>
 #include <brkga_cuda_api/Logger.hpp>
-#include <getopt.h>
 
 #include <fstream>
 #include <functional>
@@ -118,7 +117,7 @@ int main(int argc, char** argv) {
         }
         if (generation % logStep == 0 || generation == config.generations) {
           float best = brkga.getBestFitness();
-          std::clog << "Generation " << generation << "; best: " << best << '\r';
+          std::clog << "Generation " << generation << "; best: " << best << "   \r";
           convergence.push_back(best);
         }
       }
