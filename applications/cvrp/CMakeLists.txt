@@ -3,6 +3,7 @@ project(brkga-cvrp LANGUAGES CUDA CXX)
 
 add_executable(brkga-cvrp
   src/main.cpp
+  src/Checker.hpp
   src/CvrpInstance.cu
   src/CvrpInstance.cpp
   src/CvrpInstance.hpp

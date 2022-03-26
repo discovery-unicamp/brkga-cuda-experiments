@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     if (arg == "--instance") {
       instance.reset(new CvrpInstance(CvrpInstance::fromFile(value)));
       configBuilder.instance(instance.get())
-                   .chromosomeLength(instance->numberOfClients);
+                   .chromosomeLength(instance->getNumberOfClients());
     } else if (arg == "--threads") {
       configBuilder.threadsPerBlock(std::stoi(value));
     } else if (arg == "--generations") {
@@ -155,23 +155,34 @@ int main(int argc, char** argv) {
 
     auto runGenerations = [&]() {
       std::vector<float> convergence;
-      convergence.reserve(config.generations);
+      convergence.push_back(brkga.getBestFitness());
+
       for (unsigned generation = 1; generation <= config.generations; ++generation) {
-        float best = brkga.getBestChromosome()[0];
-        std::clog << "Generation " << generation << "; best: " << best << '\r';
-        convergence.push_back(best);
         brkga.evolve();
-        if (generation % config.exchangeBestInterval == 0) brkga.exchangeElite(config.exchangeBestCount);
+        if (generation % config.exchangeBestInterval == 0 && generation != config.generations) {
+          brkga.exchangeElite(config.exchangeBestCount);
+        }
+        if (generation % logStep == 0 || generation == config.generations) {
+          float best = brkga.getBestFitness();
+          std::clog << "Generation " << generation << "; best: " << best << "   \r";
+          convergence.push_back(best);
+        }
       }
       std::clog << '\n';
+
       return convergence;
     };
 
     auto getBestFitness = [&]() {
-      auto best = brkga.getBestChromosome();
-      info("Validating the best solution found");
-      instance->validateChromosome(std::vector(best.begin() + 1, best.begin() + config.chromosomeLength + 1), best[0]);
-      return best[0];
+      auto fitness = brkga.getBestFitness();
+
+      info("Validating the chromosome");
+      auto bestChromosome = brkga.getBestChromosome();
+      for (unsigned i = 0; i < config.chromosomeLength; ++i)
+        if (bestChromosome[i] < 0 || bestChromosome[i] > 1)
+          throw std::runtime_error("Chromosome is out of range [0, 1]");
+
+      return fitness;
     };
 
     run(runGenerations, getBestFitness, config);

@@ -11,8 +11,40 @@
 #include <vector>
 
 class CvrpInstance : public Instance {
-public:  // for testing purposes
+public:  // brkgaCuda ==========================================================
+  void evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
+                                 const float* chromosomes,
+                                 float* results) const override;
+
+  void evaluateChromosomesOnDevice(cudaStream_t stream,
+                                   unsigned numberOfChromosomes,
+                                   const float* dChromosomes,
+                                   float* dResults) const override;
+
+  void evaluateIndicesOnHost(unsigned numberOfChromosomes,
+                             const unsigned* indices,
+                             float* results) const override;
+
+  void evaluateIndicesOnDevice(cudaStream_t stream,
+                               unsigned numberOfChromosomes,
+                               const unsigned* dIndices,
+                               float* dResults) const override;
+
+public:  // GPU-BRKGA ==========================================================
+  inline void Init() const {}
+
+  inline void Decode(float* chromosomes, float* fitness) const {
+    cudaStream_t defaultStream = nullptr;
+    evaluateChromosomesOnDevice(defaultStream, gpuBrkgaChromosomeCount,
+                                chromosomes, fitness);
+  }
+
+  unsigned gpuBrkgaChromosomeCount = 0;
+
+public:  // general ============================================================
   static CvrpInstance fromFile(const std::string& filename);
+  static std::pair<float, std::vector<unsigned> > readBestKnownSolution(
+      const std::string& filename);
 
   CvrpInstance(const CvrpInstance&) = delete;
   CvrpInstance(CvrpInstance&&) = default;
@@ -23,46 +55,25 @@ public:  // for testing purposes
 
   [[nodiscard]] inline const std::string& getName() const { return name; }
 
-  [[nodiscard]] float getFitness(const std::function<float(unsigned, unsigned)>& evalCost,
-                                 const std::vector<unsigned>& tour,
-                                 bool hasDepot = false) const;
+  void validateSolution(const std::vector<unsigned>& tour,
+                        const float fitness,
+                        bool hasDepot = false) const;
 
-  void validateBestKnownSolution(const std::string& filename);
+  void validateChromosome(const std::vector<float>& chromosome,
+                          const float fitness) const;
 
-  void validateSolution(const std::vector<unsigned>& tour, const float fitness, bool hasDepot = false) const;
-
-  void validateChromosome(const std::vector<float>& chromosome, const float fitness) const;
-
-  void validateDeviceSolutions(const unsigned* dIndices, const float* dFitness, unsigned n) const;
-
-  // brkgaCuda @{
-  void evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
-                                 const float* chromosomes,
-                                 float* results) const override;
-
-  void evaluateChromosomesOnDevice(cudaStream_t stream,
-                                   unsigned numberOfChromosomes,
-                                   const float* dChromosomes,
-                                   float* dResults) const override;
-
-  void evaluateIndicesOnHost(unsigned numberOfChromosomes, const unsigned* indices, float* results) const override;
-
-  void evaluateIndicesOnDevice(cudaStream_t stream,
-                               unsigned numberOfChromosomes,
-                               const unsigned* dIndices,
-                               float* dResults) const override;
-  // @} brkgaCuda
-
-  // GPU-BRKGA @{
-  inline void Init() const {}
-
-  inline void Decode(float* d_next, float* d_nextFitKeys) const {
-    cudaStream_t defaultStream = nullptr;
-    evaluateChromosomesOnDevice(defaultStream, gpuBrkgaChromosomeCount, d_next, d_nextFitKeys);
+  [[nodiscard]] inline unsigned getNumberOfClients() const {
+    return numberOfClients;
   }
 
-  unsigned gpuBrkgaChromosomeCount = 0;
-  // @} GPU-BRKGA
+private:
+  CvrpInstance()
+      : capacity(static_cast<unsigned>(-1)),
+        numberOfClients(static_cast<unsigned>(-1)),
+        dDistances(nullptr),
+        dDemands(nullptr) {}
+
+  float getFitness(const unsigned* tour, bool hasDepot) const;
 
   unsigned capacity;
   unsigned numberOfClients;
@@ -72,17 +83,6 @@ public:  // for testing purposes
   std::vector<unsigned> demands;
   std::vector<Point> locations;
   std::string name;
-
-private:
-  CvrpInstance()
-      : capacity(static_cast<unsigned>(-1)),
-        numberOfClients(static_cast<unsigned>(-1)),
-        dDistances(nullptr),
-        dDemands(nullptr) {}
-
-  [[nodiscard]] std::function<float(unsigned, unsigned)> buildCvrpEvaluator(const std::vector<unsigned>& tour,
-                                                                            std::vector<unsigned>& accDemand,
-                                                                            std::vector<float>& accCost) const;
 };
 
 #endif  // CVRP_EXAMPLE_SRC_CVRPINSTANCE_HPP

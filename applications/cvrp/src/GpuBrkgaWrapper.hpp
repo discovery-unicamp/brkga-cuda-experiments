@@ -11,7 +11,7 @@ class GPUBRKGA;
 class CvrpInstance;
 
 /**
- * @brief Since GPUBRKGA uses template, we've wrapped it to avoid include errors.
+ * Since GPUBRKGA uses template, we've wrapped it to avoid include errors.
  */
 class GpuBrkgaWrapper {
 public:
@@ -25,6 +25,7 @@ public:
 
   void evolve();
   void exchangeElite(unsigned count);
+  float getBestFitness();
   std::vector<float> getBestChromosome();
 
 private:
