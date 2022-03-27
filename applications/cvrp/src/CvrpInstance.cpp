@@ -22,7 +22,7 @@ void CvrpInstance::evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
                                              float* results) const {
 #pragma omp parallel for if (numberOfChromosomes > 1) default(shared)
   for (unsigned i = 0; i < numberOfChromosomes; ++i) {
-    const float* chromosome = chromosomes + i * numberOfClients;
+    const float* chromosome = &chromosomes[i * numberOfClients];
 
     std::vector<unsigned> indices(numberOfClients);
     std::iota(indices.begin(), indices.end(), 0);

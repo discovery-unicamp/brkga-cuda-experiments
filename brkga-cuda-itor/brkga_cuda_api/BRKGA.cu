@@ -108,9 +108,11 @@ void BRKGA::evaluateChromosomesPipe(unsigned p) {
                                       fitness.deviceRow(p));
     CUDA_CHECK_LAST();
   } else if (decodeType == DecodeType::HOST_SORTED) {
+    cuda::sync(streams[p]);
     instance->evaluateIndicesOnHost(populationSize, chromosomeIdx.hostRow(p),
                                     fitness.hostRow(p));
   } else if (decodeType == DecodeType::HOST) {
+    cuda::sync(streams[p]);
     instance->evaluateChromosomesOnHost(populationSize, population.hostRow(p),
                                         fitness.hostRow(p));
   } else {

@@ -20,8 +20,10 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
   unsigned* idx = cuda::alloc<unsigned>(numberOfGenes);
   cuda::iotaMod(stream, idx, numberOfGenes, chromosomeLength, threadsPerBlock);
 
-  // FIXME this will block the host
+  // FIXME We need to block the host
+  cuda::sync(stream);
   cuda::bbSegSort(dChromosomesCopy, idx, numberOfGenes, chromosomeLength);
+  cuda::sync();
 
   evaluateIndicesOnDevice(stream, numberOfChromosomes, idx, dResults);
 
@@ -108,6 +110,12 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
                                            unsigned numberOfChromosomes,
                                            const unsigned* dIndices,
                                            float* dResults) const {
+  static bool warned = false;
+  if (!warned) {
+    warning("Decoding CVRP on device is very slow!");
+    warned = true;
+  }
+
   const auto chromosomeLength = numberOfClients;
   const auto total = numberOfChromosomes * chromosomeLength;
   auto* accDemand = cuda::alloc<unsigned>(total);
