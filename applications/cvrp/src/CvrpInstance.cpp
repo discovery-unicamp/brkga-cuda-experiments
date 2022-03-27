@@ -44,6 +44,30 @@ void CvrpInstance::evaluateIndicesOnHost(unsigned numberOfChromosomes,
   }
 }
 
+// GPU-BRKGA ===================================================================
+void CvrpInstance::Decode(float* chromosomes, float* fitness) const {
+  // std::cerr << "Validate before GPU-BRKGA decode\n";
+  // cuda::sync();
+  // for (unsigned i = 0; i < gpuBrkgaChromosomeCount; ++i) {
+  //   const auto* chromosome = &chromosomes[i * numberOfClients];
+  //   for (unsigned j = 0; j < numberOfClients; ++j) {
+  //     if (chromosome[j] < 0 || chromosome[j] > 1) {
+  //       error("Chromosome", i, "on gene", j, "is out of range [0, 1]:", chromosome[j]);
+  //       abort();
+  //     }
+  //   }
+  // }
+  // std::cerr << "Starting the GPU-BRKGA decoder\n";
+  if (hostDecode) {
+    evaluateChromosomesOnHost(gpuBrkgaChromosomeCount, chromosomes, fitness);
+  } else {
+    cudaStream_t defaultStream = nullptr;
+    evaluateChromosomesOnDevice(defaultStream, gpuBrkgaChromosomeCount,
+                                chromosomes, fitness);
+  }
+  // std::cerr << "Finished the GPU-BRKGA decoder without errors\n";
+}
+
 // general =====================================================================
 CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
   std::ifstream file(filename);

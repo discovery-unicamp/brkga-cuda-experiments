@@ -163,8 +163,7 @@ int main(int argc, char** argv) {
     // Add data to the instance
     instance->hostDecode = config.decodeType == DecodeType::HOST
                            || config.decodeType == DecodeType::HOST_SORTED;
-    instance->gpuBrkgaChromosomeCount =
-        config.numberOfPopulations * config.populationSize;
+    instance->gpuBrkgaChromosomeCount = config.populationSize;
 
     GpuBrkgaWrapper brkga(config, instance.get());
 
@@ -199,6 +198,8 @@ int main(int argc, char** argv) {
       for (unsigned i = 0; i < config.chromosomeLength; ++i)
         if (bestChromosome[i] < 0 || bestChromosome[i] > 1)
           throw std::runtime_error("Chromosome is out of range [0, 1]");
+
+      instance->validateChromosome(bestChromosome, fitness);
 
       return fitness;
     };

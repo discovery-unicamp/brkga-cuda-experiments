@@ -35,15 +35,7 @@ public:  // brkgaCuda ==========================================================
 public:  // GPU-BRKGA ==========================================================
   inline void Init() const {}
 
-  inline void Decode(float* chromosomes, float* fitness) const {
-    if (hostDecode) {
-      evaluateChromosomesOnHost(gpuBrkgaChromosomeCount, chromosomes, fitness);
-    } else {
-      cudaStream_t defaultStream = nullptr;
-      evaluateChromosomesOnDevice(defaultStream, gpuBrkgaChromosomeCount,
-                                  chromosomes, fitness);
-    }
-  }
+  void Decode(float* chromosomes, float* fitness) const;
 
   unsigned gpuBrkgaChromosomeCount = 0;
   bool hostDecode = false;
