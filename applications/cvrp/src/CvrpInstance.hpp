@@ -36,12 +36,17 @@ public:  // GPU-BRKGA ==========================================================
   inline void Init() const {}
 
   inline void Decode(float* chromosomes, float* fitness) const {
-    cudaStream_t defaultStream = nullptr;
-    evaluateChromosomesOnDevice(defaultStream, gpuBrkgaChromosomeCount,
-                                chromosomes, fitness);
+    if (hostDecode) {
+      evaluateChromosomesOnHost(gpuBrkgaChromosomeCount, chromosomes, fitness);
+    } else {
+      cudaStream_t defaultStream = nullptr;
+      evaluateChromosomesOnDevice(defaultStream, gpuBrkgaChromosomeCount,
+                                  chromosomes, fitness);
+    }
   }
 
   unsigned gpuBrkgaChromosomeCount = 0;
+  bool hostDecode = false;
 
 public:  // general ============================================================
   static CvrpInstance fromFile(const std::string& filename);

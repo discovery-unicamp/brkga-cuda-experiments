@@ -160,8 +160,12 @@ int main(int argc, char** argv) {
 
     run(runGenerations, getBestFitness, config);
   } else if (tool == "gpu-brkga") {
+    // Add data to the instance
+    instance->hostDecode = config.decodeType == DecodeType::HOST
+                           || config.decodeType == DecodeType::HOST_SORTED;
     instance->gpuBrkgaChromosomeCount =
         config.numberOfPopulations * config.populationSize;
+
     GpuBrkgaWrapper brkga(config, instance.get());
 
     auto runGenerations = [&]() {

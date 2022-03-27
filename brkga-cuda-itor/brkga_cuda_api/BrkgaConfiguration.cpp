@@ -105,7 +105,6 @@ BrkgaConfiguration BrkgaConfiguration::Builder::build() const {
   if (_decodeType == DecodeType::NONE) throw std::invalid_argument("Decode type wasn't set");
 
   if (_generations == 0) warning("Number of generations is zero");
-  if (_populationSize % 256 != 0) warning("Population size is not a multiple of 256");
 
   BrkgaConfiguration config;
   config.instance = _instance;

@@ -1,6 +1,6 @@
 #include "CvrpInstance.hpp"
 #include "GpuBrkgaWrapper.hpp"
-#include <GPU-BRKGA/GPUBRKGA.cu>
+#include <GPU-BRKGA/GPUBRKGA.cuh>
 #include <brkga_cuda_api/BrkgaConfiguration.hpp>
 #include <brkga_cuda_api/Logger.hpp>
 

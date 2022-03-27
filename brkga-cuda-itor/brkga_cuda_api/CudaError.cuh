@@ -11,7 +11,7 @@
 class CudaException : public std::runtime_error {
 public:
   CudaException(cudaError_t status, const std::string& file, int line)
-      : std::runtime_error(file + ": " + std::to_string(line) + ": "
+      : std::runtime_error(file + ":" + std::to_string(line) + ": "
                            + cudaGetErrorString(status)) {}
 };
 
