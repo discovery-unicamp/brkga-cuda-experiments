@@ -26,7 +26,7 @@
 #endif  // BRKGA_USE_RAW_MEMORY
 
 /**
- * @brief Allocates an array on the device.
+ * Allocates an array on the device.
  * @tparam T The type of the array.
  * @param n The size of the array.
  * @return The allocated memory.
@@ -41,7 +41,7 @@ static inline T* _cudaNew(std::size_t n) {
 }
 
 /**
- * @brief Delete an array allocated on the device.
+ * Delete an array allocated on the device.
  * @tparam T The type of the array.
  * @param ptr The pointer to delete.
  */
@@ -52,7 +52,7 @@ static inline void _cudaDelete(T* ptr) {
 }
 
 /**
- * @brief Stores an array allocated on device/host.
+ * Stores an array allocated on device/host.
  *
  * This class manages the memory allocated on the device by either using managed
  * memory or maintaining a copy between host and device. This class doesn't free
@@ -72,7 +72,7 @@ public:
 
 #ifdef BRKGA_USE_RAW_MEMORY
   /**
-   * @brief Construct a new Cuda Sub Array object
+   * Construct a new Cuda Sub Array object
    *
    * This assumes that both the host and device memory has the same @p _size.
    *
@@ -86,7 +86,7 @@ public:
         hMemory(hPointer)
 #else
   /**
-   * @brief Construct a new Cuda Sub Array object
+   * Construct a new Cuda Sub Array object
    * @param _size The size of the array.
    * @param dPointer The pointer of the device memory.
    */
@@ -104,7 +104,7 @@ public:
   inline virtual ~CudaSubArray() = default;
 
   /**
-   * @brief Get the device pointer.
+   * Get the device pointer.
    * @return The device pointer.
    * @throw `std::runtime_error` If this object wasn't initialized.
    */
@@ -114,7 +114,7 @@ public:
   }
 
   /**
-   * @brief Get the device pointer.
+   * Get the device pointer.
    * @return The device pointer.
    * @throw `std::runtime_error` If this object wasn't initialized.
    */
@@ -124,7 +124,7 @@ public:
   }
 
   /**
-   * @brief Get the host pointer.
+   * Get the host pointer.
    * @return The host pointer.
    * @throw `std::runtime_error` If this object wasn't initialized.
    */
@@ -135,7 +135,7 @@ public:
   }
 
   /**
-   * @brief Get the host pointer.
+   * Get the host pointer.
    * @return The host pointer.
    * @throw `std::runtime_error` If this object wasn't initialized.
    */
@@ -159,7 +159,7 @@ public:
   }
 
   /**
-   * @brief Get a subarray from this one.
+   * Get a subarray from this one.
    * @param advance The first index in the subarray.
    * @param length The length of the subarray.
    * @return The desired subarray.
@@ -173,7 +173,7 @@ public:
   }
 
   /**
-   * @brief Copy data from this device memory to @p that device memory.
+   * Copy data from this device memory to @p that device memory.
    * @param that The destination of the copy.
    * @param stream The stream to run the copy method.
    * @throw `std::runtime_error` If the size of @p that is different from this.
@@ -190,7 +190,7 @@ public:
   }
 
   /**
-   * @brief Copy data from this device memory.
+   * Copy data from this device memory.
    * @param dest The destination of the copy.
    * @param host If true, @p dest will be considered as host memory.
    *    Defaults to true.
@@ -202,7 +202,7 @@ public:
   }
 
   /**
-   * @brief Swaps this with @p that.
+   * Swaps this with @p that.
    * @param that The object to swap.
    * @throw `std::runtime_error` If the size of @p that is different from this.
    */
@@ -219,7 +219,7 @@ protected:
 };
 
 /**
- * @brief CudaSubArray like, but allocating and freeing the memory.
+ * CudaSubArray like, but allocating and freeing the memory.
  * @tparam T The type of the array.
  * @see CudaSubArray
  */
@@ -250,7 +250,7 @@ public:
       : CudaArray<T>(rows * columns), columnSize(columns) {}
 
   /**
-   * @brief Returns the device pointer to the desired row.
+   * Returns the device pointer to the desired row.
    * @param row The row to return.
    * @return The row of the matrix.
    * @throw `std::runtime_error` If the row is outside this matrix range.
@@ -263,7 +263,7 @@ public:
   }
 
   /**
-   * @brief Returns the host pointer to the desired row.
+   * Returns the host pointer to the desired row.
    * @param row The row to return.
    * @return The row of the matrix.
    * @throw `std::runtime_error` If the row is outside this matrix range.
@@ -283,7 +283,7 @@ public:
   }
 
   /**
-   * @brief Swaps this with @p that.
+   * Swaps this with @p that.
    * @param that The object to swap.
    * @throw `std::runtime_error` If the size of @p that is different from this.
    */

@@ -17,7 +17,7 @@
 #include "CudaError.cuh"  // Not used here, but avoid issues with CUDA_CHECK
 
 /**
- * @brief Sorts the segments of an array.
+ * Sorts the segments of an array.
  *
  * This method sorts the ranges `[0, step)`, `[step, 2 * step)`, and so on.
  *

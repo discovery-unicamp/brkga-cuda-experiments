@@ -127,7 +127,7 @@ void BRKGA::evaluateChromosomesPipe(unsigned p) {
 }
 
 /**
- * @brief Evolves the population to a new generation.
+ * Evolves the population to a new generation.
  * @param population The population to evolve.
  * @param populationTemp The bias factor (and the new population destination).
  * @param randomEliteParent The elite parent of each chromosome.
@@ -247,7 +247,7 @@ void BRKGA::sortChromosomesPipe(unsigned p) {
 }
 
 /**
- * @brief Exchanges the best chromosomes between the populations.
+ * Exchanges the best chromosomes between the populations.
  *
  * This method replaces the worsts chromosomes by the elite ones of the other
  * populations.

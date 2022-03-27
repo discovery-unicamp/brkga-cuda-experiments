@@ -22,7 +22,7 @@ class Instance;
 class BRKGA {
 public:
   /**
-   * @brief Construct a new BRKGA object.
+   * Construct a new BRKGA object.
    *
    * @param config The configuration to run the algorithm.
    */
@@ -32,12 +32,12 @@ public:
   ~BRKGA();
 
   /**
-   * @brief Evolve the population to the next generation.
+   * Evolve the population to the next generation.
    */
   void evolve();
 
   /**
-   * @brief Copy the elites from/to all populations.
+   * Copy the elites from/to all populations.
    *
    * This method will simply copy the @p count elites from one population to all
    * the others. It will not copy to the same population, which avoids
@@ -50,7 +50,7 @@ public:
   void exchangeElite(unsigned count);
 
   /**
-   * @brief Get the fitness of the best chromosome found so far.
+   * Get the fitness of the best chromosome found so far.
    *
    * This operation blocks the CPU until it is finished.
    *
@@ -59,7 +59,7 @@ public:
   float getBestFitness();
 
   /**
-   * @brief Get the best chromosome.
+   * Get the best chromosome.
    *
    * This operation blocks the CPU until it is finished.
    *
@@ -68,7 +68,7 @@ public:
   std::vector<float> getBestChromosome();
 
   /**
-   * @brief Get the best chromosome when sorted.
+   * Get the best chromosome when sorted.
    *
    * This operation blocks the CPU until it is finished.
    *
@@ -79,7 +79,7 @@ public:
 
 private:
   /**
-   * @brief Call the decode method to the population `p`.
+   * Call the decode method to the population `p`.
    *
    * @param p The index of the population to decode.
    */
@@ -89,14 +89,14 @@ private:
   void sortChromosomesGenes();
 
   /**
-   * @brief Sorts the population `p`.
+   * Sorts the population `p`.
    *
    * @param p The index of the population to sort.
    */
   void sortChromosomesPipe(unsigned p);
 
   /**
-   * @brief Ensures the fitness is sorted.
+   * Ensures the fitness is sorted.
    *
    * This operation should be executed after each change to any chromosome.
    */

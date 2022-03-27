@@ -15,7 +15,7 @@ __global__ void deviceIotaMod(unsigned* arr, unsigned n, unsigned k);
 /// Defines many methods used by BRKGA.
 namespace cuda {
 /**
- * @brief Returns the number of blocks required to process `n` items.
+ * Returns the number of blocks required to process `n` items.
  * @param n The number of items to process.
  * @param threads The desired number of threads.
  * @return The minimum number of blocks `k` s.t. `k * threads >= n`.
@@ -25,7 +25,7 @@ namespace cuda {
 }
 
 /**
- * @brief Sets the sequence `0, 1, ..., n-1` to an array.
+ * Sets the sequence `0, 1, ..., n-1` to an array.
  * @param arr The array to store the sequence
  * @param n The size of the array.
  * @param threads The number of threads on the device to use.
@@ -40,7 +40,7 @@ inline void iota(cudaStream_t stream,
 }
 
 /**
- * @brief Sets the sequence `0, 1, ..., k-1, 0, 1, ...` and so on to an array.
+ * Sets the sequence `0, 1, ..., k-1, 0, 1, ...` and so on to an array.
  * @param arr The array to store the sequence
  * @param n The size of the array.
  * @param k The steps of the sequence.
@@ -57,7 +57,7 @@ inline void iotaMod(cudaStream_t stream,
 }
 
 /**
- * @brief Set all values of an array to random values in range [0, 1].
+ * Set all values of an array to random values in range [0, 1].
  *
  * Although the library says the range is (0, 1], the 0 still appear in the
  * generator.
@@ -77,7 +77,7 @@ inline void random(cudaStream_t stream,
 }
 
 /**
- * @brief Sorts the array of keys and values based on the keys.
+ * Sorts the array of keys and values based on the keys.
  * @tparam Key The key type.
  * @tparam Value The value type.
  * @param keys The keys used to compare (and also sorted).
