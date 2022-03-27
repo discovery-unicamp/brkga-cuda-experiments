@@ -84,8 +84,8 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
 
   debug("Building the initial populations");
   for (unsigned p = 0; p < numberOfPopulations; ++p)
-    CudaUtils::random(generators[p], population.deviceRow(p),
-                      populationSize * chromosomeSize, streams[p]);
+    cuda::random(streams[p], generators[p], population.deviceRow(p),
+                 populationSize * chromosomeSize);
 
   updateFitness();
 }
@@ -181,18 +181,18 @@ __global__ void deviceEvolve(const float* population,
 void BRKGA::evolve() {
   debug("Evolving the population");
   for (unsigned p = 0; p < numberOfPopulations; ++p)
-    CudaUtils::random(generators[p], populationTemp.deviceRow(p),
-                      populationSize * chromosomeSize, streams[p]);
+    cuda::random(streams[p], generators[p], populationTemp.deviceRow(p),
+                 populationSize * chromosomeSize);
   for (unsigned p = 0; p < numberOfPopulations; ++p)
-    CudaUtils::random(generators[p], randomEliteParent.deviceRow(p),
-                      populationSize, streams[p]);
+    cuda::random(streams[p], generators[p], randomEliteParent.deviceRow(p),
+                 populationSize);
   for (unsigned p = 0; p < numberOfPopulations; ++p)
-    CudaUtils::random(generators[p], randomParent.deviceRow(p), populationSize,
-                      streams[p]);
+    cuda::random(streams[p], generators[p], randomParent.deviceRow(p),
+                 populationSize);
 
   for (unsigned p = 0; p < numberOfPopulations; ++p) {
-    deviceEvolve<<<CudaUtils::blocks(chromosomeSize * populationSize,
-                                     threadsPerBlock),
+    deviceEvolve<<<cuda::blocks(chromosomeSize * populationSize,
+                                threadsPerBlock),
                    threadsPerBlock, 0, streams[p]>>>(
         population.deviceRow(p), populationTemp.deviceRow(p),
         randomEliteParent.deviceRow(p), randomParent.deviceRow(p),
@@ -221,9 +221,9 @@ void BRKGA::updateFitness() {
 
 void BRKGA::sortChromosomesGenes() {
   for (unsigned p = 0; p < numberOfPopulations; ++p)
-    CudaUtils::iotaMod(chromosomeIdx.deviceRow(p),
-                       populationSize * chromosomeSize, chromosomeSize,
-                       threadsPerBlock, streams[p]);
+    cuda::iotaMod(streams[p], chromosomeIdx.deviceRow(p),
+                  populationSize * chromosomeSize, chromosomeSize,
+                  threadsPerBlock);
 
   // Copy to temp memory since the sort modifies the original array
   for (unsigned p = 0; p < numberOfPopulations; ++p) {
@@ -241,9 +241,9 @@ void BRKGA::sortChromosomesGenes() {
 }
 
 void BRKGA::sortChromosomesPipe(unsigned p) {
-  CudaUtils::iota(fitnessIdx.deviceRow(p), populationSize);
-  CudaUtils::sortByKey(fitness.deviceRow(p), fitnessIdx.deviceRow(p),
-                       populationSize, streams[p]);
+  cuda::iota(streams[p], fitnessIdx.deviceRow(p), populationSize);
+  cuda::sortByKey(streams[p], fitness.deviceRow(p), fitnessIdx.deviceRow(p),
+                  populationSize);
 }
 
 /**

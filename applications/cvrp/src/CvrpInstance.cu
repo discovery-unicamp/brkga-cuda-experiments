@@ -17,13 +17,12 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
   float* dChromosomesCopy = nullptr;
   CUDA_CHECK(cudaMalloc(&dChromosomesCopy, numberOfGenes * sizeof(float)));
   CUDA_CHECK(cudaMemcpyAsync(dChromosomesCopy, dChromosomes,
-                        numberOfGenes * sizeof(float),
-                        cudaMemcpyDeviceToDevice, stream));
+                             numberOfGenes * sizeof(float),
+                             cudaMemcpyDeviceToDevice, stream));
 
   unsigned* idx = nullptr;
   CUDA_CHECK(cudaMalloc(&idx, numberOfGenes * sizeof(unsigned)));
-  CudaUtils::iotaMod(idx, numberOfGenes, chromosomeLength, threadsPerBlock,
-                     stream);
+  cuda::iotaMod(stream, idx, numberOfGenes, chromosomeLength, threadsPerBlock);
 
   // FIXME this will block the host
   bbSegSort(dChromosomesCopy, idx, numberOfGenes, chromosomeLength);
@@ -123,7 +122,7 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
   CUDA_CHECK(cudaMalloc(&bestCost, (total + 1) * sizeof(float)));
 
   const unsigned threads = 256;
-  const unsigned blocks = CudaUtils::blocks(numberOfChromosomes, threads);
+  const unsigned blocks = cuda::blocks(numberOfChromosomes, threads);
   setupDemands<<<blocks, threads, 0, stream>>>(
       accDemand, numberOfChromosomes, chromosomeLength, dIndices, dDemands);
   CUDA_CHECK_LAST();

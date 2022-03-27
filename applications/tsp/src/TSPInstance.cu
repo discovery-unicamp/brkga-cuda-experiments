@@ -51,10 +51,10 @@ void evaluateChromosomesOnDevice(cudaStream_t stream,
 
   unsigned* indices = nullptr;
   CUDA_CHECK(cudaMalloc(&indices, length * sizeof(unsigned)));
-  CudaUtils::iotaMod(indices.data(), length, chromosomeLength(),
+  cuda::iotaMod(indices.data(), length, chromosomeLength(),
                      THREADS_PER_BLOCK, stream);
 
-  CudaUtils::sortByKey(keys, indices, length, stream);
+  cuda::sortByKey(keys, indices, length, stream);
 
   evaluateIndicesOnDevice(stream, numberOfChromosomes, indices, dResults);
 }

@@ -13,7 +13,7 @@ __global__ void deviceIota(unsigned* arr, unsigned n);
 __global__ void deviceIotaMod(unsigned* arr, unsigned n, unsigned k);
 
 /// Defines many methods used by BRKGA.
-namespace CudaUtils {
+namespace cuda {
 /**
  * @brief Returns the number of blocks required to process `n` items.
  * @param n The number of items to process.
@@ -31,10 +31,10 @@ namespace CudaUtils {
  * @param threads The number of threads on the device to use.
  * @param stream The stream to process.
  */
-inline void iota(unsigned* arr,
+inline void iota(cudaStream_t stream,
+                 unsigned* arr,
                  unsigned n,
-                 unsigned threads = 256,
-                 cudaStream_t stream = nullptr) {
+                 unsigned threads = 256) {
   deviceIota<<<blocks(n, threads), threads, 0, stream>>>(arr, n);
   CUDA_CHECK_LAST();
 }
@@ -47,11 +47,11 @@ inline void iota(unsigned* arr,
  * @param threads The number of threads on the device to use.
  * @param stream The stream to process.
  */
-inline void iotaMod(unsigned* arr,
+inline void iotaMod(cudaStream_t stream,
+                    unsigned* arr,
                     unsigned n,
                     unsigned k,
-                    unsigned threads = 256,
-                    cudaStream_t stream = nullptr) {
+                    unsigned threads = 256) {
   deviceIotaMod<<<blocks(n, threads), threads, 0, stream>>>(arr, n, k);
   CUDA_CHECK_LAST();
 }
@@ -67,10 +67,10 @@ inline void iotaMod(unsigned* arr,
  * @param n The length of the array.
  * @param stream The stream to run the generator.
  */
-inline void random(curandGenerator_t generator,
+inline void random(cudaStream_t stream,
+                   curandGenerator_t generator,
                    float* arr,
-                   std::size_t n,
-                   cudaStream_t stream = nullptr) {
+                   std::size_t n) {
   curandSetStream(generator, stream);
   curandGenerateUniform(generator, arr, n);
   CUDA_CHECK_LAST();
@@ -86,10 +86,10 @@ inline void random(curandGenerator_t generator,
  * @param stream The stream to process.
  */
 template <class Key, class Value>
-inline void sortByKey(Key* keys,
+inline void sortByKey(cudaStream_t stream,
+                      Key* keys,
                       Value* values,
-                      std::size_t n,
-                      cudaStream_t stream = nullptr) {
+                      std::size_t n) {
   thrust::device_ptr<Key> keysPtr(keys);
   thrust::device_ptr<Value> valuesPtr(values);
   if (stream) {
@@ -100,6 +100,6 @@ inline void sortByKey(Key* keys,
   }
   CUDA_CHECK_LAST();
 }
-}  // namespace CudaUtils
+}  // namespace cuda
 
 #endif  // BRKGA_CUDA_API_CUDAUTILS_CUH
