@@ -28,7 +28,7 @@ public:
    */
   BRKGA(BrkgaConfiguration& config);
 
-  /// Checks for CUDA errors and releases memory
+  /// Releases memory
   ~BRKGA();
 
   /**

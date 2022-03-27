@@ -10,7 +10,7 @@
 #include "BrkgaConfiguration.hpp"
 #include "CudaContainers.cuh"
 #include "CudaError.cuh"
-#include "CudaUtils.cuh"
+#include "CudaUtils.hpp"
 #include "DecodeType.hpp"
 #include "Instance.hpp"
 #include "Logger.hpp"
@@ -71,16 +71,14 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
   // One stream for each population
   streams.resize(numberOfPopulations);
   for (unsigned p = 0; p < numberOfPopulations; ++p)
-    CUDA_CHECK(cudaStreamCreate(&streams[p]));
+    streams[p] = cuda::allocStream();
 
   debug("Building random generator with seed", config.seed);
   std::mt19937 rng(config.seed);
   std::uniform_int_distribution<std::mt19937::result_type> uid;
   generators.resize(numberOfPopulations);
-  for (unsigned p = 0; p < numberOfPopulations; ++p) {
-    curandCreateGenerator(&generators[p], CURAND_RNG_PSEUDO_DEFAULT);
-    curandSetPseudoRandomGeneratorSeed(generators[p], uid(rng));
-  }
+  for (unsigned p = 0; p < numberOfPopulations; ++p)
+    generators[p] = cuda::allocRandomGenerator(uid(rng));
 
   debug("Building the initial populations");
   for (unsigned p = 0; p < numberOfPopulations; ++p)
@@ -91,14 +89,8 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
 }
 
 BRKGA::~BRKGA() {
-  // Ensure we had no problem
-  for (unsigned p = 0; p < numberOfPopulations; ++p) CUDA_CHECK_LAST();
-  CUDA_CHECK_LAST();
-
-  for (unsigned p = 0; p < numberOfPopulations; ++p)
-    curandDestroyGenerator(generators[p]);
-  for (unsigned p = 0; p < numberOfPopulations; ++p)
-    CUDA_CHECK(cudaStreamDestroy(streams[p]));
+  for (unsigned p = 0; p < numberOfPopulations; ++p) cuda::free(generators[p]);
+  for (unsigned p = 0; p < numberOfPopulations; ++p) cuda::free(streams[p]);
 }
 
 void BRKGA::evaluateChromosomesPipe(unsigned p) {
@@ -233,11 +225,10 @@ void BRKGA::sortChromosomesGenes() {
   CUDA_CHECK_LAST();
 
   // FIXME We should sort each fitness on its own thread to avoid synchonization
-  for (unsigned p = 0; p < numberOfPopulations; ++p)
-    CUDA_CHECK(cudaStreamSynchronize(streams[p]));
+  for (unsigned p = 0; p < numberOfPopulations; ++p) cuda::sync(streams[p]);
 
-  bbSegSort(populationTemp.device(), chromosomeIdx.device(),
-            numberOfChromosomes * chromosomeSize, chromosomeSize);
+  cuda::bbSegSort(populationTemp.device(), chromosomeIdx.device(),
+                  numberOfChromosomes * chromosomeSize, chromosomeSize);
 }
 
 void BRKGA::sortChromosomesPipe(unsigned p) {
@@ -305,13 +296,12 @@ void BRKGA::exchangeElite(unsigned count) {
         + std::to_string(populationSize / numberOfPopulations) + ").");
   }
 
-  for (unsigned p = 0; p < numberOfPopulations; ++p)
-    CUDA_CHECK(cudaStreamSynchronize(streams[p]));
+  for (unsigned p = 0; p < numberOfPopulations; ++p) cuda::sync(streams[p]);
 
   deviceExchangeElite<<<1, chromosomeSize, 0, defaultStream>>>(
       population.device(), chromosomeSize, populationSize, numberOfPopulations,
       fitnessIdx.device(), count);
-  CUDA_CHECK(cudaDeviceSynchronize());
+  cuda::sync();
 
   updateFitness();
 }

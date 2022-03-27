@@ -1,24 +1,20 @@
 #ifndef BRKGA_CUDA_API_CUDAERROR_CUH
 #define BRKGA_CUDA_API_CUDAERROR_CUH
 
-#include <stdio.h>
+#include <cuda_runtime.h>
 
-#include <cuda.h>
-
+#include <cstdio>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 
-static inline void _cudaCheck(cudaError_t status,
-                              const char* file,
-                              const int line) {
-  if (status != cudaSuccess) {
-    std::cerr << file << ':' << line << ": " << cudaGetErrorString(status)
-              << '\n';
-    abort();
-  }
-}
+class CudaException : public std::runtime_error {
+public:
+  CudaException(cudaError_t status, const std::string& file, int line)
+      : std::runtime_error(file + ": " + std::to_string(line) + ": "
+                           + cudaGetErrorString(status)) {}
+};
 
-template <class... T>
 static inline void _brkgaFail(const char* expr,
                               const char* file,
                               int line,
@@ -38,9 +34,15 @@ static inline void _brkgaFail(const char* expr,
 #undef CUDA_CHECK_LAST
 #undef BRKGA_CHECK
 
-#ifdef BRKGA_DEBUG
-#define CUDA_CHECK(statement) _cudaCheck(statement, __FILE__, __LINE__)
-#define CUDA_CHECK_LAST() _cudaCheck(cudaPeekAtLastError(), __FILE__, __LINE__)
+#define CUDA_CHECK(statement)                                    \
+  do {                                                           \
+    const auto _cudaCheckStatus = statement;                     \
+    if (_cudaCheckStatus != cudaSuccess)                         \
+      throw CudaException(_cudaCheckStatus, __FILE__, __LINE__); \
+  } while (false)
+
+#define CUDA_CHECK_LAST() CUDA_CHECK(cudaPeekAtLastError())
+
 #define BRKGA_CHECK(expr, ...)                                         \
   do {                                                                 \
     if (!static_cast<bool>(expr)) {                                    \
@@ -49,8 +51,3 @@ static inline void _brkgaFail(const char* expr,
       _brkgaFail(#expr, __FILE__, __LINE__, __PRETTY_FUNCTION__, buf); \
     }                                                                  \
   } while (false)
-#else
-#define CUDA_CHECK(statement) statement
-#define CUDA_CHECK_LAST() void(nullptr)
-#define BRKGA_CHECK(expr, ...) void(nullptr)
-#endif  // BRKGA_DEBUG

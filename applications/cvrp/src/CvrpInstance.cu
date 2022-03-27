@@ -2,7 +2,7 @@
 #include "MinQueue.hpp"
 #include <brkga_cuda_api/BBSegSort.cuh>
 #include <brkga_cuda_api/CudaError.cuh>
-#include <brkga_cuda_api/CudaUtils.cuh>
+#include <brkga_cuda_api/CudaUtils.hpp>
 #include <brkga_cuda_api/Logger.hpp>
 
 #include <string>
@@ -14,23 +14,19 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
   const auto chromosomeLength = numberOfClients;
   const auto numberOfGenes = numberOfChromosomes * chromosomeLength;
 
-  float* dChromosomesCopy = nullptr;
-  CUDA_CHECK(cudaMalloc(&dChromosomesCopy, numberOfGenes * sizeof(float)));
-  CUDA_CHECK(cudaMemcpyAsync(dChromosomesCopy, dChromosomes,
-                             numberOfGenes * sizeof(float),
-                             cudaMemcpyDeviceToDevice, stream));
+  float* dChromosomesCopy = cuda::alloc<float>(numberOfGenes);
+  cuda::memcpy(stream, dChromosomesCopy, dChromosomes, numberOfGenes);
 
-  unsigned* idx = nullptr;
-  CUDA_CHECK(cudaMalloc(&idx, numberOfGenes * sizeof(unsigned)));
+  unsigned* idx = cuda::alloc<unsigned>(numberOfGenes);
   cuda::iotaMod(stream, idx, numberOfGenes, chromosomeLength, threadsPerBlock);
 
   // FIXME this will block the host
-  bbSegSort(dChromosomesCopy, idx, numberOfGenes, chromosomeLength);
+  cuda::bbSegSort(dChromosomesCopy, idx, numberOfGenes, chromosomeLength);
 
   evaluateIndicesOnDevice(stream, numberOfChromosomes, idx, dResults);
 
-  CUDA_CHECK(cudaFree(dChromosomesCopy));
-  CUDA_CHECK(cudaFree(idx));
+  cuda::free(dChromosomesCopy);
+  cuda::free(idx);
 }
 
 __global__ void setupDemands(unsigned* accDemandList,
@@ -114,12 +110,9 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
                                            float* dResults) const {
   const auto chromosomeLength = numberOfClients;
   const auto total = numberOfChromosomes * chromosomeLength;
-  unsigned* accDemand = nullptr;
-  float* accCost = nullptr;
-  float* bestCost = nullptr;
-  CUDA_CHECK(cudaMalloc(&accDemand, total * sizeof(unsigned)));
-  CUDA_CHECK(cudaMalloc(&accCost, total * sizeof(float)));
-  CUDA_CHECK(cudaMalloc(&bestCost, (total + 1) * sizeof(float)));
+  auto* accDemand = cuda::alloc<unsigned>(total);
+  auto* accCost = cuda::alloc<float>(total);
+  auto* bestCost = cuda::alloc<float>(total + 1);
 
   const unsigned threads = 256;
   const unsigned blocks = cuda::blocks(numberOfChromosomes, threads);
@@ -136,7 +129,7 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
       chromosomeLength, capacity, dDistances, dDemands);
   CUDA_CHECK_LAST();
 
-  CUDA_CHECK(cudaFree(accDemand));
-  CUDA_CHECK(cudaFree(accCost));
-  CUDA_CHECK(cudaFree(bestCost));
+  cuda::free(accDemand);
+  cuda::free(accCost);
+  cuda::free(bestCost);
 }

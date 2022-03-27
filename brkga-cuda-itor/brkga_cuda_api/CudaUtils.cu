@@ -1,11 +1,28 @@
-#include "CudaUtils.cuh"
+#include "CudaUtils.hpp"
 
 __global__ void deviceIota(unsigned* arr, unsigned n) {
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid < n) arr[tid] = tid;
 }
 
+void cuda::iota(cudaStream_t stream,
+                unsigned* arr,
+                unsigned n,
+                unsigned threads) {
+  deviceIota<<<blocks(n, threads), threads, 0, stream>>>(arr, n);
+  CUDA_CHECK_LAST();
+}
+
 __global__ void deviceIotaMod(unsigned* arr, unsigned n, unsigned k) {
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid < n) arr[tid] = tid % k;
+}
+
+void cuda::iotaMod(cudaStream_t stream,
+                   unsigned* arr,
+                   unsigned n,
+                   unsigned k,
+                   unsigned threads) {
+  deviceIotaMod<<<blocks(n, threads), threads, 0, stream>>>(arr, n, k);
+  CUDA_CHECK_LAST();
 }

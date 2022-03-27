@@ -3,12 +3,13 @@
 #include "Checker.hpp"
 #include "MinQueue.hpp"
 #include <brkga_cuda_api/CudaError.cuh>
+#include <brkga_cuda_api/CudaUtils.hpp>
 #include <brkga_cuda_api/Logger.hpp>
 
 #include <omp.h>
 
 #include <algorithm>
-#include <cassert>  // FIXME use `check`
+#include <cassert>  // FIXME use `massert`
 #include <fstream>
 #include <numeric>
 #include <set>
@@ -78,10 +79,9 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
     file >> d;
     instance.demands.push_back(d);
   }
-  const auto demandsSize = instance.demands.size() * sizeof(int);
-  CUDA_CHECK(cudaMalloc(&instance.dDemands, demandsSize));
-  CUDA_CHECK(cudaMemcpy(instance.dDemands, instance.demands.data(), demandsSize,
-                        cudaMemcpyHostToDevice));
+  instance.dDemands = cuda::alloc<unsigned>(instance.demands.size());
+  cuda::memcpy_htod(nullptr, instance.dDemands, instance.demands.data(),
+                    instance.demands.size());
 
   // Perform validations
   assert(!instance.name.empty());
@@ -102,10 +102,9 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
       instance.distances[i * (n + 1) + j] =
           instance.locations[i].distance(instance.locations[j]);
 
-  const auto distancesSize = instance.distances.size() * sizeof(float);
-  CUDA_CHECK(cudaMalloc(&instance.dDistances, distancesSize));
-  CUDA_CHECK(cudaMemcpy(instance.dDistances, instance.distances.data(),
-                        distancesSize, cudaMemcpyHostToDevice));
+  instance.dDistances = cuda::alloc<float>(instance.distances.size());
+  cuda::memcpy_htod(nullptr, instance.dDistances, instance.distances.data(),
+                    instance.distances.size());
 
   return instance;
 }
@@ -138,46 +137,46 @@ std::pair<float, std::vector<unsigned>> CvrpInstance::readBestKnownSolution(
 }
 
 CvrpInstance::~CvrpInstance() {
-  CUDA_CHECK(cudaFree(dDistances));
-  CUDA_CHECK(cudaFree(dDemands));
+  cuda::free(dDistances);
+  cuda::free(dDemands);
 }
 
 void CvrpInstance::validateSolution(const std::vector<unsigned>& tour,
                                     const float fitness,
                                     bool hasDepot) const {
-  check(!tour.empty(), "Tour is empty");
+  massert(!tour.empty(), "Tour is empty");
   if (hasDepot) {
-    check(tour[0] == 0 && tour.back() == 0,
-          "The tour should start and finish at depot");
+    massert(tour[0] == 0 && tour.back() == 0,
+            "The tour should start and finish at depot");
     for (unsigned i = 1; i < tour.size(); ++i)
-      check(tour[i - 1] != tour[i], "Found an empty route");
+      massert(tour[i - 1] != tour[i], "Found an empty route");
   } else {
-    check(tour.size() == numberOfClients,
-          "The tour should visit all the clients");
+    massert(tour.size() == numberOfClients,
+            "The tour should visit all the clients");
   }
 
-  check(*std::min_element(tour.begin(), tour.end()) == 0,
-        "Invalid range of clients");
-  check(*std::max_element(tour.begin(), tour.end())
-            == numberOfClients - (int)!hasDepot,
-        "Invalid range of clients");
+  massert(*std::min_element(tour.begin(), tour.end()) == 0,
+          "Invalid range of clients");
+  massert(*std::max_element(tour.begin(), tour.end())
+              == numberOfClients - (int)!hasDepot,
+          "Invalid range of clients");
 
   std::set<unsigned> alreadyVisited;
   for (unsigned v : tour) {
-    check(alreadyVisited.count(v) == 0 || (hasDepot && v == 0),
-          "Client %u was visited twice", v);
+    massert(alreadyVisited.count(v) == 0 || (hasDepot && v == 0),
+            "Client %u was visited twice", v);
     alreadyVisited.insert(v);
   }
-  check(alreadyVisited.size() == numberOfClients + (int)hasDepot,
-        "Wrong number of clients: %u != %u", (unsigned)alreadyVisited.size(),
-        numberOfClients + (int)hasDepot);
+  massert(alreadyVisited.size() == numberOfClients + (int)hasDepot,
+          "Wrong number of clients: %u != %u", (unsigned)alreadyVisited.size(),
+          numberOfClients + (int)hasDepot);
 
   std::vector<unsigned> accDemand;
   std::vector<float> accCost;
   float expectedFitness = getFitness(tour.data(), hasDepot);
-  check(std::abs(expectedFitness - fitness) < 1e-6,
-        "Wrong fitness evaluation: expected %f, but found %f", expectedFitness,
-        fitness);
+  massert(std::abs(expectedFitness - fitness) < 1e-6,
+          "Wrong fitness evaluation: expected %f, but found %f",
+          expectedFitness, fitness);
 }
 
 void CvrpInstance::validateChromosome(const std::vector<float>& chromosome,
@@ -190,6 +189,20 @@ void CvrpInstance::validateChromosome(const std::vector<float>& chromosome,
 }
 
 float CvrpInstance::getFitness(const unsigned* tour, bool hasDepot) const {
+  if (hasDepot) {
+    unsigned n = numberOfClients + 1;
+    float fitness = 0;
+    for (unsigned i = 1; i < n; ++i) {
+      const auto u = tour[i - 1];
+      const auto v = tour[i];
+      fitness += distances[u * (numberOfClients + 1) + v];
+      if (v == 0) ++n;
+    }
+
+    fitness += distances[tour[n - 1]];  // Back to depot
+    return fitness;
+  }
+
   // calculates the optimal tour cost in O(n) using dynamic programming
   const auto n = numberOfClients;
   unsigned i = 0;  // first client of the truck

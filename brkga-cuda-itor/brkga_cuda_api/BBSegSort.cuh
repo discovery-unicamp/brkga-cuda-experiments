@@ -14,8 +14,9 @@
 #include <string>
 
 #undef CUDA_CHECK  // Defined by bb_segsort in a header file
-#include "CudaError.cuh"  // Not used here, but avoid issues with CUDA_CHECK
+#include "CudaError.cuh"
 
+namespace cuda {
 /**
  * Sorts the segments of an array.
  *
@@ -56,5 +57,6 @@ inline void bbSegSort(Key* keys,
     throw std::runtime_error("bbSegSort exited with status "
                              + std::to_string(status));
 }
+}  // namespace cuda
 
 #endif  // BRKGA_CUDA_API_BBSEGSORT_CUH

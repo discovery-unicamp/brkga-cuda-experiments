@@ -28,7 +28,7 @@ add_library(brkga-cuda
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/CudaContainers.cuh
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/CudaError.cuh
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/CudaUtils.cu
-  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/CudaUtils.cuh
+  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/CudaUtils.hpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/DecodeType.hpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/Logger.hpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/Instance.hpp
