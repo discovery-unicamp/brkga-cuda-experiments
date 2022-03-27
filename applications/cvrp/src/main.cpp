@@ -28,11 +28,11 @@ void run(const std::function<std::vector<float>()>& runGenerations,
   cudaEventElapsedTime(&timeElapsedMs, start, stop);
 
   float best = getBestFitness();
-  info("Optimization finished after", timeElapsedMs / 1000, "seconds with solution", best);
+  info("Optimization finished after", timeElapsedMs / 1000,
+       "seconds with solution", best);
   std::cout << std::fixed << std::setprecision(3) << "ans=" << best
             << " elapsed=" << timeElapsedMs / 1000
-            << " convergence=" << str(convergence, ",")
-            << '\n';
+            << " convergence=" << str(convergence, ",") << '\n';
 }
 
 int main(int argc, char** argv) {
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     if (arg == "--instance") {
       instance.reset(new CvrpInstance(CvrpInstance::fromFile(value)));
       configBuilder.instance(instance.get())
-                   .chromosomeLength(instance->getNumberOfClients());
+          .chromosomeLength(instance->getNumberOfClients());
     } else if (arg == "--threads") {
       configBuilder.threadsPerBlock(std::stoi(value));
     } else if (arg == "--generations") {
@@ -111,14 +111,17 @@ int main(int argc, char** argv) {
       std::vector<float> convergence;
       convergence.push_back(brkga.getBestFitness());
 
-      for (unsigned generation = 1; generation <= config.generations; ++generation) {
+      for (unsigned generation = 1; generation <= config.generations;
+           ++generation) {
         brkga.evolve();
-        if (generation % config.exchangeBestInterval == 0 && generation != config.generations) {
+        if (generation % config.exchangeBestInterval == 0
+            && generation != config.generations) {
           brkga.exchangeElite(config.exchangeBestCount);
         }
         if (generation % logStep == 0 || generation == config.generations) {
           float best = brkga.getBestFitness();
-          std::clog << "Generation " << generation << "; best: " << best << "   \r";
+          std::clog << "Generation " << generation << "; best: " << best
+                    << "   \r";
           convergence.push_back(best);
         }
       }
@@ -130,20 +133,26 @@ int main(int argc, char** argv) {
     auto getBestFitness = [&]() {
       auto fitness = brkga.getBestFitness();
 
-      info("Validating the best solution found");
-      auto bestSorted = brkga.getBestIndices();
-      instance->validateSolution(bestSorted, fitness, /* has depot: */ false);
-
       info("Validating the chromosome");
       auto bestChromosome = brkga.getBestChromosome();
       for (unsigned i = 0; i < config.chromosomeLength; ++i)
         if (bestChromosome[i] < 0 || bestChromosome[i] > 1)
           throw std::runtime_error("Chromosome is out of range [0, 1]");
-      for (unsigned i = 1; i < config.chromosomeLength; ++i) {
-        const auto a = bestSorted[i - 1];
-        const auto b = bestSorted[i];
-        if (bestChromosome[a] > bestChromosome[b])
-          throw std::runtime_error("Chromosome wasn't sorted correctly");
+
+      info("Validating the best solution found");
+      if (config.decodeType == DecodeType::DEVICE_SORTED
+          || config.decodeType == DecodeType::HOST_SORTED) {
+        auto bestSorted = brkga.getBestIndices();
+        instance->validateSolution(bestSorted, fitness, /* has depot: */ false);
+
+        for (unsigned i = 1; i < config.chromosomeLength; ++i) {
+          const auto a = bestSorted[i - 1];
+          const auto b = bestSorted[i];
+          if (bestChromosome[a] > bestChromosome[b])
+            throw std::runtime_error("Chromosome wasn't sorted correctly");
+        }
+      } else {
+        instance->validateChromosome(bestChromosome, fitness);
       }
 
       return fitness;
@@ -151,21 +160,25 @@ int main(int argc, char** argv) {
 
     run(runGenerations, getBestFitness, config);
   } else if (tool == "gpu-brkga") {
-    instance->gpuBrkgaChromosomeCount = config.numberOfPopulations * config.populationSize;
+    instance->gpuBrkgaChromosomeCount =
+        config.numberOfPopulations * config.populationSize;
     GpuBrkgaWrapper brkga(config, instance.get());
 
     auto runGenerations = [&]() {
       std::vector<float> convergence;
       convergence.push_back(brkga.getBestFitness());
 
-      for (unsigned generation = 1; generation <= config.generations; ++generation) {
+      for (unsigned generation = 1; generation <= config.generations;
+           ++generation) {
         brkga.evolve();
-        if (generation % config.exchangeBestInterval == 0 && generation != config.generations) {
+        if (generation % config.exchangeBestInterval == 0
+            && generation != config.generations) {
           brkga.exchangeElite(config.exchangeBestCount);
         }
         if (generation % logStep == 0 || generation == config.generations) {
           float best = brkga.getBestFitness();
-          std::clog << "Generation " << generation << "; best: " << best << "   \r";
+          std::clog << "Generation " << generation << "; best: " << best
+                    << "   \r";
           convergence.push_back(best);
         }
       }

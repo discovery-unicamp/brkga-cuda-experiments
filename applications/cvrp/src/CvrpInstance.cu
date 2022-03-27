@@ -16,17 +16,19 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
 
   float* dChromosomesCopy = nullptr;
   CUDA_CHECK(cudaMalloc(&dChromosomesCopy, numberOfGenes * sizeof(float)));
-  CUDA_CHECK(cudaMemcpy(dChromosomesCopy, dChromosomes,
+  CUDA_CHECK(cudaMemcpyAsync(dChromosomesCopy, dChromosomes,
                         numberOfGenes * sizeof(float),
-                        cudaMemcpyDeviceToDevice));
+                        cudaMemcpyDeviceToDevice, stream));
 
   unsigned* idx = nullptr;
-  CUDA_CHECK(cudaMalloc(&dChromosomesCopy, numberOfGenes * sizeof(unsigned)));
+  CUDA_CHECK(cudaMalloc(&idx, numberOfGenes * sizeof(unsigned)));
   CudaUtils::iotaMod(idx, numberOfGenes, chromosomeLength, threadsPerBlock,
                      stream);
 
   // FIXME this will block the host
   bbSegSort(dChromosomesCopy, idx, numberOfGenes, chromosomeLength);
+
+  evaluateIndicesOnDevice(stream, numberOfChromosomes, idx, dResults);
 
   CUDA_CHECK(cudaFree(dChromosomesCopy));
   CUDA_CHECK(cudaFree(idx));
@@ -111,8 +113,6 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
                                            unsigned numberOfChromosomes,
                                            const unsigned* dIndices,
                                            float* dResults) const {
-  warning("Evaluating the indices of CVRP on device is slow");
-
   const auto chromosomeLength = numberOfClients;
   const auto total = numberOfChromosomes * chromosomeLength;
   unsigned* accDemand = nullptr;
