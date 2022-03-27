@@ -1,16 +1,35 @@
 #include "CvrpInstance.hpp"
 #include "MinQueue.hpp"
+#include <brkga_cuda_api/BBSegSort.cuh>
 #include <brkga_cuda_api/CudaError.cuh>
 #include <brkga_cuda_api/CudaUtils.cuh>
 #include <brkga_cuda_api/Logger.hpp>
 
 #include <string>
 
-void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t,
-                                               unsigned,
-                                               const float*,
-                                               float*) const {
-  throw std::runtime_error(__FUNCTION__ + std::string(" is broken"));
+void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
+                                               unsigned numberOfChromosomes,
+                                               const float* dChromosomes,
+                                               float* dResults) const {
+  const auto chromosomeLength = numberOfClients;
+  const auto numberOfGenes = numberOfChromosomes * chromosomeLength;
+
+  float* dChromosomesCopy = nullptr;
+  CUDA_CHECK(cudaMalloc(&dChromosomesCopy, numberOfGenes * sizeof(float)));
+  CUDA_CHECK(cudaMemcpy(dChromosomesCopy, dChromosomes,
+                        numberOfGenes * sizeof(float),
+                        cudaMemcpyDeviceToDevice));
+
+  unsigned* idx = nullptr;
+  CUDA_CHECK(cudaMalloc(&dChromosomesCopy, numberOfGenes * sizeof(unsigned)));
+  CudaUtils::iotaMod(idx, numberOfGenes, chromosomeLength, threadsPerBlock,
+                     stream);
+
+  // FIXME this will block the host
+  bbSegSort(dChromosomesCopy, idx, numberOfGenes, chromosomeLength);
+
+  CUDA_CHECK(cudaFree(dChromosomesCopy));
+  CUDA_CHECK(cudaFree(idx));
 }
 
 __global__ void setupDemands(unsigned* accDemandList,

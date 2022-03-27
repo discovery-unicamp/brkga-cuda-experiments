@@ -30,6 +30,8 @@ public:  // brkgaCuda ==========================================================
                                const unsigned* dIndices,
                                float* dResults) const override;
 
+  unsigned threadsPerBlock = 0;
+
 public:  // GPU-BRKGA ==========================================================
   inline void Init() const {}
 

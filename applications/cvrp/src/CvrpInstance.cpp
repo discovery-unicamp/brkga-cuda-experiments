@@ -28,7 +28,8 @@ void CvrpInstance::evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
     std::sort(indices.begin(), indices.end(),
               [&](int a, int b) { return chromosome[a] < chromosome[b]; });
 
-    results[i] = getFitness(indices.data(), /* hasDepot: */ false);
+    const auto* tour = indices.data();
+    results[i] = getFitness(tour, /* hasDepot: */ false);
   }
 }
 
@@ -36,9 +37,9 @@ void CvrpInstance::evaluateIndicesOnHost(unsigned numberOfChromosomes,
                                          const unsigned* indices,
                                          float* results) const {
 #pragma omp parallel for if (numberOfChromosomes > 1) default(shared)
-  for (unsigned k = 0; k < numberOfChromosomes; ++k) {
-    const auto* tour = &indices[k * numberOfClients];
-    results[k] = getFitness(tour, /* hasDepot: */ false);
+  for (unsigned i = 0; i < numberOfChromosomes; ++i) {
+    const auto* tour = &indices[i * numberOfClients];
+    results[i] = getFitness(tour, /* hasDepot: */ false);
   }
 }
 

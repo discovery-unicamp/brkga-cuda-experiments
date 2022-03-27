@@ -103,6 +103,7 @@ int main(int argc, char** argv) {
   }
 
   auto config = configBuilder.build();
+  instance->threadsPerBlock = config.threadsPerBlock;
   if (tool == "brkga-cuda") {
     BRKGA brkga(config);
 
