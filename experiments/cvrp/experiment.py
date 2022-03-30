@@ -1,4 +1,5 @@
 import datetime
+from enum import Enum
 import logging
 from pathlib import Path
 import subprocess
@@ -13,11 +14,45 @@ INSTANCES_PATH = Path('instances')
 OUTPUT_PATH = Path('experiments', 'results')
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="[%(asctime)s] [%(levelname)8s]"
            " %(filename)s:%(lineno)s: %(message)s",
     datefmt='%Y-%m-%dT%H:%M:%S',
 )
+
+
+class ToolName(Enum):
+    YELMEWAD2021_CUSTOMER = 'yelmewad2021', 'yelmewad2021-customer'
+
+    def __new__(cls, *args, **kw):
+        value = len(cls.__members__) + 1
+        obj = object.__new__(cls)
+        obj._value_ = value
+        return obj
+
+    def __init__(self, sources: str, target: str):
+        self.sources = sources
+        self.target = target
+
+
+def run_tool(tool: ToolName, instances: List[str]):
+    build_folder = f'build-{tool.sources}'
+    load = f'cmake -DCMAKE_BUILD_TYPE=release -B{build_folder} {tool.sources}'
+    build = f'cmake --build {build_folder}'
+    __shell(load, get=False)
+    __shell(build, get=False)
+
+    data = []
+    # Only instances X of CVRP
+    for instance in instances:
+        instance_path = get_instance_path('cvrp', instance)
+        cmd = f'{str(Path(build_folder, tool.target).absolute())} {str(instance_path)}'
+        results = __shell(cmd).split()
+
+        fitness = float(results[3])
+        elapsed = float(results[6])
+        data.append((instance, elapsed, fitness))
+    return pd.DataFrame(data, columns=['instance', 'elapsed', 'fitness'])
 
 
 def run_experiment(
@@ -148,25 +183,6 @@ def __run_test(
 
 
 def main():
-    mode = 'release'
-    params = {
-        'threads': 256,
-        'generations': 2000,
-        'exchange-interval': 25,
-        'exchange-count': 5,
-        'pop_count': 3,
-        'pop_size': 256,
-        'elite': .1,
-        'mutant': .1,
-        'rho': .75,
-        'decode': 'host-sorted',
-        'tool': 'brkga-cuda',
-        'log-step': 25,
-    }
-    if mode == 'debug':
-        params['generations'] = 10
-        params['exchange-interval'] = 2
-
     instances = [
         'X-n219-k73',
         'X-n266-k58',
@@ -182,6 +198,7 @@ def main():
         'X-n586-k159',
         'X-n599-k92',
         'X-n655-k131',
+        # The following doesn't work with the original GPU-BRKGA code
         'X-n733-k159',
         'X-n749-k98',
         'X-n819-k171',
@@ -192,14 +209,41 @@ def main():
         'X-n979-k58',
         'X-n1001-k43',
     ]
-    results = run_experiment('cvrp', params, instances,
-                             test_count=10, mode=mode)
-    if results is not None and not results.empty:
-        output = OUTPUT_PATH.joinpath('cvrp')
-        output.mkdir(parents=True, exist_ok=True)
-        test_date = results.iloc[0]['test_date']
-        results.to_csv(output.joinpath(f'{test_date}.tsv'),
-                       index=False, sep='\t')
+
+    results = run_tool(ToolName.YELMEWAD2021_CUSTOMER, instances)
+
+    output = OUTPUT_PATH.joinpath('cvrp')
+    output.mkdir(parents=True, exist_ok=True)
+    results.to_csv(output.joinpath(f'yielmewad2021.tsv'), index=False, sep='\t')
+    exit(0)
+    for tool in ['brkga-cuda', 'gpu-brkga']:
+        mode = 'release'
+        params = {
+            'threads': 256,
+            'generations': 2000,
+            'exchange-interval': 50,
+            'exchange-count': 1,
+            'pop_count': 3,
+            'pop_size': 128,
+            'elite': .1,
+            'mutant': .1,
+            'rho': .75,
+            'decode': 'host',
+            'tool': tool,
+            'log-step': 50,
+        }
+        if mode == 'debug':
+            params['generations'] = 10
+            params['exchange-interval'] = 2
+
+        results = run_experiment('cvrp', params, instances,
+                                test_count=10, mode=mode)
+        if results is not None and not results.empty:
+            output = OUTPUT_PATH.joinpath('cvrp')
+            output.mkdir(parents=True, exist_ok=True)
+            test_date = results.iloc[0]['test_date']
+            results.to_csv(output.joinpath(f'{test_date}.tsv'),
+                        index=False, sep='\t')
 
 
 if __name__ == '__main__':
