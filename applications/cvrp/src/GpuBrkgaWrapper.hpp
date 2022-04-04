@@ -3,19 +3,40 @@
 
 #include <brkga_cuda_api/BrkgaConfiguration.hpp>
 
+#include <cuda_runtime.h>
+
 #include <vector>
 
 template <class T>
 class GPUBRKGA;
 
-class CvrpInstance;
+class Instance;
 
 /**
- * Since GPUBRKGA uses template, we've wrapped it to avoid include errors.
+ * GPUBRKGA uses template, so we wrap the `Instance` class since it is abstract.
  */
+class InstanceWrapper {
+public:
+  InstanceWrapper(const BrkgaConfiguration& config, Instance* _instance)
+      : instance(_instance),
+        chromosomeCount(config.populationSize),
+        chromosomeLength(config.chromosomeLength),
+        hostDecode(config.decodeType == DecodeType::HOST
+                   || config.decodeType == DecodeType::HOST_SORTED) {}
+
+  inline void Init() const {}
+
+  void Decode(float* chromosomes, float* fitness) const;
+
+  Instance* instance;
+  unsigned chromosomeCount;
+  unsigned chromosomeLength;
+  bool hostDecode;
+};
+
 class GpuBrkgaWrapper {
 public:
-  GpuBrkgaWrapper(const BrkgaConfiguration& config, CvrpInstance* _instance);
+  GpuBrkgaWrapper(const BrkgaConfiguration& config, Instance* _instance);
   ~GpuBrkgaWrapper();
 
   GpuBrkgaWrapper(const GpuBrkgaWrapper&) = delete;
@@ -29,8 +50,8 @@ public:
   std::vector<float> getBestChromosome();
 
 private:
-  CvrpInstance* instance;
-  GPUBRKGA<CvrpInstance>* gpuBrkga;
+  InstanceWrapper* instance;
+  GPUBRKGA<InstanceWrapper>* gpuBrkga;
 };
 
 #endif  // APPLICATIONS_GPU_BRKGA_WRAPPER_HPP

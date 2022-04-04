@@ -1,21 +1,27 @@
-#include "CvrpInstance.hpp"
 #include "GpuBrkgaWrapper.hpp"
 #include <GPU-BRKGA/GPUBRKGA.cuh>
 #include <brkga_cuda_api/BrkgaConfiguration.hpp>
+#include <brkga_cuda_api/Instance.hpp>
 #include <brkga_cuda_api/Logger.hpp>
+
+#include <cuda_runtime.h>
 
 #include <cstdlib>
 #include <vector>
 
-GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config,
-                                 CvrpInstance* _instance)
-    : instance(_instance) {
-  // `max_t` is a constant representing the maximum number of threads
-  if (config.chromosomeLength > max_t) {
-    error("Thread limit exceeded:", config.chromosomeLength, ">", max_t,
-          "and the algorithm may fail to run");
-    abort();
+void InstanceWrapper::Decode(float* chromosomes, float* fitness) const {
+  if (hostDecode) {
+    instance->evaluateChromosomesOnHost(chromosomeCount, chromosomes, fitness);
+  } else {
+    cudaStream_t defaultStream = nullptr;
+    instance->evaluateChromosomesOnDevice(defaultStream, chromosomeCount,
+                                          chromosomes, fitness);
   }
+}
+
+GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config,
+                                 Instance* _instance)
+    : instance(new InstanceWrapper(config, _instance)) {
   if (config.decodeType != DecodeType::DEVICE
       && config.decodeType != DecodeType::HOST) {
     error("Decode type", toString(config.decodeType),
@@ -24,15 +30,16 @@ GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config,
   }
 
   auto isDecodedOnGpu = config.decodeType == DecodeType::DEVICE;
-  gpuBrkga = new GPUBRKGA<CvrpInstance>(
+  gpuBrkga = new GPUBRKGA<InstanceWrapper>(
       config.chromosomeLength, config.populationSize,
       (double)config.eliteCount / (double)config.populationSize,
       (double)config.mutantsCount / (double)config.populationSize, config.rho,
-      *_instance, config.seed, isDecodedOnGpu, config.numberOfPopulations);
+      *instance, config.seed, isDecodedOnGpu, config.numberOfPopulations);
 }
 
 GpuBrkgaWrapper::~GpuBrkgaWrapper() {
   delete gpuBrkga;
+  delete instance;
 }
 
 void GpuBrkgaWrapper::evolve() {
@@ -51,5 +58,5 @@ float GpuBrkgaWrapper::getBestFitness() {
 std::vector<float> GpuBrkgaWrapper::getBestChromosome() {
   auto best = gpuBrkga->getBestIndividual();
   return std::vector<float>(best.aleles,
-                            best.aleles + instance->getNumberOfClients());
+                            best.aleles + instance->chromosomeLength);
 }

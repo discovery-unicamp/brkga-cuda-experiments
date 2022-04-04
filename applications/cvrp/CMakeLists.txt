@@ -2,13 +2,14 @@ cmake_minimum_required(VERSION 3.10)
 project(brkga-cvrp LANGUAGES CUDA CXX)
 
 add_executable(brkga-cvrp
-  src/main.cpp
+  src/instances/CvrpInstance.cpp
+  src/instances/CvrpInstance.cu
+  src/instances/CvrpInstance.hpp
   src/Checker.hpp
-  src/CvrpInstance.cu
-  src/CvrpInstance.cpp
-  src/CvrpInstance.hpp
   src/GpuBrkgaWrapper.cu
   src/GpuBrkgaWrapper.hpp
+  src/main.cpp
+  src/MinQueue.hpp
   src/Point.cpp
   src/Point.hpp
 )

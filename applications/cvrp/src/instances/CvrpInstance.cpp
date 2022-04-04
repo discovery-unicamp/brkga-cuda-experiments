@@ -1,7 +1,7 @@
 #include "CvrpInstance.hpp"
 
-#include "Checker.hpp"
-#include "MinQueue.hpp"
+#include "../Checker.hpp"
+#include "../MinQueue.hpp"
 #include <brkga_cuda_api/CudaError.cuh>
 #include <brkga_cuda_api/CudaUtils.hpp>
 #include <brkga_cuda_api/Logger.hpp>
@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-// brkgaCuda ===================================================================
+// decoders ====================================================================
 void CvrpInstance::evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
                                              const float* chromosomes,
                                              float* results) const {
@@ -44,28 +44,62 @@ void CvrpInstance::evaluateIndicesOnHost(unsigned numberOfChromosomes,
   }
 }
 
-// GPU-BRKGA ===================================================================
-void CvrpInstance::Decode(float* chromosomes, float* fitness) const {
-  // std::cerr << "Validate before GPU-BRKGA decode\n";
-  // cuda::sync();
-  // for (unsigned i = 0; i < gpuBrkgaChromosomeCount; ++i) {
-  //   const auto* chromosome = &chromosomes[i * numberOfClients];
-  //   for (unsigned j = 0; j < numberOfClients; ++j) {
-  //     if (chromosome[j] < 0 || chromosome[j] > 1) {
-  //       error("Chromosome", i, "on gene", j, "is out of range [0, 1]:", chromosome[j]);
-  //       abort();
-  //     }
-  //   }
-  // }
-  // std::cerr << "Starting the GPU-BRKGA decoder\n";
-  if (hostDecode) {
-    evaluateChromosomesOnHost(gpuBrkgaChromosomeCount, chromosomes, fitness);
-  } else {
-    cudaStream_t defaultStream = nullptr;
-    evaluateChromosomesOnDevice(defaultStream, gpuBrkgaChromosomeCount,
-                                chromosomes, fitness);
+float CvrpInstance::getFitness(const unsigned* tour, bool hasDepot) const {
+  if (hasDepot) {
+    unsigned n = numberOfClients + 1;
+    float fitness = 0;
+    for (unsigned i = 1; i < n; ++i) {
+      const auto u = tour[i - 1];
+      const auto v = tour[i];
+      fitness += distances[u * (numberOfClients + 1) + v];
+      if (v == 0) ++n;
+    }
+
+    fitness += distances[tour[n - 1]];  // Back to depot
+    return fitness;
   }
-  // std::cerr << "Finished the GPU-BRKGA decoder without errors\n";
+
+  // calculates the optimal tour cost in O(n) using dynamic programming
+  const auto n = numberOfClients;
+  unsigned i = 0;  // first client of the truck
+  unsigned filled = 0;  // the amount used from the capacity of the truck
+
+  MinQueue<float> q;
+  q.push(0);
+  for (unsigned j = 0; j < n; ++j) {  // last client of the truck
+    // remove the leftmost client while the truck is overfull
+    filled += demands[tour[j]];
+    while (filled > capacity) {
+      filled -= demands[tour[i]];
+      ++i;
+      q.pop();
+    }
+    if (j == n - 1) break;
+
+    // cost to return to from j to the depot and from the depot to j+1
+    // since j doesn't goes to j+1 anymore, we remove it from the total cost
+    const auto u = tour[j];
+    const auto v = tour[j + 1];
+    auto backToDepotCost =
+        distances[u] + distances[v] - distances[u * (n + 1) + v];
+
+    // optimal cost of tour ending at j+1 is the optimal cost of any tour
+    //  ending between i and j + the cost to return to the depot at j
+    auto bestFitness = q.min();
+    q.push(bestFitness + backToDepotCost);
+  }
+
+  // now calculates the TSP cost from/to depot + the split cost in the queue
+  auto fitness = q.min();  // `q.min` is the optimal split cost
+  auto u = 0;  // starts on the depot
+  for (unsigned j = 0; j < n; ++j) {
+    auto v = tour[j];
+    fitness += distances[u * (n + 1) + v];
+    u = v;
+  }
+  fitness += distances[u];  // back to the depot
+
+  return fitness;
 }
 
 // general =====================================================================
@@ -210,62 +244,4 @@ void CvrpInstance::validateChromosome(const std::vector<float>& chromosome,
   std::sort(indices.begin(), indices.end(),
             [&](int a, int b) { return chromosome[a] < chromosome[b]; });
   validateSolution(indices, fitness);
-}
-
-float CvrpInstance::getFitness(const unsigned* tour, bool hasDepot) const {
-  if (hasDepot) {
-    unsigned n = numberOfClients + 1;
-    float fitness = 0;
-    for (unsigned i = 1; i < n; ++i) {
-      const auto u = tour[i - 1];
-      const auto v = tour[i];
-      fitness += distances[u * (numberOfClients + 1) + v];
-      if (v == 0) ++n;
-    }
-
-    fitness += distances[tour[n - 1]];  // Back to depot
-    return fitness;
-  }
-
-  // calculates the optimal tour cost in O(n) using dynamic programming
-  const auto n = numberOfClients;
-  unsigned i = 0;  // first client of the truck
-  unsigned filled = 0;  // the amount used from the capacity of the truck
-
-  MinQueue<float> q;
-  q.push(0);
-  for (unsigned j = 0; j < n; ++j) {  // last client of the truck
-    // remove the leftmost client while the truck is overfull
-    filled += demands[tour[j]];
-    while (filled > capacity) {
-      filled -= demands[tour[i]];
-      ++i;
-      q.pop();
-    }
-    if (j == n - 1) break;
-
-    // cost to return to from j to the depot and from the depot to j+1
-    // since j doesn't goes to j+1 anymore, we remove it from the total cost
-    const auto u = tour[j];
-    const auto v = tour[j + 1];
-    auto backToDepotCost =
-        distances[u] + distances[v] - distances[u * (n + 1) + v];
-
-    // optimal cost of tour ending at j+1 is the optimal cost of any tour
-    //  ending between i and j + the cost to return to the depot at j
-    auto bestFitness = q.min();
-    q.push(bestFitness + backToDepotCost);
-  }
-
-  // now calculates the TSP cost from/to depot + the split cost in the queue
-  auto fitness = q.min();  // `q.min` is the optimal split cost
-  auto u = 0;  // starts on the depot
-  for (unsigned j = 0; j < n; ++j) {
-    auto v = tour[j];
-    fitness += distances[u * (n + 1) + v];
-    u = v;
-  }
-  fitness += distances[u];  // back to the depot
-
-  return fitness;
 }

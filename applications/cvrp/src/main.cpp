@@ -1,4 +1,4 @@
-#include "CvrpInstance.hpp"
+#include "instances/CvrpInstance.hpp"
 #include "GpuBrkgaWrapper.hpp"
 #include <brkga_cuda_api/BRKGA.hpp>
 #include <brkga_cuda_api/Logger.hpp>
@@ -12,8 +12,7 @@
 #include <vector>
 
 void run(const std::function<std::vector<float>()>& runGenerations,
-         const std::function<float()>& getBestFitness,
-         const BrkgaConfiguration& config) {
+         const std::function<float()>& getBestFitness) {
   cudaEvent_t start, stop;
   cudaEventCreate(&start);
   cudaEventCreate(&stop);
@@ -158,13 +157,8 @@ int main(int argc, char** argv) {
       return fitness;
     };
 
-    run(runGenerations, getBestFitness, config);
+    run(runGenerations, getBestFitness);
   } else if (tool == "gpu-brkga") {
-    // Add data to the instance
-    instance->hostDecode = config.decodeType == DecodeType::HOST
-                           || config.decodeType == DecodeType::HOST_SORTED;
-    instance->gpuBrkgaChromosomeCount = config.populationSize;
-
     GpuBrkgaWrapper brkga(config, instance.get());
 
     auto runGenerations = [&]() {
@@ -195,16 +189,12 @@ int main(int argc, char** argv) {
 
       info("Validating the chromosome");
       auto bestChromosome = brkga.getBestChromosome();
-      for (unsigned i = 0; i < config.chromosomeLength; ++i)
-        if (bestChromosome[i] < 0 || bestChromosome[i] > 1)
-          throw std::runtime_error("Chromosome is out of range [0, 1]");
-
       instance->validateChromosome(bestChromosome, fitness);
 
       return fitness;
     };
 
-    run(runGenerations, getBestFitness, config);
+    run(runGenerations, getBestFitness);
   } else {
     info("Invalid tool:", tool);
     abort();

@@ -1,7 +1,7 @@
 #ifndef CVRP_EXAMPLE_SRC_CVRPINSTANCE_HPP
 #define CVRP_EXAMPLE_SRC_CVRPINSTANCE_HPP
 
-#include "Point.hpp"
+#include "../Point.hpp"
 #include <brkga_cuda_api/Instance.hpp>
 
 #include <cuda_runtime.h>
@@ -11,7 +11,7 @@
 #include <vector>
 
 class CvrpInstance : public Instance {
-public:  // brkgaCuda ==========================================================
+public:  // decoders ===========================================================
   void evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
                                  const float* chromosomes,
                                  float* results) const override;
@@ -32,13 +32,8 @@ public:  // brkgaCuda ==========================================================
 
   unsigned threadsPerBlock = 0;
 
-public:  // GPU-BRKGA ==========================================================
-  inline void Init() const {}
-
-  void Decode(float* chromosomes, float* fitness) const;
-
-  unsigned gpuBrkgaChromosomeCount = 0;
-  bool hostDecode = false;
+private:
+  float getFitness(const unsigned* tour, bool hasDepot) const;
 
 public:  // general ============================================================
   static CvrpInstance fromFile(const std::string& filename);
@@ -71,8 +66,6 @@ private:
         numberOfClients(static_cast<unsigned>(-1)),
         dDistances(nullptr),
         dDemands(nullptr) {}
-
-  float getFitness(const unsigned* tour, bool hasDepot) const;
 
   unsigned capacity;
   unsigned numberOfClients;
