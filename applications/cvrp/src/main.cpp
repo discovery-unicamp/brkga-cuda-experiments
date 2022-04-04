@@ -1,5 +1,6 @@
-#include "instances/CvrpInstance.hpp"
 #include "GpuBrkgaWrapper.hpp"
+#include "instances/CvrpInstance.hpp"
+#include "instances/TSPInstance.hpp"
 #include <brkga_cuda_api/BRKGA.hpp>
 #include <brkga_cuda_api/Logger.hpp>
 
@@ -36,8 +37,11 @@ void run(const std::function<std::vector<float>()>& runGenerations,
 
 int main(int argc, char** argv) {
   std::string tool;
+  std::string problem;
+  std::string instanceFileName;
   unsigned logStep = 0;
-  std::unique_ptr<CvrpInstance> instance;
+  unsigned threadsPerBlock = 0;  // FIXME remove this
+
   BrkgaConfiguration::Builder configBuilder;
   for (int i = 1; i < argc; i += 2) {
     std::string arg = argv[i];
@@ -57,20 +61,19 @@ int main(int argc, char** argv) {
     }
 
     if (arg == "--instance") {
-      instance.reset(new CvrpInstance(CvrpInstance::fromFile(value)));
-      configBuilder.instance(instance.get())
-          .chromosomeLength(instance->getNumberOfClients());
+      instanceFileName = value;
     } else if (arg == "--threads") {
-      configBuilder.threadsPerBlock(std::stoi(value));
+      threadsPerBlock = std::stoi(value);
+      configBuilder.threadsPerBlock(threadsPerBlock);
     } else if (arg == "--generations") {
       configBuilder.generations(std::stoi(value));
     } else if (arg == "--exchange-interval") {
       configBuilder.exchangeBestInterval(std::stoi(value));
     } else if (arg == "--exchange-count") {
       configBuilder.exchangeBestCount(std::stoi(value));
-    } else if (arg == "--pop_count") {
+    } else if (arg == "--pop-count") {
       configBuilder.numberOfPopulations(std::stoi(value));
-    } else if (arg == "--pop_size") {
+    } else if (arg == "--pop-size") {
       configBuilder.populationSize(std::stoi(value));
     } else if (arg == "--elite") {
       configBuilder.eliteProportion(std::stof(value));
@@ -84,6 +87,8 @@ int main(int argc, char** argv) {
       configBuilder.decodeType(fromString(value));
     } else if (arg == "--tool") {
       tool = value;
+    } else if (arg == "--problem") {
+      problem = value;
     } else if (arg == "--log-step") {
       logStep = std::stoi(value);
     } else {
@@ -96,13 +101,45 @@ int main(int argc, char** argv) {
     error("Missing the algorithm name");
     abort();
   }
+  if (problem.empty()) {
+    error("Missing the problem name");
+    abort();
+  }
   if (logStep == 0) {
     error("Missing the log-step (it should be greater than 0)");
     abort();
   }
 
+  std::unique_ptr<Instance> instance;
+  std::function<void(const std::vector<unsigned>&, float)> validateIndices;
+  std::function<void(const std::vector<float>&, float)> validateChromosome;
+
+  if (problem == "cvrp") {
+    auto* cvrp = new CvrpInstance(CvrpInstance::fromFile(instanceFileName));
+    cvrp->threadsPerBlock = threadsPerBlock;
+    configBuilder.instance(cvrp).chromosomeLength(cvrp->getNumberOfClients());
+
+    validateIndices = [&](const std::vector<unsigned>& tour, float fitness) {
+      cvrp->validateSolution(tour, fitness, /* has depot: */ false);
+    };
+    validateChromosome = [&](const std::vector<float>& chromosome,
+                             float fitness) {
+      cvrp->validateChromosome(chromosome, fitness);
+    };
+
+    instance.reset(cvrp);
+  } else if (problem == "tsp") {
+    auto* tsp = new TSPInstance(instanceFileName);
+    tsp->threadsPerBlock = threadsPerBlock;
+    configBuilder.instance(tsp).chromosomeLength(tsp->nNodes);
+
+    instance.reset(tsp);
+  } else {
+    error("Unknown problem:", problem);
+    abort();
+  }
+
   auto config = configBuilder.build();
-  instance->threadsPerBlock = config.threadsPerBlock;
   if (tool == "brkga-cuda") {
     BRKGA brkga(config);
 
@@ -110,17 +147,13 @@ int main(int argc, char** argv) {
       std::vector<float> convergence;
       convergence.push_back(brkga.getBestFitness());
 
-      for (unsigned generation = 1; generation <= config.generations;
-           ++generation) {
+      for (unsigned k = 1; k <= config.generations; ++k) {
         brkga.evolve();
-        if (generation % config.exchangeBestInterval == 0
-            && generation != config.generations) {
+        if (k % config.exchangeBestInterval == 0 && k != config.generations)
           brkga.exchangeElite(config.exchangeBestCount);
-        }
-        if (generation % logStep == 0 || generation == config.generations) {
+        if (k % logStep == 0 || k == config.generations) {
           float best = brkga.getBestFitness();
-          std::clog << "Generation " << generation << "; best: " << best
-                    << "   \r";
+          std::clog << "Generation " << k << "; best: " << best << "        \r";
           convergence.push_back(best);
         }
       }
@@ -141,17 +174,25 @@ int main(int argc, char** argv) {
       info("Validating the best solution found");
       if (config.decodeType == DecodeType::DEVICE_SORTED
           || config.decodeType == DecodeType::HOST_SORTED) {
-        auto bestSorted = brkga.getBestIndices();
-        instance->validateSolution(bestSorted, fitness, /* has depot: */ false);
+        if (!validateIndices) {
+          warning("Validator is empty");
+        } else {
+          auto bestSorted = brkga.getBestIndices();
+          validateIndices(bestSorted, fitness);
 
-        for (unsigned i = 1; i < config.chromosomeLength; ++i) {
-          const auto a = bestSorted[i - 1];
-          const auto b = bestSorted[i];
-          if (bestChromosome[a] > bestChromosome[b])
-            throw std::runtime_error("Chromosome wasn't sorted correctly");
+          for (unsigned i = 1; i < config.chromosomeLength; ++i) {
+            const auto a = bestSorted[i - 1];
+            const auto b = bestSorted[i];
+            if (bestChromosome[a] > bestChromosome[b])
+              throw std::runtime_error("Chromosome wasn't sorted correctly");
+          }
         }
       } else {
-        instance->validateChromosome(bestChromosome, fitness);
+        if (!validateChromosome) {
+          warning("Validator is empty");
+        } else {
+          validateChromosome(bestChromosome, fitness);
+        }
       }
 
       return fitness;
@@ -159,23 +200,19 @@ int main(int argc, char** argv) {
 
     run(runGenerations, getBestFitness);
   } else if (tool == "gpu-brkga") {
-    GpuBrkgaWrapper brkga(config, instance.get());
+    GpuBrkgaWrapper brkga(config);
 
     auto runGenerations = [&]() {
       std::vector<float> convergence;
       convergence.push_back(brkga.getBestFitness());
 
-      for (unsigned generation = 1; generation <= config.generations;
-           ++generation) {
+      for (unsigned k = 1; k <= config.generations; ++k) {
         brkga.evolve();
-        if (generation % config.exchangeBestInterval == 0
-            && generation != config.generations) {
+        if (k % config.exchangeBestInterval == 0 && k != config.generations)
           brkga.exchangeElite(config.exchangeBestCount);
-        }
-        if (generation % logStep == 0 || generation == config.generations) {
+        if (k % logStep == 0 || k == config.generations) {
           float best = brkga.getBestFitness();
-          std::clog << "Generation " << generation << "; best: " << best
-                    << "   \r";
+          std::clog << "Generation " << k << "; best: " << best << "   \r";
           convergence.push_back(best);
         }
       }
@@ -189,7 +226,11 @@ int main(int argc, char** argv) {
 
       info("Validating the chromosome");
       auto bestChromosome = brkga.getBestChromosome();
-      instance->validateChromosome(bestChromosome, fitness);
+      if (!validateChromosome) {
+        warning("Validator is empty");
+      } else {
+        validateChromosome(bestChromosome, fitness);
+      }
 
       return fitness;
     };

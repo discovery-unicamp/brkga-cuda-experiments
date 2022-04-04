@@ -13,12 +13,12 @@ class GPUBRKGA;
 class Instance;
 
 /**
- * GPUBRKGA uses template, so we wrap the `Instance` class since it is abstract.
+ * GPUBRKGA uses template. We wrap the `Instance` class since it is abstract.
  */
 class InstanceWrapper {
 public:
-  InstanceWrapper(const BrkgaConfiguration& config, Instance* _instance)
-      : instance(_instance),
+  InstanceWrapper(const BrkgaConfiguration& config)
+      : instance(config.instance),
         chromosomeCount(config.populationSize),
         chromosomeLength(config.chromosomeLength),
         hostDecode(config.decodeType == DecodeType::HOST
@@ -36,7 +36,7 @@ public:
 
 class GpuBrkgaWrapper {
 public:
-  GpuBrkgaWrapper(const BrkgaConfiguration& config, Instance* _instance);
+  GpuBrkgaWrapper(const BrkgaConfiguration& config);
   ~GpuBrkgaWrapper();
 
   GpuBrkgaWrapper(const GpuBrkgaWrapper&) = delete;

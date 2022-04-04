@@ -5,6 +5,9 @@ add_executable(brkga-cvrp
   src/instances/CvrpInstance.cpp
   src/instances/CvrpInstance.cu
   src/instances/CvrpInstance.hpp
+  src/instances/TSPInstance.cpp
+  src/instances/TSPInstance.cu
+  src/instances/TSPInstance.hpp
   src/Checker.hpp
   src/GpuBrkgaWrapper.cu
   src/GpuBrkgaWrapper.hpp

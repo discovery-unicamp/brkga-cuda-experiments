@@ -19,9 +19,8 @@ void InstanceWrapper::Decode(float* chromosomes, float* fitness) const {
   }
 }
 
-GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config,
-                                 Instance* _instance)
-    : instance(new InstanceWrapper(config, _instance)) {
+GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config)
+    : instance(new InstanceWrapper(config)) {
   if (config.decodeType != DecodeType::DEVICE
       && config.decodeType != DecodeType::HOST) {
     error("Decode type", toString(config.decodeType),

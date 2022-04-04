@@ -30,7 +30,7 @@ public:  // decoders ===========================================================
                                const unsigned* dIndices,
                                float* dResults) const override;
 
-  unsigned threadsPerBlock = 0;
+  unsigned threadsPerBlock = 0;  // FIXME remove this
 
 private:
   float getFitness(const unsigned* tour, bool hasDepot) const;
