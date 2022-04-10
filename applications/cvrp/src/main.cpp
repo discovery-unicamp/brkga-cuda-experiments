@@ -150,11 +150,11 @@ int main(int argc, char** argv) {
       auto cur = convergence.back();
       for (unsigned k = 1; k <= config.generations; ++k) {
         brkga.evolve();
-        // if (k % config.exchangeBestInterval == 0 && k != config.generations)
-        //   brkga.exchangeElite(config.exchangeBestCount);
-        if (k % logStep == 0 || k == config.generations || true) {
+        if (k % config.exchangeBestInterval == 0 && k != config.generations)
+          brkga.exchangeElite(config.exchangeBestCount);
+        if (k % logStep == 0 || k == config.generations) {
           float best = brkga.getBestFitness();
-          std::clog << "Generation " << k << "; best: " << best << "        \n";
+          std::clog << "Generation " << k << "; best: " << best << "        \r";
           if (best > cur) {
             abort();
           }
