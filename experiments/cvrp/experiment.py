@@ -18,6 +18,13 @@ from instance import get_instance_path
 # GPU-BRKGA:  -       -                 -              1         512      0.15625 0.15625 0.70
 # GPU-BRKGA:  -       -                 -              1         1024     0.15625 0.15625 0.70
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="[%(asctime)s] [%(levelname)8s]"
+           " %(filename)s:%(lineno)s: %(message)s",
+    datefmt='%Y-%m-%dT%H:%M:%S',
+)
+
 SOURCE_PATH = Path('applications')
 INSTANCES_PATH = Path('instances')
 OUTPUT_PATH = Path('experiments', 'results')
@@ -74,13 +81,6 @@ INSTANCES = {
         'bm33708',
     ]
 }
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="[%(asctime)s] [%(levelname)8s]"
-           " %(filename)s:%(lineno)s: %(message)s",
-    datefmt='%Y-%m-%dT%H:%M:%S',
-)
 
 
 class ToolName(Enum):
@@ -254,11 +254,10 @@ def main():
     # output.mkdir(parents=True, exist_ok=True)
     # results.to_csv(output.joinpath(f'yielmewad2021.tsv'), index=False, sep='\t')
 
-    for tool in ['brkga-cuda', 'gpu-brkga']:
-        mode = 'release'
+    for tool in ['brkga-cuda']:
         params = {
             'threads': 256,
-            'generations': 20000,
+            'generations': 10000,
             'exchange-interval': 50,
             'exchange-count': 1,
             'pop-count': 3,
@@ -266,17 +265,14 @@ def main():
             'elite': .1,
             'mutant': .1,
             'rho': .75,
-            'decode': 'device-sorted',
+            'decode': 'device',
             'tool': tool,
             'problem': problem,
             'log-step': 50,
         }
-        if mode == 'debug':
-            params['generations'] = 10
-            params['exchange-interval'] = 2
 
         results = run_experiment(problem, params, INSTANCES[problem],
-                                 test_count=5)
+                                 test_count=10)
         if results is not None and not results.empty:
             output = OUTPUT_PATH.joinpath(problem)
             output.mkdir(parents=True, exist_ok=True)

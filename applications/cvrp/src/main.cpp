@@ -147,14 +147,19 @@ int main(int argc, char** argv) {
       std::vector<float> convergence;
       convergence.push_back(brkga.getBestFitness());
 
+      auto cur = convergence.back();
       for (unsigned k = 1; k <= config.generations; ++k) {
         brkga.evolve();
-        if (k % config.exchangeBestInterval == 0 && k != config.generations)
-          brkga.exchangeElite(config.exchangeBestCount);
-        if (k % logStep == 0 || k == config.generations) {
+        // if (k % config.exchangeBestInterval == 0 && k != config.generations)
+        //   brkga.exchangeElite(config.exchangeBestCount);
+        if (k % logStep == 0 || k == config.generations || true) {
           float best = brkga.getBestFitness();
-          std::clog << "Generation " << k << "; best: " << best << "        \r";
+          std::clog << "Generation " << k << "; best: " << best << "        \n";
+          if (best > cur) {
+            abort();
+          }
           convergence.push_back(best);
+          cur = best;
         }
       }
       std::clog << '\n';
