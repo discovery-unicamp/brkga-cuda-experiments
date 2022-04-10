@@ -71,9 +71,9 @@ int main(int argc, char* argv[]) {
       configBuilder.exchangeBestInterval(std::stoi(value));
     } else if (arg == "--exchange-count") {
       configBuilder.exchangeBestCount(std::stoi(value));
-    } else if (arg == "--pop_count") {
+    } else if (arg == "--pop-count") {
       configBuilder.numberOfPopulations(std::stoi(value));
-    } else if (arg == "--pop_size") {
+    } else if (arg == "--pop-size") {
       configBuilder.populationSize(std::stoi(value));
     } else if (arg == "--elite") {
       configBuilder.eliteProportion(std::stof(value));

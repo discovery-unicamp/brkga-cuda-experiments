@@ -46,19 +46,17 @@ void TSPInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
                                               const float* dChromosomes,
                                               float* dResults) const {
   const auto length = numberOfChromosomes * chromosomeLength();
+  auto* keys = cuda::alloc<float>(length);
+  auto* indices = cuda::alloc<unsigned>(length);
 
-  float* keys = nullptr;
-  CUDA_CHECK(cudaMalloc(&keys, length * sizeof(float)));
-  CUDA_CHECK(cudaMemcpy(keys, dChromosomes, length * sizeof(float),
-                        cudaMemcpyDeviceToDevice));
-
-  unsigned* indices = nullptr;
-  CUDA_CHECK(cudaMalloc(&indices, length * sizeof(unsigned)));
+  cuda::memcpy(stream, keys, dChromosomes, length);
   cuda::iotaMod(stream, indices, length, chromosomeLength(), threadsPerBlock);
-
   cuda::sortByKey(stream, keys, indices, length);
 
   evaluateIndicesOnDevice(stream, numberOfChromosomes, indices, dResults);
+
+  cuda::free(keys);
+  cuda::free(indices);
 }
 
 __device__ float deviceDecodeSorted(const unsigned* indices,

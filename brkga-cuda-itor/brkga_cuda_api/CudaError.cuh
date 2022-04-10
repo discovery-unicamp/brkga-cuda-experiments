@@ -10,6 +10,8 @@
 
 class CudaException : public std::runtime_error {
 public:
+  CudaException(const std::string& message) : std::runtime_error(message) {}
+
   CudaException(cudaError_t status, const std::string& file, int line)
       : std::runtime_error(file + ":" + std::to_string(line) + ": "
                            + cudaGetErrorString(status)) {}
@@ -41,7 +43,7 @@ static inline void _brkgaFail(const char* expr,
       throw CudaException(_cudaCheckStatus, __FILE__, __LINE__); \
   } while (false)
 
-#define CUDA_CHECK_LAST() CUDA_CHECK(cudaPeekAtLastError())
+#define CUDA_CHECK_LAST() void(0)
 
 #define BRKGA_CHECK(expr, ...)                                         \
   do {                                                                 \
