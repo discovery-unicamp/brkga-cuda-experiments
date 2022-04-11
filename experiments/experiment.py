@@ -86,7 +86,6 @@ INSTANCES = {
     ]
 }
 
-
 def run_experiment(
         problem: str,
         params: Dict[str, Union[str, float, int]],
@@ -205,7 +204,7 @@ def main():
     for tool in ['brkga-cuda']:
         params = {
             'threads': 256,
-            'generations': 20000,
+            'generations': 10000,
             'exchange-interval': 50,
             'exchange-count': 1,
             'pop-count': 3,
@@ -213,15 +212,14 @@ def main():
             'elite': .1,
             'mutant': .1,
             'rho': .75,
-            'decode': 'device-sorted',
+            'decode': 'device',
             'tool': tool,
             'problem': problem,
             'log-step': 50,
         }
 
-        r = run_experiment(problem, params, INSTANCES[problem][0:1], test_count=1)
+        r = run_experiment(problem, params, INSTANCES[problem], test_count=10)
         results.append(r)
-        break
 
     test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
     results = pd.concat(results)
@@ -234,7 +232,4 @@ def main():
 
 
 if __name__ == '__main__':
-    __shell('ls -a', False)
-    __shell('cat /proc/driver/nvidia/version', False)
-    __shell('nvidia-smi', False)
     main()

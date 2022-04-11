@@ -6,6 +6,7 @@
  *
  */
 #include "TSPInstance.hpp"
+#include <brkga_cuda_api/BBSegSort.cuh>
 #include <brkga_cuda_api/CudaUtils.hpp>
 
 #include <thrust/device_ptr.h>
@@ -15,22 +16,21 @@
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
+#include <numeric>
 #include <vector>
 
 float hostDecode(const float* chromosome,
                  const unsigned n,
                  const float* distances) {
-  std::vector<std::pair<float, unsigned>> indices(n);
-  for (unsigned i = 0; i < n; ++i)
-    indices[i] = std::pair<float, unsigned>(chromosome[i], i);
+  std::vector<unsigned> indices(n);
+  std::iota(indices.begin(), indices.end(), 0);
+  std::sort(indices.begin(), indices.end(),
+            [&](int a, int b) { return chromosome[a] < chromosome[b]; });
 
-  std::sort(indices.begin(), indices.end());
-
-  float score = distances[indices[0].second * n + indices[n - 1].second];
+  float fitness = distances[indices[0] * n + indices[n - 1]];
   for (unsigned i = 1; i < n; ++i)
-    score += distances[indices[i - 1].second * n + indices[i].second];
-
-  return score;
+    fitness += distances[indices[i - 1] * n + indices[i]];
+  return fitness;
 }
 
 void TSPInstance::evaluateChromosomesOnHost(const unsigned numberOfChromosomes,
@@ -51,7 +51,7 @@ void TSPInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
 
   cuda::memcpy(stream, keys, dChromosomes, length);
   cuda::iotaMod(stream, indices, length, chromosomeLength(), threadsPerBlock);
-  cuda::sortByKey(stream, keys, indices, length);
+  cuda::bbSegSort(keys, indices, length, chromosomeLength());
 
   evaluateIndicesOnDevice(stream, numberOfChromosomes, indices, dResults);
 
@@ -62,11 +62,10 @@ void TSPInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
 __device__ float deviceDecodeSorted(const unsigned* indices,
                                     const unsigned n,
                                     const float* distances) {
-  float score = distances[indices[0] * n + indices[n - 1]];
+  float fitness = distances[indices[0] * n + indices[n - 1]];
   for (unsigned i = 1; i < n; ++i)
-    score += distances[indices[i - 1] * n + indices[i]];
-
-  return score;
+    fitness += distances[indices[i - 1] * n + indices[i]];
+  return fitness;
 }
 
 __global__ void tspDecodeSorted(const unsigned numberOfChromosomes,

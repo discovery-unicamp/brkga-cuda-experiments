@@ -147,6 +147,7 @@ int main(int argc, char** argv) {
       std::vector<float> convergence;
       convergence.push_back(brkga.getBestFitness());
 
+      auto cur = convergence.back();
       for (unsigned k = 1; k <= config.generations; ++k) {
         brkga.evolve();
         if (k % config.exchangeBestInterval == 0 && k != config.generations)
@@ -154,7 +155,11 @@ int main(int argc, char** argv) {
         if (k % logStep == 0 || k == config.generations) {
           float best = brkga.getBestFitness();
           std::clog << "Generation " << k << "; best: " << best << "        \r";
+          if (best > cur) {
+            abort();
+          }
           convergence.push_back(best);
+          cur = best;
         }
       }
       std::clog << '\n';
