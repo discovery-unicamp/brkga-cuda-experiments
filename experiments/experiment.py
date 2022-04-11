@@ -1,5 +1,4 @@
 import datetime
-from enum import Enum
 import logging
 from pathlib import Path
 import subprocess
@@ -18,9 +17,21 @@ from instance import get_instance_path
 # GPU-BRKGA:  -       -                 -              1         512      0.15625 0.15625 0.70
 # GPU-BRKGA:  -       -                 -              1         1024     0.15625 0.15625 0.70
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="[%(asctime)s] [%(levelname)8s]"
+           " %(filename)s:%(lineno)s: %(message)s",
+    datefmt='%Y-%m-%dT%H:%M:%S',
+)
+
 SOURCE_PATH = Path('applications')
 INSTANCES_PATH = Path('instances')
 OUTPUT_PATH = Path('experiments', 'results')
+
+EXECUTABLES = {
+    'cvrp': Path('brkga-cuda'),
+    'tsp': Path('brkga-cuda'),
+}
 
 INSTANCES = {
     'cvrp': [
@@ -75,47 +86,6 @@ INSTANCES = {
     ]
 }
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="[%(asctime)s] [%(levelname)8s]"
-           " %(filename)s:%(lineno)s: %(message)s",
-    datefmt='%Y-%m-%dT%H:%M:%S',
-)
-
-
-class ToolName(Enum):
-    YELMEWAD2021_CUSTOMER = 'yelmewad2021', 'yelmewad2021-customer'
-
-    def __new__(cls, *args, **kw):
-        value = len(cls.__members__) + 1
-        obj = object.__new__(cls)
-        obj._value_ = value
-        return obj
-
-    def __init__(self, sources: str, target: str):
-        self.sources = sources
-        self.target = target
-
-
-def run_tool(tool: ToolName, instances: List[str]):
-    build_folder = f'build-{tool.sources}'
-    load = f'cmake -DCMAKE_BUILD_TYPE=release -B{build_folder} {tool.sources}'
-    build = f'cmake --build {build_folder}'
-    __shell(load, get=False)
-    __shell(build, get=False)
-
-    data = []
-    # Only instances X of CVRP
-    for instance in instances:
-        instance_path = get_instance_path('cvrp', instance)
-        cmd = f'{str(Path(build_folder, tool.target).absolute())} {str(instance_path)}'
-        results = __shell(cmd).split()
-
-        fitness = float(results[3])
-        elapsed = float(results[6])
-        data.append((instance, elapsed, fitness))
-    return pd.DataFrame(data, columns=['instance', 'elapsed', 'fitness'])
-
 
 def run_experiment(
         problem: str,
@@ -124,19 +94,10 @@ def run_experiment(
         test_count: int,
         mode: str = 'release',
 ) -> Optional[pd.DataFrame]:
-    default_columns = ['test_date', 'tool', 'instance',
-                       'ans', 'elapsed', 'seed']
-    for p in default_columns:
-        if p in params and p != 'tool':
-            raise ValueError(f'Parameter cannot be named `{p}`')
-
-    executable = __compile(problem, mode)
     if test_count == 0:
-        logging.warning('Test count is zero; ignoring the execution')
-        return
+        raise ValueError('Test count is zero')
 
     # Take info here to avoid changes by the user
-    test_date = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
     info = __get_system_info()
 
     results = []
@@ -144,38 +105,18 @@ def run_experiment(
         logging.info(f'[{problem}] Testing {instance}')
         for test in range(test_count):
             seed = test + 1
-            ans = __run_test(problem, executable, params, instance, seed)
-            results.append(ans)
+            results.append(__run_test(problem, params, instance, seed))
 
-    results = [{**r, **info} for r in results]
-    results = pd.DataFrame(results)
-    results['test_date'] = test_date
+    results = pd.DataFrame([{**r, **info} for r in results])
     results['tool'] = params.get('tool', 'default')
-
-    columns = [c for c in results.columns if c not in default_columns]
-    results = results[default_columns + columns]
 
     logging.info('Experiment finished')
     return results
 
 
-def __compile(problem: str, mode: str) -> Path:
-    logging.info(f'Compiling {problem} with {mode} mode')
-    mode = mode.lower()
-    folder = f'build-{mode}'
-    target = f'brkga-cvrp'
-
-    load = f'cmake -DCMAKE_BUILD_TYPE={mode} -B{folder} {str(SOURCE_PATH)}'
-    build = f'cmake --build {folder} --target {target}'
-    __shell(load, get=False)
-    __shell(build, get=False)
-
-    return Path(folder, 'cvrp', target)
-
-
 def __get_system_info() -> Dict[str, str]:
     return {
-        'commit': __shell('git log --format="%H" -n 1'),
+        'commit': '**broken**', #__shell('git log --format="%H" -n 1'),
         'system': __shell('uname -v'),
         'cpu': __shell('cat /proc/cpuinfo | grep "model name"'
                        ' | uniq | cut -d" " -f 3-'),
@@ -186,8 +127,8 @@ def __get_system_info() -> Dict[str, str]:
         'gpu-cores': 'unknown',
         'gpu-memory': __shell('nvidia-smi -q | grep -m1 Total'
                               " | awk '{print $3}'") + 'MiB',
-        'nvcc': __shell('nvcc --version | grep "release" | grep -o "V.*"'),
-        'g++': __shell('g++ --version | grep "g++"'),
+        'nvcc': '**broken**', #__shell('nvcc --version | grep "release" | grep -o "V.*"'),
+        'g++': '**broken**', #__shell('g++ --version | grep "g++"'),
     }
 
 
@@ -214,27 +155,30 @@ def __shell(cmd: str, get: bool = True) -> str:
 
 def __run_test(
         problem: str,
-        executable: Path,
         params: Dict[str, Union[str, float, int]],
         instance: str,
         seed: int,
 ) -> Dict[str, str]:
-    logging.info(f'Test instance {instance} of {problem}'
-                 f' ({str(executable)}) with params {params} and seed {seed}')
+    executable = EXECUTABLES[problem]
+
+    logging.info(f'Test instance {instance} of {problem} ({str(executable)})')
+    logging.info(f'Test with seed {seed} and params {params}')
+
     instance_path = get_instance_path(problem, instance)
 
+    parsed_params = {key: __parse_param(value) for key, value in params.items()}
+    parsed_params['instance'] = str(instance_path.absolute())
+    parsed_params['seed'] = str(seed)
+
     cmd = str(executable.absolute())
-    cmd += ''.join(f' --{arg} {value}' for arg, value in params.items())
-    cmd += f' --instance {str(instance_path.absolute())} --seed {seed}'
+    cmd += ''.join(f' --{arg} {value}' for arg, value in parsed_params.items())
 
     result = dict(tuple(r.split('=')) for r in __shell(cmd).split())
-
-    str_params = {key: str(value) for key, value in params.items()}
-    if 'convergence' in result and result['convergence'] == '[]':
+    if 'convergence' not in result or result['convergence'] == '[]':
         result['convergence'] = '?'
 
     return {
-        **str_params,
+        **parsed_params,
         'seed': str(seed),
         'instance': instance,
         'ans': result['ans'],
@@ -243,19 +187,22 @@ def __run_test(
     }
 
 
+def __parse_param(value: Union[int, float, str]) -> str:
+    if isinstance(value, float):
+        return str(round(value, 6))
+    return str(value)
+
+
 def main():
     problem = 'tsp'
-
-    # compile only
-    # run_experiment(problem, {}, [], test_count=0)
 
     # results = run_tool(ToolName.YELMEWAD2021_CUSTOMER, instances)
     # output = OUTPUT_PATH.joinpath(problem)
     # output.mkdir(parents=True, exist_ok=True)
     # results.to_csv(output.joinpath(f'yielmewad2021.tsv'), index=False, sep='\t')
 
-    for tool in ['brkga-cuda', 'gpu-brkga']:
-        mode = 'release'
+    results = []
+    for tool in ['brkga-cuda']:
         params = {
             'threads': 256,
             'generations': 20000,
@@ -271,19 +218,23 @@ def main():
             'problem': problem,
             'log-step': 50,
         }
-        if mode == 'debug':
-            params['generations'] = 10
-            params['exchange-interval'] = 2
 
-        results = run_experiment(problem, params, INSTANCES[problem],
-                                 test_count=5)
-        if results is not None and not results.empty:
-            output = OUTPUT_PATH.joinpath(problem)
-            output.mkdir(parents=True, exist_ok=True)
-            test_date = results.iloc[0]['test_date']
-            results.to_csv(output.joinpath(f'{test_date}.tsv'),
-                           index=False, sep='\t')
+        r = run_experiment(problem, params, INSTANCES[problem][0:1], test_count=1)
+        results.append(r)
+        break
+
+    test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
+    results = pd.concat(results)
+    results['test_time'] = test_time
+
+    output = OUTPUT_PATH.joinpath(problem)
+    output.mkdir(parents=True, exist_ok=True)
+    output = output.joinpath(f'{test_time}.tsv')
+    results.to_csv(output, index=False, sep='\t')
 
 
 if __name__ == '__main__':
+    __shell('ls -a', False)
+    __shell('cat /proc/driver/nvidia/version', False)
+    __shell('nvidia-smi', False)
     main()
