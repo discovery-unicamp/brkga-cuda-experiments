@@ -36,25 +36,6 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
                     config.populationSize * config.chromosomeLength),
       randomEliteParent(config.numberOfPopulations, config.populationSize),
       randomParent(config.numberOfPopulations, config.populationSize) {
-  // clang-format off
-  info("Configuration received:",
-       "\n - Number of populations:", config.numberOfPopulations,
-       "\n - Threads per block:", config.threadsPerBlock,
-       "\n - Population size:", config.populationSize,
-       "\n - Chromosome length:", config.chromosomeLength,
-       "\n - Elite count:", config.eliteCount,
-              log_nosep("(", config.getEliteProbability() * 100, "%)"),
-       "\n - Mutants count:", config.mutantsCount,
-              log_nosep("(", config.getMutantsProbability() * 100, "%)"),
-       "\n - Rho:", config.rho,
-       "\n - Seed:", config.seed,
-       "\n - Decode type:", config.decodeType,
-              log_nosep("(", toString(config.decodeType), ")"),
-       "\n - Generations:", config.generations,
-       "\n - Exchange interval:", config.exchangeBestInterval,
-       "\n - Exchange count:", config.exchangeBestCount);
-  // clang-format on
-
   CUDA_CHECK_LAST();
   instance = config.instance;
   numberOfPopulations = config.numberOfPopulations;
@@ -73,14 +54,14 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
   for (unsigned p = 0; p < numberOfPopulations; ++p)
     streams[p] = cuda::allocStream();
 
-  debug("Building random generator with seed", config.seed);
+  logger::debug("Building random generator with seed", config.seed);
   std::mt19937 rng(config.seed);
   std::uniform_int_distribution<std::mt19937::result_type> uid;
   generators.resize(numberOfPopulations);
   for (unsigned p = 0; p < numberOfPopulations; ++p)
     generators[p] = cuda::allocRandomGenerator(uid(rng));
 
-  debug("Building the initial populations");
+  logger::debug("Building the initial populations");
   for (unsigned p = 0; p < numberOfPopulations; ++p)
     cuda::random(streams[p], generators[p], population.deviceRow(p),
                  populationSize * chromosomeSize);
@@ -94,8 +75,8 @@ BRKGA::~BRKGA() {
 }
 
 void BRKGA::evaluateChromosomesPipe(unsigned p) {
-  debug("evaluating the chromosomes of the population no.", p, "with",
-        toString(decodeType));
+  logger::debug("evaluating the chromosomes of the population no.", p, "with",
+                toString(decodeType));
 
   if (decodeType == DecodeType::DEVICE) {
     instance->evaluateChromosomesOnDevice(streams[p], populationSize,
@@ -173,7 +154,7 @@ __global__ void deviceEvolve(const float* population,
 }
 
 void BRKGA::evolve() {
-  debug("Evolving the population");
+  logger::debug("Evolving the population");
   for (unsigned p = 0; p < numberOfPopulations; ++p)
     cuda::random(streams[p], generators[p], populationTemp.deviceRow(p),
                  populationSize * chromosomeSize);
@@ -197,11 +178,11 @@ void BRKGA::evolve() {
   std::swap(population, populationTemp);
 
   updateFitness();
-  debug("A new generation of the population was created");
+  logger::debug("A new generation of the population was created");
 }
 
 void BRKGA::updateFitness() {
-  debug("Updating the population fitness");
+  logger::debug("Updating the population fitness");
 
   if (decodeType == DecodeType::DEVICE_SORTED
       || decodeType == DecodeType::HOST_SORTED) {
@@ -286,8 +267,8 @@ __global__ void deviceExchangeElite(float* population,
 }
 
 void BRKGA::exchangeElite(unsigned count) {
-  debug("Sharing the", count, "best chromosomes of each one of the",
-        numberOfPopulations, "populations");
+  logger::debug("Sharing the", count, "best chromosomes of each one of the",
+                numberOfPopulations, "populations");
   if (count > eliteSize)
     throw std::range_error("Exchange count is greater than elite size.");
   if (count * numberOfPopulations > populationSize) {

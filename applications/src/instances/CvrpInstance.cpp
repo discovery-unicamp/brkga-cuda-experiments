@@ -169,7 +169,7 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
 
 std::pair<float, std::vector<unsigned>> CvrpInstance::readBestKnownSolution(
     const std::string& filename) {
-  info("Reading best known solution from", filename);
+  logger::info("Reading best known solution from", filename);
 
   std::ifstream file(filename);
   assert(file.is_open());

@@ -94,8 +94,6 @@ BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::decodeType(DecodeType 
 BrkgaConfiguration BrkgaConfiguration::Builder::build() const {
   if (_instance == nullptr) throw std::invalid_argument("Instance wasn't set");
   if (_threadsPerBlock == 0) throw std::invalid_argument("Threads per block wasn't set");
-  if ((_exchangeBestInterval > 0) != (_exchangeBestCount > 0))
-    throw std::invalid_argument("Both exchange best interval and exchange count should be either zero or non-zero");
   if (_numberOfPopulations == 0) throw std::invalid_argument("Number of populations wasn't set");
   if (_populationSize == 0) throw std::invalid_argument("Population size wasn't set");
   if (_chromosomeLength == 0) throw std::invalid_argument("Chromosome length wasn't set");
@@ -104,14 +102,12 @@ BrkgaConfiguration BrkgaConfiguration::Builder::build() const {
   if (std::abs(_rho) < 1e-6) throw std::invalid_argument("Rho wasn't set");
   if (_decodeType == DecodeType::NONE) throw std::invalid_argument("Decode type wasn't set");
 
-  if (_generations == 0) warning("Number of generations is zero");
+  if (_generations == 0) logger::warning("Number of generations is zero");
 
   BrkgaConfiguration config;
   config.instance = _instance;
   config.threadsPerBlock = _threadsPerBlock;
   config.generations = _generations;
-  config.exchangeBestInterval = _exchangeBestInterval;
-  config.exchangeBestCount = _exchangeBestCount;
   config.numberOfPopulations = _numberOfPopulations;
   config.populationSize = _populationSize;
   config.chromosomeLength = _chromosomeLength;
@@ -120,6 +116,15 @@ BrkgaConfiguration BrkgaConfiguration::Builder::build() const {
   config.rho = _rho;
   config.seed = _seed;
   config.decodeType = _decodeType;
+
+  if ((_exchangeBestInterval > 0) != (_exchangeBestCount > 0)) {
+    logger::warning("Exchange interval/count is conflicting and will be disabled.");
+    config.exchangeBestInterval = 0;
+    config.exchangeBestCount = 0;
+  } else {
+    config.exchangeBestInterval = _exchangeBestInterval;
+    config.exchangeBestCount = _exchangeBestCount;
+  }
 
   return config;
 }

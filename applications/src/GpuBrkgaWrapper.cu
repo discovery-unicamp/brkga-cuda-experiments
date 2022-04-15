@@ -23,8 +23,8 @@ GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config)
     : instance(new InstanceWrapper(config)) {
   if (config.decodeType != DecodeType::DEVICE
       && config.decodeType != DecodeType::HOST) {
-    error("Decode type", toString(config.decodeType),
-          "isn't supported; use some non-sorted version\n");
+    logger::error("Decode type", toString(config.decodeType), "isn't supported;"
+                  " use some non-sorted version");
     abort();
   }
 

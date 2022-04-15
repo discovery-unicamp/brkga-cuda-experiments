@@ -112,7 +112,7 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
                                            float* dResults) const {
   static bool warned = false;
   if (!warned) {
-    warning("Decoding CVRP on device is very slow!");
+    logger::warning("Decoding CVRP on device is very slow!");
     warned = true;
   }
 

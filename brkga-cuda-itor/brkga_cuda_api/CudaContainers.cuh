@@ -36,7 +36,7 @@ static inline T* _cudaNew(std::size_t n) {
   T* ptr = nullptr;
   CUDA_CHECK(
       _MANAGED_OR_RAW(cudaMallocManaged, cudaMalloc)(&ptr, n * sizeof(T)));
-  debug("Allocated pointer", ptr, "with", n, "positions");
+  logger::debug("Allocated pointer", ptr, "with", n, "positions");
   return ptr;
 }
 
@@ -47,7 +47,7 @@ static inline T* _cudaNew(std::size_t n) {
  */
 template <class T>
 static inline void _cudaDelete(T* ptr) {
-  debug("Deleting", ptr);
+  logger::debug("Deleting", ptr);
   CUDA_CHECK(cudaFree(ptr));
 }
 

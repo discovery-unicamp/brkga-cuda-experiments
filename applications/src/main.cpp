@@ -28,8 +28,8 @@ void run(const std::function<std::vector<float>()>& runGenerations,
   cudaEventElapsedTime(&timeElapsedMs, start, stop);
 
   float best = getBestFitness();
-  info("Optimization finished after", timeElapsedMs / 1000,
-       "seconds with solution", best);
+  logger::info("Optimization finished after", timeElapsedMs / 1000,
+               "seconds with solution", best);
   std::cout << std::fixed << std::setprecision(3) << "ans=" << best
             << " elapsed=" << timeElapsedMs / 1000
             << " convergence=" << str(convergence, ",") << '\n';
@@ -46,17 +46,17 @@ int main(int argc, char** argv) {
   for (int i = 1; i < argc; i += 2) {
     std::string arg = argv[i];
     if (arg.substr(0, 2) != "--") {
-      error("All arguments should start with --; found", arg);
+      logger::error("All arguments should start with --; found", arg);
       abort();
     }
     if (i + 1 == argc) {
-      error("Missing value for", arg);
+      logger::error("Missing value for", arg);
       abort();
     }
 
     std::string value = argv[i + 1];
     if (value.substr(0, 2) == "--") {
-      error("Argument value for", arg, "starts with --:", value);
+      logger::error("Argument value for", arg, "starts with --:", value);
       abort();
     }
 
@@ -92,21 +92,21 @@ int main(int argc, char** argv) {
     } else if (arg == "--log-step") {
       logStep = std::stoi(value);
     } else {
-      error("Unknown argument:", arg);
+      logger::error("Unknown argument:", arg);
       abort();
     }
   }
 
   if (tool.empty()) {
-    error("Missing the algorithm name");
+    logger::error("Missing the algorithm name");
     abort();
   }
   if (problem.empty()) {
-    error("Missing the problem name");
+    logger::error("Missing the problem name");
     abort();
   }
   if (logStep == 0) {
-    error("Missing the log-step (it should be greater than 0)");
+    logger::error("Missing the log-step (it should be greater than 0)");
     abort();
   }
 
@@ -135,7 +135,7 @@ int main(int argc, char** argv) {
 
     instance.reset(tsp);
   } else {
-    error("Unknown problem:", problem);
+    logger::error("Unknown problem:", problem);
     abort();
   }
 
@@ -147,7 +147,6 @@ int main(int argc, char** argv) {
       std::vector<float> convergence;
       convergence.push_back(brkga.getBestFitness());
 
-      auto cur = convergence.back();
       for (unsigned k = 1; k <= config.generations; ++k) {
         brkga.evolve();
         if (k % config.exchangeBestInterval == 0 && k != config.generations)
@@ -155,11 +154,7 @@ int main(int argc, char** argv) {
         if (k % logStep == 0 || k == config.generations) {
           float best = brkga.getBestFitness();
           std::clog << "Generation " << k << "; best: " << best << "        \r";
-          if (best > cur) {
-            abort();
-          }
           convergence.push_back(best);
-          cur = best;
         }
       }
       std::clog << '\n';
@@ -170,17 +165,17 @@ int main(int argc, char** argv) {
     auto getBestFitness = [&]() {
       auto fitness = brkga.getBestFitness();
 
-      info("Validating the chromosome");
+      logger::info("Validating the chromosome");
       auto bestChromosome = brkga.getBestChromosome();
       for (unsigned i = 0; i < config.chromosomeLength; ++i)
         if (bestChromosome[i] < 0 || bestChromosome[i] > 1)
           throw std::runtime_error("Chromosome is out of range [0, 1]");
 
-      info("Validating the best solution found");
+      logger::info("Validating the best solution found");
       if (config.decodeType == DecodeType::DEVICE_SORTED
           || config.decodeType == DecodeType::HOST_SORTED) {
         if (!validateIndices) {
-          warning("Validator is empty");
+          logger::warning("Validator is empty");
         } else {
           auto bestSorted = brkga.getBestIndices();
           validateIndices(bestSorted, fitness);
@@ -194,7 +189,7 @@ int main(int argc, char** argv) {
         }
       } else {
         if (!validateChromosome) {
-          warning("Validator is empty");
+          logger::warning("Validator is empty");
         } else {
           validateChromosome(bestChromosome, fitness);
         }
@@ -229,10 +224,10 @@ int main(int argc, char** argv) {
     auto getBestFitness = [&]() {
       auto fitness = brkga.getBestFitness();
 
-      info("Validating the chromosome");
+      logger::info("Validating the chromosome");
       auto bestChromosome = brkga.getBestChromosome();
       if (!validateChromosome) {
-        warning("Validator is empty");
+        logger::warning("Validator is empty");
       } else {
         validateChromosome(bestChromosome, fitness);
       }
@@ -242,10 +237,10 @@ int main(int argc, char** argv) {
 
     run(runGenerations, getBestFitness);
   } else {
-    info("Invalid tool:", tool);
+    logger::error("Invalid tool:", tool);
     abort();
   }
 
-  info("Exiting gracefully");
+  logger::info("Exiting gracefully");
   return 0;
 }
