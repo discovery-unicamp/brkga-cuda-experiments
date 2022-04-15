@@ -4,7 +4,6 @@
 
 # ignore for while
 results/
-.clang*
 Makefile
 *.json
 *.sh
