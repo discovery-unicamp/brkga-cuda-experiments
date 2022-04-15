@@ -18,11 +18,12 @@ RUN apt-get update \
 # compile the applications
 #! FIXME move the other sources to a specific folder
 #! FIXME use wget or git clone to fetch other sources
-COPY applications/ applications/
-COPY brkga-cuda-itor/ brkga-cuda-itor/
 COPY GPU-BRKGA/ GPU-BRKGA/
+COPY toso-brkga-api/brkgaAPI/ toso-brkga-api/brkgaAPI/
+COPY brkga-cuda-itor/ brkga-cuda-itor/
+COPY applications/ applications/
 RUN cmake -DCMAKE_BUILD_TYPE=release -Bbuild applications/ \
-    && cmake --build build --target brkga-cvrp -j6
+    && cmake --build build --target brkga-optimizer -j6
 
 ################################################################################
 FROM nvidia/cuda:11.3.0-runtime-ubuntu20.04 AS main
@@ -39,7 +40,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # copy the executables
-COPY --from=build /brkga/build/cvrp/brkga-cvrp ./brkga-cuda
+COPY --from=build /brkga/build/brkga-optimizer ./brkga-cuda
 COPY experiments/ ./
 
 # set the experiment to run

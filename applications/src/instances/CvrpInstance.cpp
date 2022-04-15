@@ -191,7 +191,7 @@ std::pair<float, std::vector<unsigned>> CvrpInstance::readBestKnownSolution(
   assert(line.rfind("Cost") == 0);
   float fitness = std::stof(line.substr(5));
 
-  return std::pair(fitness, tour);
+  return std::pair<float, std::vector<unsigned>>(fitness, tour);
 }
 
 CvrpInstance::~CvrpInstance() {

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(bb_segsort LANGUAGES CUDA CXX)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 11)
 
 find_package(CUDA REQUIRED)
 enable_language(CUDA)
@@ -18,7 +18,7 @@ set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/bb_segsort.h PROPERTIES LA
 set_target_properties(bb_segsort PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(bb_segsort PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set_target_properties(bb_segsort PROPERTIES COMPILE_FLAGS "-w")  # disable all warnings
-set_property(TARGET bb_segsort PROPERTY CUDA_STANDARD 17)
+set_property(TARGET bb_segsort PROPERTY CUDA_STANDARD 11)
 set_property(TARGET bb_segsort PROPERTY CUDA_ARCHITECTURES 61)
 
 target_compile_options(bb_segsort PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -fopenmp>)

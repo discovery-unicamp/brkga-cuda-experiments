@@ -1,6 +1,7 @@
-#include "wrapper/GpuBrkgaWrapper.hpp"
 #include "instances/CvrpInstance.hpp"
 #include "instances/TSPInstance.hpp"
+#include "wrapper/BrkgaApiWrapper.hpp"
+#include "wrapper/GpuBrkgaWrapper.hpp"
 #include <brkga_cuda_api/BRKGA.hpp>
 #include <brkga_cuda_api/Logger.hpp>
 
@@ -199,19 +200,24 @@ int main(int argc, char** argv) {
     };
 
     run(runGenerations, getBestFitness);
-  } else if (tool == "gpu-brkga") {
-    GpuBrkgaWrapper brkga(config);
+  } else if (tool == "gpu-brkga" || tool == "brkga-api") {
+    std::unique_ptr<BaseWrapper> brkga;
+    if (tool == "gpu-brkga") {
+      brkga.reset(new GpuBrkgaWrapper(config));
+    } else {
+      brkga.reset(new BrkgaApiWrapper(config));
+    }
 
     auto runGenerations = [&]() {
       std::vector<float> convergence;
-      convergence.push_back(brkga.getBestFitness());
+      convergence.push_back(brkga->getBestFitness());
 
       for (unsigned k = 1; k <= config.generations; ++k) {
-        brkga.evolve();
+        brkga->evolve();
         if (k % config.exchangeBestInterval == 0 && k != config.generations)
-          brkga.exchangeElite(config.exchangeBestCount);
+          brkga->exchangeElite(config.exchangeBestCount);
         if (k % logStep == 0 || k == config.generations) {
-          float best = brkga.getBestFitness();
+          float best = brkga->getBestFitness();
           std::clog << "Generation " << k << "; best: " << best << "   \r";
           convergence.push_back(best);
         }
@@ -222,10 +228,10 @@ int main(int argc, char** argv) {
     };
 
     auto getBestFitness = [&]() {
-      auto fitness = brkga.getBestFitness();
+      auto fitness = brkga->getBestFitness();
 
       logger::info("Validating the chromosome");
-      auto bestChromosome = brkga.getBestChromosome();
+      auto bestChromosome = brkga->getBestChromosome();
       if (!validateChromosome) {
         logger::warning("Validator is empty");
       } else {
