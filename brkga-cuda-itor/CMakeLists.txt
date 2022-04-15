@@ -36,7 +36,7 @@ add_library(brkga-cuda
 
 set_target_properties(brkga-cuda PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(brkga-cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-set_property(TARGET brkga-cuda PROPERTY CUDA_STANDARD 17)
+set_property(TARGET brkga-cuda PROPERTY CUDA_STANDARD 11)
 set_property(TARGET brkga-cuda PROPERTY CUDA_ARCHITECTURES 61)
 
 target_compile_options(brkga-cuda PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -fopenmp>)

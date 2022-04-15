@@ -197,6 +197,30 @@ inline void sortByKey(cudaStream_t stream,
   }
   CUDA_CHECK_LAST();
 }
+
+/**
+ * Returns the minimum between two items.
+ * @tparam T The type of the items.
+ * @param x The first item.
+ * @param y The second item.
+ * @return The minimum between the two items.
+ */
+template <class T>
+__device__ inline T min(const T& x, const T& y) {
+  return (x < y ? x : y);
+}
+
+/**
+ * Returns the maximum between two items.
+ * @tparam T The type of the items.
+ * @param x The first item.
+ * @param y The second item.
+ * @return The maximum between the two items.
+ */
+template <class T>
+__device__ inline T max(const T& x, const T& y) {
+  return (y < x ? x : y);
+}
 }  // namespace cuda
 
 #endif  // BRKGA_CUDA_API_CUDAUTILS_CUH

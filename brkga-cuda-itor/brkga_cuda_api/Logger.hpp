@@ -48,29 +48,34 @@ std::string log_nosep(const T&... x) {
   return ss.str();
 }
 
-template <class... T>
-void print(std::ostream& out, const char* file, const int line, const char* func, const char* color, const T&... x) {
-  bool flag = false;
-  const std::string emptyStr = "";
-  const std::string spaceStr = " ";
-  auto separator = [&]() {
-    if (flag) return spaceStr;
-    flag = true;
-    return emptyStr;
-  };
+inline void _log_impl(std::ostream&) {}
 
-  out << file << ':' << line << ": on " << func << ": ";
+template <class T, class... U>
+inline void _log_impl(std::ostream& out, const T& x, const U&... y) {
+  out << ' ' << x;
+  _log_impl(out, y...);
+}
+
+template <class... T>
+void _log_msg(std::ostream& out,
+           const char* file,
+           const int line,
+           const char* func,
+           const char* color,
+           const T&... x) {
+  out << file << ':' << line << ": on " << func << ':';
   out << color;
-  ((out << separator() << x), ...) << '\n';
+  _log_impl(out, x...);
   out << RESET;
 }
 
-#define NO_OPERATION void(nullptr)  // NOLINT
-#define printLog(...) print(std::clog, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)  // NOLINT
+#define NO_OPERATION void(nullptr)
+#define _log(...) _log_msg(std::clog, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 
-#define error(...) (printLog(BOLDRED, __VA_ARGS__))  // NOLINT
-#define warning(...) (LOG_LEVEL >= 1 ? printLog(YELLOW, __VA_ARGS__) : NO_OPERATION)  // NOLINT
-#define info(...) (LOG_LEVEL >= 2 ? printLog(GREEN, __VA_ARGS__) : NO_OPERATION)  // NOLINT
-#define debug(...) (LOG_LEVEL >= 3 ? printLog(CYAN, __VA_ARGS__) : NO_OPERATION)  // NOLINT
+#define error(...) (_log(BOLDRED, __VA_ARGS__))
+#define warning(...) \
+  (LOG_LEVEL >= 1 ? _log(YELLOW, __VA_ARGS__) : NO_OPERATION)
+#define info(...) (LOG_LEVEL >= 2 ? _log(GREEN, __VA_ARGS__) : NO_OPERATION)
+#define debug(...) (LOG_LEVEL >= 3 ? _log(CYAN, __VA_ARGS__) : NO_OPERATION)
 
 #endif  // BRKGA_CUDA_API_LOGGER_HPP

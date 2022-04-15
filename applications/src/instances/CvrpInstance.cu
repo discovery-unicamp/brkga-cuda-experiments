@@ -99,7 +99,7 @@ __global__ void cvrpEvaluateIndicesOnDevice(float* results,
     for (int j = i; j < (int)n; ++j) {
       float cost = evalCost(i, j);
       if (cost >= INFINITY) break;
-      bestCost[i] = std::min(bestCost[i], cost + bestCost[j + 1]);
+      bestCost[i] = cuda::min(bestCost[i], cost + bestCost[j + 1]);
     }
   }
 
