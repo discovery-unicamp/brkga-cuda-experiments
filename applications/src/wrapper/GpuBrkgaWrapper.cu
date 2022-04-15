@@ -35,8 +35,8 @@ public:
   bool hostDecode;
 };
 
-struct GpuBrkgaWrapper::GpuBrkga {
-  GpuBrkga(const BrkgaConfiguration& config, InstanceWrapper* instance)
+struct GpuBrkgaWrapper::BrkgaWrapper {
+  BrkgaWrapper(const BrkgaConfiguration& config, InstanceWrapper* instance)
       : algorithm(config.chromosomeLength,
                   config.populationSize,
                   (double)config.eliteCount / (double)config.populationSize,
@@ -59,28 +59,28 @@ struct GpuBrkgaWrapper::GpuBrkga {
 
 GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config)
     : instance(new InstanceWrapper(config)),
-      gpuBrkga(new GpuBrkga(config, instance)) {}
+      brkga(new BrkgaWrapper(config, instance)) {}
 
 GpuBrkgaWrapper::~GpuBrkgaWrapper() {
-  delete gpuBrkga;
+  delete brkga;
   delete instance;
 }
 
 void GpuBrkgaWrapper::evolve() {
-  gpuBrkga->algorithm.evolve();
+  brkga->algorithm.evolve();
 }
 
 void GpuBrkgaWrapper::exchangeElite(unsigned count) {
-  gpuBrkga->algorithm.exchangeElite(count);
+  brkga->algorithm.exchangeElite(count);
 }
 
 float GpuBrkgaWrapper::getBestFitness() {
-  auto best = gpuBrkga->algorithm.getBestIndividual();
+  auto best = brkga->algorithm.getBestIndividual();
   return best.fitness.first;
 }
 
 std::vector<float> GpuBrkgaWrapper::getBestChromosome() {
-  auto best = gpuBrkga->algorithm.getBestIndividual();
+  auto best = brkga->algorithm.getBestIndividual();
   return std::vector<float>(best.aleles,
                             best.aleles + instance->chromosomeLength);
 }

@@ -6,9 +6,6 @@
 
 #include <vector>
 
-/**
- * GPUBRKGA uses template. We wrap it to avoid issues at compilation time.
- */
 class GpuBrkgaWrapper : public BaseWrapper {
 public:
   GpuBrkgaWrapper(const BrkgaConfiguration& config);
@@ -21,10 +18,10 @@ public:
 
 private:
   struct InstanceWrapper;
-  struct GpuBrkga;
+  struct BrkgaWrapper;
 
   InstanceWrapper* instance;
-  GpuBrkga* gpuBrkga;
+  BrkgaWrapper* brkga;
 };
 
 #endif  // WRAPPER_GPUBRKGAWRAPPER_HPP

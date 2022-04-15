@@ -21,7 +21,7 @@ private:
   struct BrkgaWrapper;
 
   InstanceWrapper* instance;
-  BrkgaWrapper* gpuBrkga;
+  BrkgaWrapper* brkga;
 };
 
 #endif  // WRAPPER_BRKGAAPIWRAPPER_HPP
