@@ -1,6 +1,7 @@
-#ifndef APPLICATIONS_GPU_BRKGA_WRAPPER_HPP
-#define APPLICATIONS_GPU_BRKGA_WRAPPER_HPP
+#ifndef WRAPPER_GPUBRKGAWRAPPER_HPP
+#define WRAPPER_GPUBRKGAWRAPPER_HPP
 
+#include "BaseWrapper.hpp"
 #include <brkga_cuda_api/BrkgaConfiguration.hpp>
 
 #include <vector>
@@ -8,20 +9,15 @@
 /**
  * GPUBRKGA uses template. We wrap it to avoid issues at compilation time.
  */
-class GpuBrkgaWrapper {
+class GpuBrkgaWrapper : public BaseWrapper {
 public:
   GpuBrkgaWrapper(const BrkgaConfiguration& config);
   ~GpuBrkgaWrapper();
 
-  GpuBrkgaWrapper(const GpuBrkgaWrapper&) = delete;
-  GpuBrkgaWrapper(GpuBrkgaWrapper&&) = delete;
-  GpuBrkgaWrapper& operator=(const GpuBrkgaWrapper&) = delete;
-  GpuBrkgaWrapper& operator=(GpuBrkgaWrapper&&) = delete;
-
-  void evolve();
-  void exchangeElite(unsigned count);
-  float getBestFitness();
-  std::vector<float> getBestChromosome();
+  void evolve() override;
+  void exchangeElite(unsigned count) override;
+  float getBestFitness() override;
+  std::vector<float> getBestChromosome() override;
 
 private:
   struct InstanceWrapper;
@@ -31,4 +27,4 @@ private:
   GpuBrkga* gpuBrkga;
 };
 
-#endif  // APPLICATIONS_GPU_BRKGA_WRAPPER_HPP
+#endif  // WRAPPER_GPUBRKGAWRAPPER_HPP

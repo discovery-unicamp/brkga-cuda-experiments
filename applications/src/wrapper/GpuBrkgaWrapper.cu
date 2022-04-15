@@ -4,8 +4,6 @@
 #include <brkga_cuda_api/Instance.hpp>
 #include <brkga_cuda_api/Logger.hpp>
 
-#include <cuda_runtime.h>
-
 #include <cstdlib>
 #include <vector>
 

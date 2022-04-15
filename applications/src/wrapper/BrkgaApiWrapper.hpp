@@ -1,26 +1,20 @@
-#ifndef BRKGAAPIWRAPPER_HPP
-#define BRKGAAPIWRAPPER_HPP 1
+#ifndef WRAPPER_BRKGAAPIWRAPPER_HPP
+#define WRAPPER_BRKGAAPIWRAPPER_HPP 1
 
+#include "BaseWrapper.hpp"
 #include <brkga_cuda_api/BrkgaConfiguration.hpp>
-
-#include <cuda_runtime.h>
 
 #include <vector>
 
-class BrkgaApiWrapper {
+class BrkgaApiWrapper : public BaseWrapper {
 public:
   BrkgaApiWrapper(const BrkgaConfiguration& config);
   ~BrkgaApiWrapper();
 
-  BrkgaApiWrapper(const BrkgaApiWrapper&) = delete;
-  BrkgaApiWrapper(BrkgaApiWrapper&&) = delete;
-  BrkgaApiWrapper& operator=(const BrkgaApiWrapper&) = delete;
-  BrkgaApiWrapper& operator=(BrkgaApiWrapper&&) = delete;
-
-  void evolve();
-  void exchangeElite(unsigned count);
-  float getBestFitness();
-  std::vector<float> getBestChromosome();
+  void evolve() override;
+  void exchangeElite(unsigned count) override;
+  float getBestFitness() override;
+  std::vector<float> getBestChromosome() override;
 
 private:
   struct InstanceWrapper;
@@ -30,4 +24,4 @@ private:
   BrkgaWrapper* gpuBrkga;
 };
 
-#endif  // BRKGAAPIWRAPPER_HPP
+#endif  // WRAPPER_BRKGAAPIWRAPPER_HPP
