@@ -1,4 +1,4 @@
-#include "GpuBrkgaWrapper.hpp"
+#include "wrapper/GpuBrkgaWrapper.hpp"
 #include "instances/CvrpInstance.hpp"
 #include "instances/TSPInstance.hpp"
 #include <brkga_cuda_api/BRKGA.hpp>

@@ -39,9 +39,9 @@ add_executable(brkga-optimizer
   src/instances/TSPInstance.cpp
   src/instances/TSPInstance.cu
   src/instances/TSPInstance.hpp
+  src/wrapper/GpuBrkgaWrapper.cu
+  src/wrapper/GpuBrkgaWrapper.hpp
   src/Checker.hpp
-  src/GpuBrkgaWrapper.cu
-  src/GpuBrkgaWrapper.hpp
   src/main.cpp
   src/MinQueue.hpp
   src/Point.cpp
