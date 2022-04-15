@@ -79,8 +79,8 @@ int main(int argc, char** argv) {
       configBuilder.eliteProportion(std::stof(value));
     } else if (arg == "--mutant") {
       configBuilder.mutantsProportion(std::stof(value));
-    } else if (arg == "--rho") {
-      configBuilder.rho(std::stof(value));
+    } else if (arg == "--rhoe") {
+      configBuilder.rhoe(std::stof(value));
     } else if (arg == "--seed") {
       configBuilder.seed(std::stoi(value));
     } else if (arg == "--decode") {

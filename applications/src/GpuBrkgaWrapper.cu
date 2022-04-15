@@ -32,7 +32,7 @@ GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config)
   gpuBrkga = new GPUBRKGA<InstanceWrapper>(
       config.chromosomeLength, config.populationSize,
       (double)config.eliteCount / (double)config.populationSize,
-      (double)config.mutantsCount / (double)config.populationSize, config.rho,
+      (double)config.mutantsCount / (double)config.populationSize, config.rhoe,
       *instance, config.seed, isDecodedOnGpu, config.numberOfPopulations);
 }
 

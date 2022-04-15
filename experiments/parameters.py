@@ -235,7 +235,7 @@ def __normalize_results(df: pd.DataFrame, params: List[str]) -> pd.DataFrame:
 
 
 if __name__ == '__main__':
-    # plot_results('rho', 'cvrp', OUTPUT_PATH.joinpath('cvrp', '2022-03-21T20:10:01.tsv'))
+    # plot_results('rhoe', 'cvrp', OUTPUT_PATH.joinpath('cvrp', '2022-03-21T20:10:01.tsv'))
     # plot_results('exchange-interval', 'cvrp', OUTPUT_PATH.joinpath('cvrp', '2022-03-22T00:21:10.tsv'))
     # plot_results('exchange-count', 'cvrp', OUTPUT_PATH.joinpath('cvrp', '2022-03-22T16:59:29.tsv'))
     # plot_results('pop-count', 'cvrp', OUTPUT_PATH.joinpath('cvrp', '2022-03-22T20:55:08.tsv'))
@@ -255,7 +255,7 @@ if __name__ == '__main__':
             'pop-size',
             'elite',
             'mutant',
-            'rho',
+            'rhoe',
         ],
     )
     exit()
@@ -281,7 +281,7 @@ if __name__ == '__main__':
     #         'pop-size': [128],  # cl_range(128, 512),
     #         'elite': [.05, .1],  # cl_range(.02, .2),
     #         'mutant': [.1, .15],  # cl_range(.02, .3),
-    #         'rho': [.7, .75, .8],  # cl_range(.05, .95, start=.55),
+    #         'rhoe': [.7, .75, .8],  # cl_range(.05, .95, start=.55),
     #         'decode': ['host-sorted'],
     #         'tool': ['brkga-cuda'],
     #         'log-step': [50],
@@ -289,13 +289,13 @@ if __name__ == '__main__':
     # )
 
     experiment_params = [
-        {'exchange-interval': 25, 'pop-count': 3, 'pop-size': 128, 'elite': 0.10, 'mutant': 0.10, 'rho': 0.75,},
-        {'exchange-interval': 25, 'pop-count': 3, 'pop-size': 128, 'elite': 0.05, 'mutant': 0.10, 'rho': 0.75,},
-        {'exchange-interval': 50, 'pop-count': 3, 'pop-size': 128, 'elite': 0.10, 'mutant': 0.15, 'rho': 0.80,},
-        {'exchange-interval': 25, 'pop-count': 3, 'pop-size': 128, 'elite': 0.05, 'mutant': 0.15, 'rho': 0.80,},
-        {'exchange-interval': 50, 'pop-count': 1, 'pop-size': 256, 'elite': 0.15625, 'mutant': 0.15625, 'rho': 0.70,},
-        {'exchange-interval': 50, 'pop-count': 1, 'pop-size': 512, 'elite': 0.15625, 'mutant': 0.15625, 'rho': 0.70,},
-        {'exchange-interval': 50, 'pop-count': 1, 'pop-size': 1024, 'elite': 0.15625, 'mutant': 0.15625, 'rho': 0.70,},
+        {'exchange-interval': 25, 'pop-count': 3, 'pop-size': 128, 'elite': 0.10, 'mutant': 0.10, 'rhoe': 0.75,},
+        {'exchange-interval': 25, 'pop-count': 3, 'pop-size': 128, 'elite': 0.05, 'mutant': 0.10, 'rhoe': 0.75,},
+        {'exchange-interval': 50, 'pop-count': 3, 'pop-size': 128, 'elite': 0.10, 'mutant': 0.15, 'rhoe': 0.80,},
+        {'exchange-interval': 25, 'pop-count': 3, 'pop-size': 128, 'elite': 0.05, 'mutant': 0.15, 'rhoe': 0.80,},
+        {'exchange-interval': 50, 'pop-count': 1, 'pop-size': 256, 'elite': 0.15625, 'mutant': 0.15625, 'rhoe': 0.70,},
+        {'exchange-interval': 50, 'pop-count': 1, 'pop-size': 512, 'elite': 0.15625, 'mutant': 0.15625, 'rhoe': 0.70,},
+        {'exchange-interval': 50, 'pop-count': 1, 'pop-size': 1024, 'elite': 0.15625, 'mutant': 0.15625, 'rhoe': 0.70,},
     ]
 
     run_parameters(instances, experiment_params)

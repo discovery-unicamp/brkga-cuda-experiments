@@ -8,7 +8,7 @@ import pandas as pd
 from instance import get_instance_path
 
 
-#             threads exchange-interval exchange-count pop-count pop-size elite   mutant  rho
+#             threads exchange-interval exchange-count pop-count pop-size elite   mutant  rhoe
 # best time:  256     25                1              3         128      0.10    0.10    0.75
 # avg-1 time: 256     25                1              3         128      0.05    0.10    0.75
 # avg-2 time: 256     50                1              3         128      0.10    0.15    0.80
@@ -211,7 +211,7 @@ def main():
             'pop-size': 128,
             'elite': .1,
             'mutant': .1,
-            'rho': .75,
+            'rhoe': .75,
             'decode': 'device',
             'tool': tool,
             'problem': problem,

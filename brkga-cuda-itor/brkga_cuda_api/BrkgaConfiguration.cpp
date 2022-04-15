@@ -74,9 +74,9 @@ BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::mutantsProportion(floa
   return mutantsCount((unsigned)(p * (float)_populationSize));
 }
 
-BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::rho(float r) {
-  if (r < .5 || r >= 1) throw std::invalid_argument("Rho should be in range [0.5, 1)");
-  _rho = r;
+BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::rhoe(float r) {
+  if (r < .5 || r >= 1) throw std::invalid_argument("Rhoe should be in range [0.5, 1)");
+  _rhoe = r;
   return *this;
 }
 
@@ -99,7 +99,7 @@ BrkgaConfiguration BrkgaConfiguration::Builder::build() const {
   if (_chromosomeLength == 0) throw std::invalid_argument("Chromosome length wasn't set");
   if (_eliteCount == 0) throw std::invalid_argument("Elite count wasn't set");
   if (_mutantsCount == 0) throw std::invalid_argument("Mutants count wasn't set");
-  if (std::abs(_rho) < 1e-6) throw std::invalid_argument("Rho wasn't set");
+  if (std::abs(_rhoe) < 1e-6) throw std::invalid_argument("Rhoe wasn't set");
   if (_decodeType == DecodeType::NONE) throw std::invalid_argument("Decode type wasn't set");
 
   if (_generations == 0) logger::warning("Number of generations is zero");
@@ -113,7 +113,7 @@ BrkgaConfiguration BrkgaConfiguration::Builder::build() const {
   config.chromosomeLength = _chromosomeLength;
   config.eliteCount = _eliteCount;
   config.mutantsCount = _mutantsCount;
-  config.rho = _rho;
+  config.rhoe = _rhoe;
   config.seed = _seed;
   config.decodeType = _decodeType;
 

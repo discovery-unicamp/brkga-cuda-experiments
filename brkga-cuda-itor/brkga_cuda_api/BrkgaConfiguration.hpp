@@ -27,7 +27,7 @@ public:
     Builder& eliteProportion(float p);
     Builder& mutantsCount(unsigned n);
     Builder& mutantsProportion(float p);
-    Builder& rho(float r);
+    Builder& rhoe(float r);
     Builder& seed(unsigned s);
     Builder& decodeType(DecodeType dt);
 
@@ -44,7 +44,7 @@ public:
     unsigned _chromosomeLength = 0;
     unsigned _eliteCount = 0;
     unsigned _mutantsCount = 0;
-    float _rho = 0;
+    float _rhoe = 0;
     unsigned _seed = 0;
     DecodeType _decodeType = DecodeType::NONE;
   };
@@ -57,18 +57,18 @@ public:
   Instance* instance;
   unsigned threadsPerBlock;
   unsigned numberOfPopulations;  ///< number of different independent populations
-  unsigned populationSize;  ///< size of population, example 256 individuals
+  unsigned populationSize;  ///< size of the population
   unsigned chromosomeLength;  ///< the length of the chromosome to be generated
-  unsigned eliteCount;  ///< proportion of elite population, example 0.1
-  unsigned mutantsCount;  ///< proportion of mutant population, example 0.05
-  float rho;  ///< probability that child gets an allele from elite parent, exe 0.7
+  unsigned eliteCount;  ///< proportion of elite population
+  unsigned mutantsCount;  ///< proportion of mutant population
+  float rhoe;  ///< probability that child gets an allele from elite parent
   unsigned seed;  ///< the seed to use in the algorithm
   DecodeType decodeType;  ///< @see DecodeType.hpp
 
   // these members are just for convenience as they aren't used by the main algorithm
-  unsigned generations;  ///< execute algorithm for generations generations
-  unsigned exchangeBestInterval;  ///< exchange best individuals at every exchangeBestInterval generations
-  unsigned exchangeBestCount;  ///< exchange top exchangeBestCount best individuals
+  unsigned generations;  ///< the number of generations of the population
+  unsigned exchangeBestInterval;  ///< steps to exchange best individuals
+  unsigned exchangeBestCount;  ///< number of individuals to exchange
 
 private:
   friend Builder;

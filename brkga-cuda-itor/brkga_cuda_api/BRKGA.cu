@@ -45,7 +45,7 @@ BRKGA::BRKGA(BrkgaConfiguration& config)
   chromosomeSize = config.chromosomeLength;
   eliteSize = config.eliteCount;
   mutantsSize = config.mutantsCount;
-  rhoe = config.rho;
+  rhoe = config.rhoe;
   decodeType = config.decodeType;
   threadsPerBlock = config.threadsPerBlock;
 
