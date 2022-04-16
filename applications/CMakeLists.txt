@@ -9,6 +9,7 @@ add_compile_options(
   -Wall -Wextra -Wshadow -Wformat=2 -Wfloat-equal -Wshift-overflow
   -Wconversion -Wno-sign-conversion
 )
+add_compile_definitions(LOG_LEVEL=3)
 
 # Dependencies
 find_package(OpenMP REQUIRED)
@@ -64,9 +65,12 @@ add_executable(brkga-optimizer
   src/instances/TSPInstance.cpp
   src/instances/TSPInstance.cu
   src/instances/TSPInstance.hpp
+  src/wrapper/BaseWrapper.cu
   src/wrapper/BaseWrapper.hpp
   src/wrapper/BrkgaApiWrapper.cpp
   src/wrapper/BrkgaApiWrapper.hpp
+  src/wrapper/BrkgaCudaWrapper.cu
+  src/wrapper/BrkgaCudaWrapper.hpp
   src/wrapper/GpuBrkgaWrapper.cu
   src/wrapper/GpuBrkgaWrapper.hpp
   src/Checker.hpp

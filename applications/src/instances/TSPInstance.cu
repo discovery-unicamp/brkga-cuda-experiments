@@ -49,9 +49,9 @@ void TSPInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
   auto* keys = cuda::alloc<float>(length);
   auto* indices = cuda::alloc<unsigned>(length);
 
-  cuda::memcpy(stream, keys, dChromosomes, length);
+  cuda::copy(stream, keys, dChromosomes, length);
   cuda::iotaMod(stream, indices, length, chromosomeLength(), threadsPerBlock);
-  cuda::bbSegSort(keys, indices, length, chromosomeLength());
+  cuda::segSort(keys, indices, length, chromosomeLength());
 
   evaluateIndicesOnDevice(stream, numberOfChromosomes, indices, dResults);
 

@@ -25,7 +25,7 @@
 #include <string>
 #include <vector>
 
-BRKGA::BRKGA(BrkgaConfiguration& config)
+BRKGA::BRKGA(const BrkgaConfiguration& config)
     : population(config.numberOfPopulations,
                  config.populationSize * config.chromosomeLength),
       populationTemp(config.numberOfPopulations,
@@ -210,8 +210,8 @@ void BRKGA::sortChromosomesGenes() {
   // FIXME We should sort each fitness on its own thread to avoid synchonization
   for (unsigned p = 0; p < numberOfPopulations; ++p) cuda::sync(streams[p]);
 
-  cuda::bbSegSort(populationTemp.device(), chromosomeIdx.device(),
-                  numberOfChromosomes * chromosomeSize, chromosomeSize);
+  cuda::segSort(populationTemp.device(), chromosomeIdx.device(),
+                numberOfChromosomes * chromosomeSize, chromosomeSize);
 }
 
 void BRKGA::sortChromosomesPipe(unsigned p) {

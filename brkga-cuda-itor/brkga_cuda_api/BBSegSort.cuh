@@ -4,17 +4,15 @@
 #ifndef BRKGA_CUDA_API_BBSEGSORT_CUH
 #define BRKGA_CUDA_API_BBSEGSORT_CUH
 
-#undef CUDA_CHECK
-
-#include "CudaContainers.cuh"
 #include <bb_segsort.h>
+#undef CUDA_CHECK  // Defined by bb_segsort
+
+#include "CudaError.cuh"
+#include "CudaUtils.hpp"
 
 #include <cctype>
 #include <stdexcept>
 #include <string>
-
-#undef CUDA_CHECK  // Defined by bb_segsort in a header file
-#include "CudaError.cuh"
 
 namespace cuda {
 /**
@@ -30,28 +28,30 @@ namespace cuda {
  * @param values The values to sort.
  * @param size The size of the arrays.
  * @param step The size of the segments to sort.
+ * @throw std::invalid_argument if @p size is not a multiple of @p step.
+ * @throw std::invalid_argument if @p size doesn't fit 31 bit integer.
+ * @throw std::runtime_error if the algorithm (bb seg-sort) fails.
  */
 template <class Key, class Value>
-inline void bbSegSort(Key* keys,
-                      Value* values,
-                      std::size_t size,
-                      std::size_t step) {
+inline void segSort(Key* keys,
+                    Value* values,
+                    std::size_t size,
+                    std::size_t step) {
   if (size % step != 0)
-    throw std::runtime_error("Size is not multiple of step");
+    throw std::invalid_argument("Size is not a multiple of step");
   if (size > std::numeric_limits<int>::max())
-    throw std::runtime_error("Size cannot be converted to int");
+    throw std::invalid_argument("Size cannot be converted to int");
 
   std::size_t segCount = size / step;
-  CudaArray<int> segs(segCount);
-
-  int* hSegs = segs.host();
-  hSegs[0] = 0;
+  std::vector<int> segs(segCount, 0);
   for (unsigned i = 1; i < segCount; ++i)
-    hSegs[i] = hSegs[i - 1] + static_cast<int>(step);
+    segs[i] = segs[i - 1] + static_cast<int>(step);
 
-  segs.toDevice();
-  auto status = bb_segsort(keys, values, static_cast<int>(size), segs.device(),
+  auto* dSegs = cuda::alloc<int>(segCount);
+  cuda::copy_htod(nullptr, dSegs, segs.data(), segCount);
+  auto status = bb_segsort(keys, values, static_cast<int>(size), dSegs,
                            static_cast<int>(segCount));
+  cuda::free(dSegs);
 
   if (status != 0)
     throw std::runtime_error("bbSegSort exited with status "

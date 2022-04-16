@@ -84,7 +84,7 @@ inline void free(curandGenerator_t generator) {
  * @param n The number of elements to copy.
  */
 template <class T>
-inline void memcpy(cudaStream_t stream, T* dest, const T* src, size_t n) {
+inline void copy(cudaStream_t stream, T* dest, const T* src, size_t n) {
   CUDA_CHECK(cudaMemcpyAsync(dest, src, n * sizeof(T), cudaMemcpyDeviceToDevice,
                              stream));
 }
@@ -98,7 +98,7 @@ inline void memcpy(cudaStream_t stream, T* dest, const T* src, size_t n) {
  * @param n The number of elements to copy.
  */
 template <class T>
-inline void memcpy_htod(cudaStream_t stream, T* dest, const T* src, size_t n) {
+inline void copy_htod(cudaStream_t stream, T* dest, const T* src, size_t n) {
   CUDA_CHECK(cudaMemcpyAsync(dest, src, n * sizeof(T), cudaMemcpyHostToDevice,
                              stream));
 }
@@ -112,7 +112,7 @@ inline void memcpy_htod(cudaStream_t stream, T* dest, const T* src, size_t n) {
  * @param n The number of elements to copy.
  */
 template <class T>
-inline void memcpy_dtoh(cudaStream_t stream, T* dest, const T* src, size_t n) {
+inline void copy_dtoh(cudaStream_t stream, T* dest, const T* src, size_t n) {
   CUDA_CHECK(cudaMemcpyAsync(dest, src, n * sizeof(T), cudaMemcpyDeviceToHost,
                              stream));
 }

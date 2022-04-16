@@ -15,14 +15,14 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
   const auto numberOfGenes = numberOfChromosomes * chromosomeLength;
 
   float* dChromosomesCopy = cuda::alloc<float>(numberOfGenes);
-  cuda::memcpy(stream, dChromosomesCopy, dChromosomes, numberOfGenes);
+  cuda::copy(stream, dChromosomesCopy, dChromosomes, numberOfGenes);
 
   unsigned* idx = cuda::alloc<unsigned>(numberOfGenes);
   cuda::iotaMod(stream, idx, numberOfGenes, chromosomeLength, threadsPerBlock);
 
   // FIXME We need to block the host
   cuda::sync(stream);
-  cuda::bbSegSort(dChromosomesCopy, idx, numberOfGenes, chromosomeLength);
+  cuda::segSort(dChromosomesCopy, idx, numberOfGenes, chromosomeLength);
   cuda::sync();
 
   evaluateIndicesOnDevice(stream, numberOfChromosomes, idx, dResults);

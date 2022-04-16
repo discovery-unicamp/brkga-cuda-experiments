@@ -26,7 +26,7 @@ public:
    *
    * @param config The configuration to run the algorithm.
    */
-  BRKGA(BrkgaConfiguration& config);
+  BRKGA(const BrkgaConfiguration& config);
 
   /// Releases memory
   ~BRKGA();

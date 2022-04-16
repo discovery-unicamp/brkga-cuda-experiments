@@ -10,9 +10,6 @@ find_package(CUDA REQUIRED)
 enable_language(CUDA)
 include_directories(SYSTEM "${CUDA_INCLUDE_DIRS}")
 
-add_compile_definitions(LOG_LEVEL=2)
-# add_compile_definitions(BRKGA_DEBUG)
-
 if(USE_NVTX)
   message("Compiling to use NVTX!")
   add_definitions(-DUSE_NVTX)

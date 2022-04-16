@@ -17,6 +17,9 @@ public:
   virtual void exchangeElite(unsigned count) = 0;
   virtual float getBestFitness() = 0;
   virtual std::vector<float> getBestChromosome() = 0;
+
+  /// Sorts the chromosome using the same algorithm in the lib
+  std::vector<unsigned> getBestIndices();
 };
 
 #endif  // WRAPPER_BASEWRAPPER_HPP

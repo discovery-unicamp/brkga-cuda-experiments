@@ -46,10 +46,16 @@ struct GpuBrkgaWrapper::BrkgaWrapper {
                   config.seed,
                   /* decode on gpu? */ config.decodeType == DecodeType::DEVICE,
                   config.numberOfPopulations) {
+    if (config.chromosomeLength > max_t) {
+      logger::error("The chromosome length exceeds the thread limit:",
+                    config.chromosomeLength, ">", max_t,
+                    "(the algorithm will produce invalid chromosomes)");
+      abort();
+    }
     if (config.decodeType != DecodeType::DEVICE
         && config.decodeType != DecodeType::HOST) {
       logger::error("Decode type", toString(config.decodeType),
-                    "isn't supported; use some non-sorted version");
+                    "isn't supported; use either DEVICE or HOST");
       abort();
     }
   }

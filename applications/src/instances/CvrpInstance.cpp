@@ -138,8 +138,8 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
     instance.demands.push_back(d);
   }
   instance.dDemands = cuda::alloc<unsigned>(instance.demands.size());
-  cuda::memcpy_htod(nullptr, instance.dDemands, instance.demands.data(),
-                    instance.demands.size());
+  cuda::copy_htod(nullptr, instance.dDemands, instance.demands.data(),
+                  instance.demands.size());
 
   // Perform validations
   assert(!instance.name.empty());
@@ -161,8 +161,8 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
           instance.locations[i].distance(instance.locations[j]);
 
   instance.dDistances = cuda::alloc<float>(instance.distances.size());
-  cuda::memcpy_htod(nullptr, instance.dDistances, instance.distances.data(),
-                    instance.distances.size());
+  cuda::copy_htod(nullptr, instance.dDistances, instance.distances.data(),
+                  instance.distances.size());
 
   return instance;
 }
