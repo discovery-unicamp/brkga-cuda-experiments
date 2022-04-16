@@ -13,28 +13,11 @@
 #include <string>
 #include <vector>
 
-void run(const std::function<std::vector<float>()>& runGenerations,
-         const std::function<float()>& getBestFitness) {
-  cudaEvent_t start, stop;
-  cudaEventCreate(&start);
-  cudaEventCreate(&stop);
-  cudaEventRecord(start);
-
-  auto convergence = runGenerations();
-
-  cudaEventRecord(stop);
-  cudaEventSynchronize(stop);
-
-  float timeElapsedMs;
-  cudaEventElapsedTime(&timeElapsedMs, start, stop);
-
-  float best = getBestFitness();
-  logger::info("Optimization finished after", timeElapsedMs / 1000,
-               "seconds with solution", best);
-  std::cout << std::fixed << std::setprecision(3) << "ans=" << best
-            << " elapsed=" << timeElapsedMs / 1000
-            << " convergence=" << str(convergence, ",") << '\n';
-}
+#define mabort(...)             \
+  do {                          \
+    logger::error(__VA_ARGS__); \
+    abort();                    \
+  } while (false)
 
 int main(int argc, char** argv) {
   std::string tool;
@@ -46,20 +29,14 @@ int main(int argc, char** argv) {
   BrkgaConfiguration::Builder configBuilder;
   for (int i = 1; i < argc; i += 2) {
     std::string arg = argv[i];
-    if (arg.substr(0, 2) != "--") {
-      logger::error("All arguments should start with --; found", arg);
-      abort();
-    }
-    if (i + 1 == argc) {
-      logger::error("Missing value for", arg);
-      abort();
-    }
+    if (arg.substr(0, 2) != "--")
+      mabort("All arguments should start with --; found", arg);
+
+    if (i + 1 == argc) mabort("Missing value for", arg);
 
     std::string value = argv[i + 1];
-    if (value.substr(0, 2) == "--") {
-      logger::error("Argument value for", arg, "starts with --:", value);
-      abort();
-    }
+    if (value.substr(0, 2) == "--")
+      mabort("Argument value for", arg, "starts with --:", value);
 
     if (arg == "--instance") {
       instanceFileName = value;
@@ -93,55 +70,33 @@ int main(int argc, char** argv) {
     } else if (arg == "--log-step") {
       logStep = std::stoi(value);
     } else {
-      logger::error("Unknown argument:", arg);
-      abort();
+      mabort("Unknown argument:", arg);
     }
   }
 
-  if (tool.empty()) {
-    logger::error("Missing the algorithm name");
-    abort();
-  }
-  if (problem.empty()) {
-    logger::error("Missing the problem name");
-    abort();
-  }
-  if (logStep == 0) {
-    logger::error("Missing the log-step (it should be greater than 0)");
-    abort();
-  }
+  if (tool.empty()) mabort("Missing the algorithm name");
+  if (problem.empty()) mabort("Missing the problem name");
+  if (logStep == 0)
+    mabort("Missing the log-step (it should be greater than 0)");
 
   std::unique_ptr<Instance> instance;
-  std::function<void(const std::vector<unsigned>&, float)> validateIndices;
-  std::function<void(const std::vector<float>&, float)> validateChromosome;
-
   if (problem == "cvrp") {
     auto* cvrp = new CvrpInstance(CvrpInstance::fromFile(instanceFileName));
     cvrp->threadsPerBlock = threadsPerBlock;
-    configBuilder.instance(cvrp).chromosomeLength(cvrp->getNumberOfClients());
-
-    // FIXME this code is broken
-    // validateIndices = [&](const std::vector<unsigned>& tour, float fitness) {
-    //   logger::info(cvrp->getNumberOfClients());
-    //   cvrp->validateSolution(tour, fitness, /* has depot: */ false);
-    // };
-    // validateChromosome = [&](const std::vector<float>& chromosome,
-    //                          float fitness) {
-    //   cvrp->validateChromosome(chromosome, fitness);
-    // };
+    configBuilder.chromosomeLength(cvrp->getNumberOfClients());
 
     instance.reset(cvrp);
   } else if (problem == "tsp") {
     auto* tsp = new TSPInstance(instanceFileName);
     tsp->threadsPerBlock = threadsPerBlock;
-    configBuilder.instance(tsp).chromosomeLength(tsp->nNodes);
+    configBuilder.chromosomeLength(tsp->nNodes);
 
     instance.reset(tsp);
   } else {
-    logger::error("Unknown problem:", problem);
-    abort();
+    mabort("Unknown problem:", problem);
   }
 
+  configBuilder.instance(instance.get());
   auto config = configBuilder.build();
 
   std::unique_ptr<BaseWrapper> brkga;
@@ -152,66 +107,61 @@ int main(int argc, char** argv) {
   } else if (tool == "brkga-api") {
     brkga.reset(new BrkgaApiWrapper(config));
   } else {
-    logger::error("Unknown tool:", tool);
-    abort();
+    mabort("Unknown tool:", tool);
   }
 
-  auto runGenerations = [&]() {
-    std::vector<float> convergence;
-    convergence.push_back(brkga->getBestFitness());
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+  cudaEventRecord(start);
 
-    for (unsigned k = 1; k <= config.generations; ++k) {
-      brkga->evolve();
-      if (k % config.exchangeBestInterval == 0 && k != config.generations)
-        brkga->exchangeElite(config.exchangeBestCount);
-      if (k % logStep == 0 || k == config.generations) {
-        float best = brkga->getBestFitness();
-        std::clog << "Generation " << k << "; best: " << best << "        \r";
-        convergence.push_back(best);
-      }
+  std::vector<float> convergence;
+  convergence.push_back(brkga->getBestFitness());
+
+  for (unsigned k = 1; k <= config.generations; ++k) {
+    brkga->evolve();
+    if (k % config.exchangeBestInterval == 0 && k != config.generations)
+      brkga->exchangeElite(config.exchangeBestCount);
+    if (k % logStep == 0 || k == config.generations) {
+      float best = brkga->getBestFitness();
+      std::clog << "Generation " << k << "; best: " << best << "        \r";
+      convergence.push_back(best);
     }
-    std::clog << '\n';
+  }
+  std::clog << '\n';
 
-    return convergence;
-  };
+  cudaEventRecord(stop);
+  cudaEventSynchronize(stop);
 
-  auto getBestFitness = [&]() {
-    auto fitness = brkga->getBestFitness();
+  float timeElapsedMs;
+  cudaEventElapsedTime(&timeElapsedMs, start, stop);
 
-    logger::info("Validating the chromosome");
-    auto bestChromosome = brkga->getBestChromosome();
-    for (unsigned i = 0; i < config.chromosomeLength; ++i)
-      if (bestChromosome[i] < 0 || bestChromosome[i] > 1)
-        throw std::runtime_error("Chromosome is out of range [0, 1]");
+  auto fitness = brkga->getBestFitness();
 
-    logger::info("Validating the best solution found");
-    if (config.decodeType == DecodeType::DEVICE_SORTED
-        || config.decodeType == DecodeType::HOST_SORTED) {
-      if (!validateIndices) {
-        logger::warning("Validator is empty");
-      } else {
-        auto bestSorted = brkga->getBestIndices();
-        validateIndices(bestSorted, fitness);
+  logger::info("Validating the chromosome");
+  auto bestChromosome = brkga->getBestChromosome();
+  // validateChromosome(bestChromosome, fitness);
+  for (unsigned i = 0; i < config.chromosomeLength; ++i)
+    if (bestChromosome[i] < 0 || bestChromosome[i] > 1)
+      throw std::runtime_error("Chromosome is out of range [0, 1]");
 
-        for (unsigned i = 1; i < config.chromosomeLength; ++i) {
-          const auto a = bestSorted[i - 1];
-          const auto b = bestSorted[i];
-          if (bestChromosome[a] > bestChromosome[b])
-            throw std::runtime_error("Chromosome wasn't sorted correctly");
-        }
-      }
-    } else {
-      if (!validateChromosome) {
-        logger::warning("Validator is empty");
-      } else {
-        validateChromosome(bestChromosome, fitness);
-      }
+  if (config.decodeType == DecodeType::DEVICE_SORTED
+      || config.decodeType == DecodeType::HOST_SORTED) {
+    logger::info("Validating if the indices were sorted correctly");
+    auto bestSorted = brkga->getBestIndices();
+    for (unsigned i = 1; i < config.chromosomeLength; ++i) {
+      const auto a = bestSorted[i - 1];
+      const auto b = bestSorted[i];
+      if (bestChromosome[a] > bestChromosome[b])
+        throw std::runtime_error("Chromosome wasn't sorted correctly");
     }
+  }
 
-    return fitness;
-  };
-
-  run(runGenerations, getBestFitness);
+  logger::info("Optimization finished after", timeElapsedMs / 1000,
+               "seconds with solution", fitness);
+  std::cout << std::fixed << std::setprecision(3) << "ans=" << fitness
+            << " elapsed=" << timeElapsedMs / 1000
+            << " convergence=" << str(convergence, ",") << '\n';
 
   logger::info("Exiting gracefully");
   return 0;
