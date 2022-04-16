@@ -6,7 +6,6 @@
 results/
 Makefile
 *.json
-*.sh
 config.txt
 
 # generated

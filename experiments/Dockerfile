@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # install the required tools
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y gcc g++ make wget libssl-dev \
+    && apt-get install --no-install-recommends -y git pciutils lshw wget libssl-dev \
     && wget https://github.com/Kitware/CMake/releases/download/v3.20.6/cmake-3.20.6.tar.gz \
     && tar -xf cmake*.tar.gz \
     && cd cmake* \
@@ -14,6 +14,18 @@ RUN apt-get update \
     && make -j6 \
     && make install \
     && cmake --version
+
+# get system info
+COPY .git/ .git/
+RUN printf %"s\n" \
+    "commit: $(git log --format="%H" -n 1)" \
+    "system: $(uname -v)" \
+    "cpu: $(cat /proc/cpuinfo | grep "model name" | uniq | cut -d" " -f 3-)" \
+    "host-memory: $(grep MemTotal /proc/meminfo | awk '{print $2 / 1024}')MiB" \
+    "gpu: $(lspci | grep " VGA " | cut -d" " -f 5-)" \
+    "gpu-memory: $(lshw -C display | grep product | cut -d":" -f2-)" \
+    "nvcc: $(nvcc --version | grep "release" | grep -o "V.*")" \
+    "g++: $(g++ --version | grep "g++")" >info.txt
 
 # compile the applications
 #! FIXME move the other sources to a specific folder
@@ -39,9 +51,11 @@ RUN apt-get update \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
-# copy the executables
+# copy the data and the scripts
+COPY experiments/instances/ ./instances/
+COPY experiments/*.py ./
+COPY --from=build /brkga/info.txt ./info.txt
 COPY --from=build /brkga/build/brkga-optimizer ./brkga-cuda
-COPY experiments/ ./
 
 # set the experiment to run
 CMD [ "python3", "experiment.py" ]

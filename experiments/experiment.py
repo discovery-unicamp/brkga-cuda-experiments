@@ -8,6 +8,8 @@ import pandas as pd
 from instance import get_instance_path
 
 
+# docker build -t brkga -f experiments/Dockerfile . && docker run -v ~/brkga-cuda/experiments/results/:/main/results/ --rm --gpus all brkga
+
 #             threads exchange-interval exchange-count pop-count pop-size elite   mutant  rhoe
 # best time:  256     25                1              3         128      0.10    0.10    0.75
 # avg-1 time: 256     25                1              3         128      0.05    0.10    0.75
@@ -26,7 +28,7 @@ logging.basicConfig(
 
 SOURCE_PATH = Path('applications')
 INSTANCES_PATH = Path('instances')
-OUTPUT_PATH = Path('experiments', 'results')
+OUTPUT_PATH = Path('results')
 
 EXECUTABLES = {
     'cvrp': Path('brkga-cuda'),
@@ -86,6 +88,7 @@ INSTANCES = {
     ]
 }
 
+
 def run_experiment(
         problem: str,
         params: Dict[str, Union[str, float, int]],
@@ -114,21 +117,9 @@ def run_experiment(
 
 
 def __get_system_info() -> Dict[str, str]:
-    return {
-        'commit': '**broken**', #__shell('git log --format="%H" -n 1'),
-        'system': __shell('uname -v'),
-        'cpu': __shell('cat /proc/cpuinfo | grep "model name"'
-                       ' | uniq | cut -d" " -f 3-'),
-        'cpu-cores': __shell('nproc'),
-        'host-memory': __shell('grep MemTotal /proc/meminfo'
-                               " | awk '{print $2 / 1024}'") + 'MiB',
-        'gpu': __shell('lspci | grep " VGA " | cut -d" " -f 5-'),
-        'gpu-cores': 'unknown',
-        'gpu-memory': __shell('nvidia-smi -q | grep -m1 Total'
-                              " | awk '{print $3}'") + 'MiB',
-        'nvcc': '**broken**', #__shell('nvcc --version | grep "release" | grep -o "V.*"'),
-        'g++': '**broken**', #__shell('g++ --version | grep "g++"'),
-    }
+    with open('info.txt') as f:
+        data = f.read()
+    return dict(line.split(': ') for line in data.split('\n') if line)
 
 
 def __shell(cmd: str, get: bool = True) -> str:
@@ -165,7 +156,8 @@ def __run_test(
 
     instance_path = get_instance_path(problem, instance)
 
-    parsed_params = {key: __parse_param(value) for key, value in params.items()}
+    parsed_params = {key: __parse_param(value)
+                     for key, value in params.items()}
     parsed_params['instance'] = str(instance_path.absolute())
     parsed_params['seed'] = str(seed)
 
@@ -193,7 +185,7 @@ def __parse_param(value: Union[int, float, str]) -> str:
 
 
 def main():
-    problem = 'tsp'
+    problem = 'cvrp'
 
     # results = run_tool(ToolName.YELMEWAD2021_CUSTOMER, instances)
     # output = OUTPUT_PATH.joinpath(problem)
@@ -204,26 +196,33 @@ def main():
     for tool in ['brkga-cuda']:
         params = {
             'threads': 256,
-            'generations': 10000,
+            'generations': 1000,
             'exchange-interval': 50,
-            'exchange-count': 1,
+            'exchange-count': 2,
             'pop-count': 3,
-            'pop-size': 128,
+            'pop-size': 256,
             'elite': .1,
             'mutant': .1,
             'rhoe': .75,
-            'decode': 'device',
+            'decode': 'host-sorted',
             'tool': tool,
             'problem': problem,
             'log-step': 50,
         }
 
-        r = run_experiment(problem, params, INSTANCES[problem], test_count=10)
+        r = run_experiment(problem, params, INSTANCES[problem], test_count=1)
         results.append(r)
 
     test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
     results = pd.concat(results)
     results['test_time'] = test_time
+
+    # Define the first columns of the .tsv
+    # The others are still written to the file after these ones
+    first_columns = ['test_time', 'commit', 'tool',
+                     'problem', 'instance', 'ans', 'elapsed', 'seed']
+    other_columns = [c for c in results.columns if c not in first_columns]
+    results = results[first_columns + other_columns]
 
     output = OUTPUT_PATH.joinpath(problem)
     output.mkdir(parents=True, exist_ok=True)
