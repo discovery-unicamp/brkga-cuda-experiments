@@ -1,5 +1,5 @@
 #include "instances/CvrpInstance.hpp"
-#include "instances/TSPInstance.hpp"
+#include "instances/TspInstance.hpp"
 #include "wrapper/BrkgaApiWrapper.hpp"
 #include "wrapper/BrkgaCudaWrapper.hpp"
 #include "wrapper/GpuBrkgaWrapper.hpp"
@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 
+unsigned threadsPerBlock = 0;  // FIXME remove this
+
 #define mabort(...)             \
   do {                          \
     logger::error(__VA_ARGS__); \
@@ -24,7 +26,6 @@ int main(int argc, char** argv) {
   std::string problem;
   std::string instanceFileName;
   unsigned logStep = 0;
-  unsigned threadsPerBlock = 0;  // FIXME remove this
 
   BrkgaConfiguration::Builder configBuilder;
   for (int i = 1; i < argc; i += 2) {
@@ -76,21 +77,16 @@ int main(int argc, char** argv) {
 
   if (tool.empty()) mabort("Missing the algorithm name");
   if (problem.empty()) mabort("Missing the problem name");
-  if (logStep == 0)
-    mabort("Missing the log-step (it should be greater than 0)");
+  if (logStep == 0) mabort("Missing the log-step (should be > 0)");
 
   std::unique_ptr<Instance> instance;
   if (problem == "cvrp") {
     auto* cvrp = new CvrpInstance(CvrpInstance::fromFile(instanceFileName));
-    cvrp->threadsPerBlock = threadsPerBlock;
-    configBuilder.chromosomeLength(cvrp->getNumberOfClients());
-
+    configBuilder.chromosomeLength(cvrp->chromosomeLength());
     instance.reset(cvrp);
   } else if (problem == "tsp") {
-    auto* tsp = new TSPInstance(instanceFileName);
-    tsp->threadsPerBlock = threadsPerBlock;
-    configBuilder.chromosomeLength(tsp->nNodes);
-
+    auto* tsp = new TspInstance(TspInstance::fromFile(instanceFileName));
+    configBuilder.chromosomeLength(tsp->chromosomeLength());
     instance.reset(tsp);
   } else {
     mabort("Unknown problem:", problem);

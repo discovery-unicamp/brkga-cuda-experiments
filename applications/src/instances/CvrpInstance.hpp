@@ -1,5 +1,5 @@
-#ifndef CVRP_EXAMPLE_SRC_CVRPINSTANCE_HPP
-#define CVRP_EXAMPLE_SRC_CVRPINSTANCE_HPP
+#ifndef INSTANCES_CVRPINSTANCE_HPP
+#define INSTANCES_CVRPINSTANCE_HPP 1
 
 #include "../Point.hpp"
 #include <brkga_cuda_api/Instance.hpp>
@@ -10,8 +10,10 @@
 #include <string>
 #include <vector>
 
+extern unsigned threadsPerBlock;  // FIXME remove this
+
 class CvrpInstance : public Instance {
-public:  // decoders ===========================================================
+public:  // decoders
   void evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
                                  const float* chromosomes,
                                  float* results) const override;
@@ -30,24 +32,21 @@ public:  // decoders ===========================================================
                                const unsigned* dIndices,
                                float* dResults) const override;
 
-  unsigned threadsPerBlock = 0;  // FIXME remove this
-
 private:
   float getFitness(const unsigned* tour, bool hasDepot) const;
 
-public:  // general ============================================================
+public:  // general
   static CvrpInstance fromFile(const std::string& filename);
+
   static std::pair<float, std::vector<unsigned> > readBestKnownSolution(
       const std::string& filename);
 
   CvrpInstance(const CvrpInstance&) = delete;
   CvrpInstance(CvrpInstance&&) = default;
   CvrpInstance& operator=(const CvrpInstance&) = delete;
-  CvrpInstance& operator=(CvrpInstance&&) = default;
+  CvrpInstance& operator=(CvrpInstance&&) = delete;
 
   ~CvrpInstance();
-
-  [[nodiscard]] inline const std::string& getName() const { return name; }
 
   void validateSolution(const std::vector<unsigned>& tour,
                         const float fitness,
@@ -56,7 +55,7 @@ public:  // general ============================================================
   void validateChromosome(const std::vector<float>& chromosome,
                           const float fitness) const;
 
-  [[nodiscard]] inline unsigned getNumberOfClients() const {
+  [[nodiscard]] inline unsigned chromosomeLength() const {
     return numberOfClients;
   }
 
@@ -74,7 +73,6 @@ private:
   std::vector<float> distances;
   std::vector<unsigned> demands;
   std::vector<Point> locations;
-  std::string name;
 };
 
-#endif  // CVRP_EXAMPLE_SRC_CVRPINSTANCE_HPP
+#endif  // INSTANCES_CVRPINSTANCE_HPP

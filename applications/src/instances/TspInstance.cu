@@ -1,17 +1,8 @@
-/*
- *
- *  Created on: 2019
- *      Author: Eduardo Xavier
- *
- *
- */
-#include "TSPInstance.hpp"
+#include "TspInstance.hpp"
 #include <brkga_cuda_api/BBSegSort.cuh>
 #include <brkga_cuda_api/CudaUtils.hpp>
 
-#include <thrust/device_ptr.h>
-#include <thrust/execution_policy.h>
-#include <thrust/sort.h>
+#include <cuda_runtime.h>
 
 #include <algorithm>
 #include <cstdio>
@@ -21,7 +12,7 @@
 
 float hostDecode(const float* chromosome,
                  const unsigned n,
-                 const float* distances) {
+                 const std::vector<float>& distances) {
   std::vector<unsigned> indices(n);
   std::iota(indices.begin(), indices.end(), 0);
   std::sort(indices.begin(), indices.end(),
@@ -33,7 +24,7 @@ float hostDecode(const float* chromosome,
   return fitness;
 }
 
-void TSPInstance::evaluateChromosomesOnHost(const unsigned numberOfChromosomes,
+void TspInstance::evaluateChromosomesOnHost(const unsigned numberOfChromosomes,
                                             const float* chromosomes,
                                             float* results) const {
   for (unsigned i = 0; i < numberOfChromosomes; ++i)
@@ -41,7 +32,7 @@ void TSPInstance::evaluateChromosomesOnHost(const unsigned numberOfChromosomes,
                             chromosomeLength(), distances);
 }
 
-void TSPInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
+void TspInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
                                               unsigned numberOfChromosomes,
                                               const float* dChromosomes,
                                               float* dResults) const {
@@ -80,7 +71,7 @@ __global__ void tspDecodeSorted(const unsigned numberOfChromosomes,
   results[tid] = deviceDecodeSorted(curIndices, chromosomeLength, distances);
 }
 
-void TSPInstance::evaluateIndicesOnDevice(cudaStream_t stream,
+void TspInstance::evaluateIndicesOnDevice(cudaStream_t stream,
                                           const unsigned numberOfChromosomes,
                                           const unsigned* dIndices,
                                           float* dResults) const {

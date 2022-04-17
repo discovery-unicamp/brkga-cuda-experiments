@@ -62,9 +62,11 @@ add_executable(brkga-optimizer
   src/instances/CvrpInstance.cpp
   src/instances/CvrpInstance.cu
   src/instances/CvrpInstance.hpp
-  src/instances/TSPInstance.cpp
-  src/instances/TSPInstance.cu
-  src/instances/TSPInstance.hpp
+  src/instances/TspInstance.cpp
+  src/instances/TspInstance.cu
+  src/instances/TspInstance.hpp
+  src/utils/StringUtils.cpp
+  src/utils/StringUtils.hpp
   src/wrapper/BaseWrapper.cu
   src/wrapper/BaseWrapper.hpp
   src/wrapper/BrkgaApiWrapper.cpp

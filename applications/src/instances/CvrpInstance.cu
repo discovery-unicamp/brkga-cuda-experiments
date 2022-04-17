@@ -11,18 +11,17 @@ void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
                                                unsigned numberOfChromosomes,
                                                const float* dChromosomes,
                                                float* dResults) const {
-  const auto chromosomeLength = numberOfClients;
-  const auto numberOfGenes = numberOfChromosomes * chromosomeLength;
+  const auto numberOfGenes = numberOfChromosomes * chromosomeLength();
 
   float* dChromosomesCopy = cuda::alloc<float>(numberOfGenes);
   cuda::copy(stream, dChromosomesCopy, dChromosomes, numberOfGenes);
 
   unsigned* idx = cuda::alloc<unsigned>(numberOfGenes);
-  cuda::iotaMod(stream, idx, numberOfGenes, chromosomeLength, threadsPerBlock);
+  cuda::iotaMod(stream, idx, numberOfGenes, chromosomeLength(), threadsPerBlock);
 
   // FIXME We need to block the host
   cuda::sync(stream);
-  cuda::segSort(dChromosomesCopy, idx, numberOfGenes, chromosomeLength);
+  cuda::segSort(dChromosomesCopy, idx, numberOfGenes, chromosomeLength());
   cuda::sync();
 
   evaluateIndicesOnDevice(stream, numberOfChromosomes, idx, dResults);
@@ -117,8 +116,7 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
     warned = true;
   }
 
-  const auto chromosomeLength = numberOfClients;
-  const auto total = numberOfChromosomes * chromosomeLength;
+  const auto total = numberOfChromosomes * chromosomeLength();
   auto* accDemand = cuda::alloc<unsigned>(total);
   auto* accCost = cuda::alloc<float>(total);
   auto* bestCost = cuda::alloc<float>(total + 1);
@@ -126,16 +124,16 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
   const unsigned threads = 256;
   const unsigned blocks = cuda::blocks(numberOfChromosomes, threads);
   setupDemands<<<blocks, threads, 0, stream>>>(
-      accDemand, numberOfChromosomes, chromosomeLength, dIndices, dDemands);
+      accDemand, numberOfChromosomes, chromosomeLength(), dIndices, dDemands);
   CUDA_CHECK_LAST();
 
   setupCosts<<<blocks, threads, 0, stream>>>(
-      accCost, numberOfChromosomes, chromosomeLength, dIndices, dDistances);
+      accCost, numberOfChromosomes, chromosomeLength(), dIndices, dDistances);
   CUDA_CHECK_LAST();
 
   cvrpEvaluateIndicesOnDevice<<<blocks, threads, 0, stream>>>(
       dResults, accDemand, accCost, bestCost, dIndices, numberOfChromosomes,
-      chromosomeLength, capacity, dDistances, dDemands);
+      chromosomeLength(), capacity, dDistances, dDemands);
   CUDA_CHECK_LAST();
 
   cuda::free(accDemand);

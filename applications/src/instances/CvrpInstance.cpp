@@ -118,8 +118,6 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
     } else if (str == "DIMENSION") {
       file >> str >> instance.numberOfClients;
       --instance.numberOfClients;  // Remove the depot
-    } else if (str == "NAME") {
-      file >> str >> instance.name;
     }
   }
 
