@@ -31,12 +31,9 @@ TspInstance TspInstance::fromFile(const std::string& filename) {
 
   // Read the basic data
   std::pair<std::string, std::string> key;
-  while (key = readValue(file), key.first != "NODE_COORD_SECTION") {
-    logger::error(0, key.first, 0, key.second, 0);
-    if (key.first == "DIMENSION") {
+  while (key = readValue(file), key.first != "NODE_COORD_SECTION")
+    if (key.first == "DIMENSION")
       instance.numberOfClients = std::stoi(key.second);
-    }
-  }
   if (instance.numberOfClients == static_cast<unsigned>(-1))
     throw std::runtime_error("Missing number of clients in the instance file");
 
