@@ -94,7 +94,6 @@ def run_experiment(
         params: Dict[str, Union[str, float, int]],
         instances: List[str],
         test_count: int,
-        mode: str = 'release',
 ) -> Optional[pd.DataFrame]:
     if test_count == 0:
         raise ValueError('Test count is zero')
@@ -193,25 +192,32 @@ def main():
     # results.to_csv(output.joinpath(f'yielmewad2021.tsv'), index=False, sep='\t')
 
     results = []
-    for tool in ['brkga-cuda']:
-        params = {
-            'threads': 256,
-            'generations': 1000,
-            'exchange-interval': 50,
-            'exchange-count': 2,
-            'pop-count': 3,
-            'pop-size': 256,
-            'elite': .1,
-            'mutant': .1,
-            'rhoe': .75,
-            'decode': 'host-sorted',
-            'tool': tool,
-            'problem': problem,
-            'log-step': 50,
-        }
+    for problem in ['tsp', 'cvrp']:
+        for tool in ['brkga-cuda', 'brkga-api']:
+            if tool == 'gpu-brkga' and problem == 'tsp':
+                logging.warning('GPU-BRKGA doesn\'t support the TSP instance')
+                continue
 
-        r = run_experiment(problem, params, INSTANCES[problem], test_count=1)
-        results.append(r)
+            params = {
+                'threads': 256,
+                'generations': 10000,
+                'exchange-interval': 50,
+                'exchange-count': 2,
+                'pop-count': 3,
+                'pop-size': 256,
+                'elite': .1,
+                'mutant': .1,
+                'rhoe': .75,
+                'decode': 'host-sorted',
+                'tool': tool,
+                'problem': problem,
+                'log-step': 50,
+            }
+            if problem == 'tsp':
+                params['decode'] = 'device-sorted'
+
+            results.append(run_experiment(
+                problem, params, INSTANCES[problem], test_count=10))
 
     test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
     results = pd.concat(results)
