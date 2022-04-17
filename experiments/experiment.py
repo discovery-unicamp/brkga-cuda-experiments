@@ -183,24 +183,17 @@ def __parse_param(value: Union[int, float, str]) -> str:
     return str(value)
 
 
-def main():
-    problem = 'cvrp'
-
-    # results = run_tool(ToolName.YELMEWAD2021_CUSTOMER, instances)
-    # output = OUTPUT_PATH.joinpath(problem)
-    # output.mkdir(parents=True, exist_ok=True)
-    # results.to_csv(output.joinpath(f'yielmewad2021.tsv'), index=False, sep='\t')
-
+def test_all():
     results = []
     for problem in ['tsp', 'cvrp']:
-        for tool in ['brkga-cuda', 'brkga-api']:
+        for tool in ['brkga-cuda', 'gpu-brkga', 'brkga-api']:
             if tool == 'gpu-brkga' and problem == 'tsp':
                 logging.warning('GPU-BRKGA doesn\'t support the TSP instance')
                 continue
 
             params = {
                 'threads': 256,
-                'generations': 10000,
+                'generations': 1000,
                 'exchange-interval': 50,
                 'exchange-count': 2,
                 'pop-count': 3,
@@ -208,13 +201,11 @@ def main():
                 'elite': .1,
                 'mutant': .1,
                 'rhoe': .75,
-                'decode': 'host-sorted',
+                'decode': 'host',
                 'tool': tool,
                 'problem': problem,
                 'log-step': 50,
             }
-            if problem == 'tsp':
-                params['decode'] = 'device-sorted'
 
             results.append(run_experiment(
                 problem, params, INSTANCES[problem], test_count=10))
@@ -230,11 +221,11 @@ def main():
     other_columns = [c for c in results.columns if c not in first_columns]
     results = results[first_columns + other_columns]
 
-    output = OUTPUT_PATH.joinpath(problem)
+    output = OUTPUT_PATH.joinpath('all')
     output.mkdir(parents=True, exist_ok=True)
     output = output.joinpath(f'{test_time}.tsv')
     results.to_csv(output, index=False, sep='\t')
 
 
 if __name__ == '__main__':
-    main()
+    test_all()

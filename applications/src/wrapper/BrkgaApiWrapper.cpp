@@ -15,9 +15,11 @@ struct BrkgaApiWrapper::InstanceWrapper {
       : instance(config.instance) {}
 
   double decode(const std::vector<double>& chromosomeDouble) const {
-    const size_t n = chromosomeDouble.size();
+    const std::size_t n = chromosomeDouble.size();
+
     std::vector<float> chromosome(n);
-    for (size_t i = 0; i < n; ++i) chromosome[i] = (float)chromosomeDouble[i];
+    for (std::size_t i = 0; i < n; ++i)
+      chromosome[i] = (float)chromosomeDouble[i];
 
     float fitness = 0;
     instance->evaluateChromosomesOnHost(1, chromosome.data(), &fitness);
@@ -39,7 +41,10 @@ struct BrkgaApiWrapper::BrkgaWrapper {
                   *instance,
                   rng,
                   config.numberOfPopulations,
-                  OMP_THREADS) {}
+                  OMP_THREADS) {
+    if (config.decodeType != DecodeType::HOST)
+      throw std::runtime_error("BRKGA-API only works with HOST decode");
+  }
 
   double bestFitness;
   std::vector<double> bestChromosome;
