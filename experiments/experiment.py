@@ -204,7 +204,7 @@ def test_all():
                 'decode': 'host',
                 'tool': tool,
                 'problem': problem,
-                'log-step': 50,
+                'log-step': 25,
             }
 
             results.append(run_experiment(

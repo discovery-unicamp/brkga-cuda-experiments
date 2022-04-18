@@ -2,12 +2,36 @@
 
 #include "../utils/StringUtils.hpp"
 #include <brkga_cuda_api/CudaUtils.hpp>
-#include <brkga_cuda_api/Logger.hpp>
 
+#include <algorithm>
 #include <fstream>
 #include <istream>
+#include <numeric>
+#include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
+
+void TspInstance::evaluateChromosomesOnHost(const unsigned numberOfChromosomes,
+                                            const float* chromosomes,
+                                            float* results) const {
+  const auto n = chromosomeLength();
+
+#pragma omp parallel for if (numberOfChromosomes > 1) default(shared)
+  for (unsigned i = 0; i < numberOfChromosomes; ++i) {
+    const float* chromosome = chromosomes + i * n;
+
+    std::vector<unsigned> indices(n);
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.end(),
+              [&](int a, int b) { return chromosome[a] < chromosome[b]; });
+
+    float fitness = distances[indices[0] * n + indices[n - 1]];
+    for (unsigned j = 1; j < n; ++j)
+      fitness += distances[indices[j - 1] * n + indices[j]];
+    results[i] = fitness;
+  }
+}
 
 std::pair<std::string, std::string> readValue(std::istream& file) {
   if (!file.good()) throw std::runtime_error("File is not good (reached EOF?)");

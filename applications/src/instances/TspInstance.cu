@@ -4,34 +4,6 @@
 
 #include <cuda_runtime.h>
 
-#include <algorithm>
-#include <cstdio>
-#include <iostream>
-#include <numeric>
-#include <vector>
-
-float hostDecode(const float* chromosome,
-                 const unsigned n,
-                 const std::vector<float>& distances) {
-  std::vector<unsigned> indices(n);
-  std::iota(indices.begin(), indices.end(), 0);
-  std::sort(indices.begin(), indices.end(),
-            [&](int a, int b) { return chromosome[a] < chromosome[b]; });
-
-  float fitness = distances[indices[0] * n + indices[n - 1]];
-  for (unsigned i = 1; i < n; ++i)
-    fitness += distances[indices[i - 1] * n + indices[i]];
-  return fitness;
-}
-
-void TspInstance::evaluateChromosomesOnHost(const unsigned numberOfChromosomes,
-                                            const float* chromosomes,
-                                            float* results) const {
-  for (unsigned i = 0; i < numberOfChromosomes; ++i)
-    results[i] = hostDecode(chromosomes + i * chromosomeLength(),
-                            chromosomeLength(), distances);
-}
-
 void TspInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
                                               unsigned numberOfChromosomes,
                                               const float* dChromosomes,

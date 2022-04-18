@@ -16,7 +16,7 @@ Maceió, Alagoas, Brasil.
 #ifndef GPUBRKGA_CUH
 #define GPUBRKGA_CUH
 
-#define max_t 512
+#define max_t 1024
 
 #include "kernels.cuh"
 #include <curand_kernel.h>
