@@ -9,13 +9,13 @@
 
 #include "DecodeType.hpp"
 
-class Instance;
+class Decoder;
 
 class BrkgaConfiguration {
 public:
   class Builder {
   public:
-    Builder& instance(Instance* i);
+    Builder& decoder(Decoder* d);
     Builder& threadsPerBlock(unsigned k);
     Builder& generations(unsigned n);
     Builder& exchangeBestInterval(unsigned k);
@@ -34,7 +34,7 @@ public:
     BrkgaConfiguration build() const;
 
   private:
-    Instance* _instance = nullptr;
+    Decoder* _decoder = nullptr;
     unsigned _generations = 0;
     unsigned _threadsPerBlock = 0;
     unsigned _exchangeBestInterval = 0;
@@ -51,21 +51,27 @@ public:
 
   virtual ~BrkgaConfiguration() = default;
 
-  [[nodiscard]] inline float getMutantsProbability() const { return (float)mutantsCount / (float)populationSize; }
-  [[nodiscard]] inline float getEliteProbability() const { return (float)eliteCount / (float)populationSize; }
+  [[nodiscard]] inline float getMutantsProbability() const {
+    return (float)mutantsCount / (float)populationSize;
+  }
 
-  Instance* instance;
+  [[nodiscard]] inline float getEliteProbability() const {
+    return (float)eliteCount / (float)populationSize;
+  }
+
+  Decoder* decoder;
+  DecodeType decodeType;  ///< @see DecodeType.hpp
   unsigned threadsPerBlock;
-  unsigned numberOfPopulations;  ///< number of different independent populations
+  unsigned numberOfPopulations;  ///< number of independent populations
   unsigned populationSize;  ///< size of the population
   unsigned chromosomeLength;  ///< the length of the chromosome to be generated
   unsigned eliteCount;  ///< proportion of elite population
   unsigned mutantsCount;  ///< proportion of mutant population
   float rhoe;  ///< probability that child gets an allele from elite parent
   unsigned seed;  ///< the seed to use in the algorithm
-  DecodeType decodeType;  ///< @see DecodeType.hpp
 
-  // these members are just for convenience as they aren't used by the main algorithm
+  // these members are just for convenience as they aren't used by the main
+  // algorithm
   unsigned generations;  ///< the number of generations of the population
   unsigned exchangeBestInterval;  ///< steps to exchange best individuals
   unsigned exchangeBestCount;  ///< number of individuals to exchange

@@ -2,7 +2,7 @@
 #define INSTANCES_CVRPINSTANCE_HPP 1
 
 #include "../Point.hpp"
-#include <brkga_cuda_api/Instance.hpp>
+#include <brkga_cuda_api/Decoder.hpp>
 
 #include <cuda_runtime.h>
 
@@ -12,7 +12,7 @@
 
 extern unsigned threadsPerBlock;  // FIXME remove this
 
-class CvrpInstance : public Instance {
+class CvrpInstance : public Decoder {
 public:  // decoders
   void evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
                                  const float* chromosomes,

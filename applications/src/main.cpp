@@ -79,20 +79,20 @@ int main(int argc, char** argv) {
   if (problem.empty()) mabort("Missing the problem name");
   if (logStep == 0) mabort("Missing the log-step (should be > 0)");
 
-  std::unique_ptr<Instance> instance;
+  std::unique_ptr<Decoder> decoder;
   if (problem == "cvrp") {
     auto* cvrp = new CvrpInstance(CvrpInstance::fromFile(instanceFileName));
     configBuilder.chromosomeLength(cvrp->chromosomeLength());
-    instance.reset(cvrp);
+    decoder.reset(cvrp);
   } else if (problem == "tsp") {
     auto* tsp = new TspInstance(TspInstance::fromFile(instanceFileName));
     configBuilder.chromosomeLength(tsp->chromosomeLength());
-    instance.reset(tsp);
+    decoder.reset(tsp);
   } else {
     mabort("Unknown problem:", problem);
   }
 
-  configBuilder.instance(instance.get());
+  configBuilder.decoder(decoder.get());
   auto config = configBuilder.build();
 
   std::unique_ptr<BaseWrapper> brkga;

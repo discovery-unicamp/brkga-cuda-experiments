@@ -12,7 +12,7 @@
 #include "CudaError.cuh"
 #include "CudaUtils.hpp"
 #include "DecodeType.hpp"
-#include "Instance.hpp"
+#include "Decoder.hpp"
 #include "Logger.hpp"
 
 #include <curand.h>
@@ -37,7 +37,7 @@ BRKGA::BRKGA(const BrkgaConfiguration& config)
       randomEliteParent(config.numberOfPopulations, config.populationSize),
       randomParent(config.numberOfPopulations, config.populationSize) {
   CUDA_CHECK_LAST();
-  instance = config.instance;
+  decoder = config.decoder;
   numberOfPopulations = config.numberOfPopulations;
   populationSize = config.populationSize;
   numberOfChromosomes = numberOfPopulations * populationSize;
@@ -79,23 +79,23 @@ void BRKGA::evaluateChromosomesPipe(unsigned p) {
                 toString(decodeType));
 
   if (decodeType == DecodeType::DEVICE) {
-    instance->evaluateChromosomesOnDevice(streams[p], populationSize,
-                                          population.deviceRow(p),
-                                          fitness.deviceRow(p));
+    decoder->evaluateChromosomesOnDevice(streams[p], populationSize,
+                                         population.deviceRow(p),
+                                         fitness.deviceRow(p));
     CUDA_CHECK_LAST();
   } else if (decodeType == DecodeType::DEVICE_SORTED) {
-    instance->evaluateIndicesOnDevice(streams[p], populationSize,
-                                      chromosomeIdx.deviceRow(p),
-                                      fitness.deviceRow(p));
+    decoder->evaluateIndicesOnDevice(streams[p], populationSize,
+                                     chromosomeIdx.deviceRow(p),
+                                     fitness.deviceRow(p));
     CUDA_CHECK_LAST();
   } else if (decodeType == DecodeType::HOST_SORTED) {
     cuda::sync(streams[p]);
-    instance->evaluateIndicesOnHost(populationSize, chromosomeIdx.hostRow(p),
-                                    fitness.hostRow(p));
+    decoder->evaluateIndicesOnHost(populationSize, chromosomeIdx.hostRow(p),
+                                   fitness.hostRow(p));
   } else if (decodeType == DecodeType::HOST) {
     cuda::sync(streams[p]);
-    instance->evaluateChromosomesOnHost(populationSize, population.hostRow(p),
-                                        fitness.hostRow(p));
+    decoder->evaluateChromosomesOnHost(populationSize, population.hostRow(p),
+                                       fitness.hostRow(p));
   } else {
     throw std::domain_error("Function decode type is unknown");
   }

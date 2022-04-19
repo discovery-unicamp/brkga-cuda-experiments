@@ -4,15 +4,15 @@
 #include <brkgaAPI/MTRand.h>
 #include <brkgaAPI/Population.cpp>
 #include <brkgaAPI/Population.h>
-#include <brkga_cuda_api/Instance.hpp>
+#include <brkga_cuda_api/Decoder.hpp>
 
 #include <limits>
 
 #define OMP_THREADS 6
 
-struct BrkgaApiWrapper::InstanceWrapper {
-  InstanceWrapper(const BrkgaConfiguration& config)
-      : instance(config.instance) {}
+struct BrkgaApiWrapper::DecoderWrapper {
+  DecoderWrapper(const BrkgaConfiguration& config)
+      : decoder(config.decoder) {}
 
   double decode(const std::vector<double>& chromosomeDouble) const {
     const std::size_t n = chromosomeDouble.size();
@@ -22,15 +22,15 @@ struct BrkgaApiWrapper::InstanceWrapper {
       chromosome[i] = (float)chromosomeDouble[i];
 
     float fitness = 0;
-    instance->evaluateChromosomesOnHost(1, chromosome.data(), &fitness);
+    decoder->evaluateChromosomesOnHost(1, chromosome.data(), &fitness);
     return fitness;
   }
 
-  Instance* instance;
+  Decoder* decoder;
 };
 
 struct BrkgaApiWrapper::BrkgaWrapper {
-  BrkgaWrapper(const BrkgaConfiguration& config, InstanceWrapper* instance)
+  BrkgaWrapper(const BrkgaConfiguration& config, DecoderWrapper* decoder)
       : bestFitness(std::numeric_limits<double>::max()),
         rng(config.seed),
         algorithm(config.chromosomeLength,
@@ -38,7 +38,7 @@ struct BrkgaApiWrapper::BrkgaWrapper {
                   config.getEliteProbability(),
                   config.getMutantsProbability(),
                   config.rhoe,
-                  *instance,
+                  *decoder,
                   rng,
                   config.numberOfPopulations,
                   OMP_THREADS) {
@@ -49,16 +49,16 @@ struct BrkgaApiWrapper::BrkgaWrapper {
   double bestFitness;
   std::vector<double> bestChromosome;
   MTRand rng;
-  BRKGA<InstanceWrapper, MTRand> algorithm;
+  BRKGA<DecoderWrapper, MTRand> algorithm;
 };
 
 BrkgaApiWrapper::BrkgaApiWrapper(const BrkgaConfiguration& config)
-    : instance(new InstanceWrapper(config)),
-      brkga(new BrkgaWrapper(config, instance)) {}
+    : decoder(new DecoderWrapper(config)),
+      brkga(new BrkgaWrapper(config, decoder)) {}
 
 BrkgaApiWrapper::~BrkgaApiWrapper() {
   delete brkga;
-  delete instance;
+  delete decoder;
 }
 
 void BrkgaApiWrapper::evolve() {

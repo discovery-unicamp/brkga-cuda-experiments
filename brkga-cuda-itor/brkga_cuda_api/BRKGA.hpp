@@ -17,7 +17,7 @@
 #include <vector>
 
 enum DecodeType;
-class Instance;
+class Decoder;
 
 class BRKGA {
 public:
@@ -105,7 +105,7 @@ private:
   /// The main stream to run the operations indenpendently
   constexpr static cudaStream_t defaultStream = nullptr;
 
-  Instance* instance;  /// The instance of the problem
+  Decoder* decoder;  /// The decoder of the problem
 
   CudaMatrix<float> population;  /// All the chromosomes
   CudaMatrix<float> populationTemp;  /// Temp memory for chromosomes

@@ -1,16 +1,16 @@
 #include "GpuBrkgaWrapper.hpp"
 #include <GPU-BRKGA/GPUBRKGA.cuh>
 #include <brkga_cuda_api/BrkgaConfiguration.hpp>
-#include <brkga_cuda_api/Instance.hpp>
+#include <brkga_cuda_api/Decoder.hpp>
 #include <brkga_cuda_api/Logger.hpp>
 
 #include <cstdlib>
 #include <vector>
 
-struct GpuBrkgaWrapper::InstanceWrapper {
+struct GpuBrkgaWrapper::DecoderWrapper {
 public:
-  InstanceWrapper(const BrkgaConfiguration& config)
-      : instance(config.instance),
+  DecoderWrapper(const BrkgaConfiguration& config)
+      : decoder(config.decoder),
         chromosomeCount(config.populationSize),
         chromosomeLength(config.chromosomeLength),
         hostDecode(config.decodeType == DecodeType::HOST
@@ -20,29 +20,29 @@ public:
 
   inline void Decode(float* chromosomes, float* fitness) const {
     if (hostDecode) {
-      instance->evaluateChromosomesOnHost(chromosomeCount, chromosomes,
+      decoder->evaluateChromosomesOnHost(chromosomeCount, chromosomes,
                                           fitness);
     } else {
       cudaStream_t defaultStream = nullptr;
-      instance->evaluateChromosomesOnDevice(defaultStream, chromosomeCount,
+      decoder->evaluateChromosomesOnDevice(defaultStream, chromosomeCount,
                                             chromosomes, fitness);
     }
   }
 
-  Instance* instance;
+  Decoder* decoder;
   unsigned chromosomeCount;
   unsigned chromosomeLength;
   bool hostDecode;
 };
 
 struct GpuBrkgaWrapper::BrkgaWrapper {
-  BrkgaWrapper(const BrkgaConfiguration& config, InstanceWrapper* instance)
+  BrkgaWrapper(const BrkgaConfiguration& config, DecoderWrapper* decoder)
       : algorithm(config.chromosomeLength,
                   config.populationSize,
                   (double)config.eliteCount / (double)config.populationSize,
                   (double)config.mutantsCount / (double)config.populationSize,
                   config.rhoe,
-                  *instance,
+                  *decoder,
                   config.seed,
                   /* decode on gpu? */ config.decodeType == DecodeType::DEVICE,
                   config.numberOfPopulations) {
@@ -60,16 +60,16 @@ struct GpuBrkgaWrapper::BrkgaWrapper {
     }
   }
 
-  GPUBRKGA<InstanceWrapper> algorithm;
+  GPUBRKGA<DecoderWrapper> algorithm;
 };
 
 GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config)
-    : instance(new InstanceWrapper(config)),
-      brkga(new BrkgaWrapper(config, instance)) {}
+    : decoder(new DecoderWrapper(config)),
+      brkga(new BrkgaWrapper(config, decoder)) {}
 
 GpuBrkgaWrapper::~GpuBrkgaWrapper() {
   delete brkga;
-  delete instance;
+  delete decoder;
 }
 
 void GpuBrkgaWrapper::evolve() {
@@ -88,5 +88,5 @@ float GpuBrkgaWrapper::getBestFitness() {
 std::vector<float> GpuBrkgaWrapper::getBestChromosome() {
   auto best = brkga->algorithm.getBestIndividual();
   return std::vector<float>(best.aleles,
-                            best.aleles + instance->chromosomeLength);
+                            best.aleles + decoder->chromosomeLength);
 }

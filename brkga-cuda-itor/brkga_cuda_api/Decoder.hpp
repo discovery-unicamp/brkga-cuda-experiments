@@ -3,9 +3,9 @@
 
 #include <cuda_runtime.h>
 
-class Instance {
+class Decoder {
 public:
-  virtual ~Instance() = default;
+  virtual ~Decoder() = default;
 
   virtual void evaluateChromosomesOnHost(unsigned numberOfChromosomes,
                                          const float* chromosomes,

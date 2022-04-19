@@ -17,10 +17,10 @@ public:
   std::vector<float> getBestChromosome() override;
 
 private:
-  struct InstanceWrapper;
+  struct DecoderWrapper;
   struct BrkgaWrapper;
 
-  InstanceWrapper* instance;
+  DecoderWrapper* decoder;
   BrkgaWrapper* brkga;
 };
 
