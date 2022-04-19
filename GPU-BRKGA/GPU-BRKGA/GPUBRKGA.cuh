@@ -3,15 +3,15 @@ This file countains the GPU-BRKGA class,
 should not be modified.
 
 Authors
-Derek N.A. Alves, 
-Bruno C.S. Nogueira, 
+Derek N.A. Alves,
+Bruno C.S. Nogueira,
 Davi R.C Oliveira and
 Ermeson C. Andrade.
 
 Instituto de Computação, Universidade Federal de Alagoas.
 Maceió, Alagoas, Brasil.
 */
- 
+
 
 #ifndef GPUBRKGA_CUH
 #define GPUBRKGA_CUH
@@ -68,7 +68,7 @@ public:
 	 void cpyHost();
 	// initializes the GPU-BRKGA
 	void initializeGPU();
-	
+
 
 	// Return copies to the internal parameters:
 	unsigned getN() const;
@@ -137,7 +137,7 @@ void GPUBRKGA< Decoder >::cpyHost()
 		h_fitnessKeys 	= (float*)malloc((K*p)*sizeof(float));
 		h_fitnessValues = (int*)malloc((K*p)*sizeof(int));
 	}
-	
+
 	cudaMemcpy(h_populations, d_current, K*p*n*sizeof(float), cudaMemcpyDeviceToHost);
 	cudaMemcpy(h_fitnessKeys, d_currFitnessKeys, K*p*sizeof(float), cudaMemcpyDeviceToHost);
 	cudaMemcpy(h_fitnessValues, d_currFitnessValues, K*p*sizeof(int), cudaMemcpyDeviceToHost);
@@ -174,18 +174,18 @@ GPUBRKGA< Decoder >::GPUBRKGA(unsigned _n, unsigned _p, double _pe, double _pm, 
 	cudaMalloc((void**)&d_currFitnessValues, (K*p) * sizeof(int));
 	cudaMalloc((void**)&d_prevFitnessKeys, (K*p) * sizeof(float));
 	cudaMalloc((void**)&d_prevFitnessValues, (K*p) * sizeof(int));
-	
+
 	// RNG states
 	cudaMalloc((void**)&d_crossStates, (p*thr) * sizeof(curandState));
 	cudaMalloc((void**)&d_mateStates, 2 * p * sizeof(curandState));
-	
+
 	//init_genrand(seed);
 	setup_kernel<<<p, thr>>>(d_crossStates, d_mateStates, seed);
 
 	refDecoder.Init();
 
 	initializeGPU();
-	
+
 }
 
 template< class Decoder >
@@ -216,7 +216,7 @@ template< class Decoder >
 Individual GPUBRKGA< Decoder >::getBestIndividual() {
 	int h_bk;
 	int* d_bk;
-	
+
 	cudaMalloc((void**)&d_bk, sizeof(int));
 	bestK<<<1,1>>>(d_currFitnessKeys, K, p, d_bk);
 	cudaMemcpy(&h_bk, d_bk, sizeof(float), cudaMemcpyDeviceToHost);
@@ -264,13 +264,13 @@ void GPUBRKGA< Decoder >::exchangeElite(unsigned M) throw(std::range_error) {
 	{
 		if(d_temp_storage == NULL)
 		{
-			cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, 
+			cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
 				d_currFitnessKeys + (i*p), d_prevFitnessKeys + (i*p), d_currFitnessValues + (i*p), d_prevFitnessValues + (i*p), p);
 			// Allocate temporary storage
 			cudaMalloc(&d_temp_storage, temp_storage_bytes);
 		}
 		// Run sorting operation
-		cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, 
+		cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
 			d_currFitnessKeys + (i*p), d_prevFitnessKeys + (i*p), d_currFitnessValues + (i*p), d_prevFitnessValues + (i*p), p);
 	}
 	std::swap(d_currFitnessKeys, d_prevFitnessKeys);
@@ -288,16 +288,16 @@ std::vector<std::vector<Individual*>> GPUBRKGA< Decoder>::getPopulations(){
 		h_fitnessKeys 	= (float*)malloc((K*p)*sizeof(float));
 		h_fitnessValues = (int*)malloc((K*p)*sizeof(int));
 	}
-	
+
 	cudaMemcpy(h_populations, d_current, K*p*n*sizeof(float), cudaMemcpyDeviceToHost);
 	cudaMemcpy(h_fitnessKeys, d_currFitnessKeys, K*p*sizeof(float), cudaMemcpyDeviceToHost);
 	cudaMemcpy(h_fitnessValues, d_currFitnessValues, K*p*sizeof(int), cudaMemcpyDeviceToHost);
-	
+
 	int idx_chr, idx_f;
 	std::pair<float, int> ft;
-	
+
 	std::vector<std::vector<Individual*>> pops;
-	
+
 	for(int _k = 0; _k < K; _k++)
 	{
 		std::vector<Individual*> aux;
@@ -310,7 +310,7 @@ std::vector<std::vector<Individual*>> GPUBRKGA< Decoder>::getPopulations(){
 		}
 		pops.push_back(aux);
 
-	}		
+	}
 	return pops;
 }
 
@@ -328,13 +328,13 @@ inline void GPUBRKGA< Decoder >::initializeGPU()
 
 		gpuInit<<<p, thr>>>(n, d_current + offp, d_currFitnessValues + offf, d_crossStates);
 
-		if(gpu_deco) refDecoder.Decode(d_current, d_currFitnessKeys);
+		if(gpu_deco) refDecoder.Decode(d_current + offp, d_currFitnessKeys + offf);
 		else{
 			if(temp_pop == NULL){
 				temp_pop = (float*)malloc(p*n*sizeof(float));
 				temp_keys = (float*)malloc(p*sizeof(float));
 			}
-			
+
 			cudaMemcpy(temp_pop, d_current + offp, p*n*sizeof(float), cudaMemcpyDeviceToHost);
 			refDecoder.Decode(temp_pop, temp_keys);
 			cudaMemcpy(d_currFitnessKeys + offf, temp_keys, p*sizeof(float), cudaMemcpyHostToDevice);
@@ -342,23 +342,23 @@ inline void GPUBRKGA< Decoder >::initializeGPU()
 
 		if(d_temp_storage == NULL)
 		{
-			cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, 
+			cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
 				d_currFitnessKeys + (i*p), d_prevFitnessKeys + (i*p), d_currFitnessValues + (i*p), d_prevFitnessValues + (i*p), p);
 			// Allocate temporary storage
 			cudaMalloc(&d_temp_storage, temp_storage_bytes);
 		}
 		// Run sorting operation
-		cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, 
+		cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
 			d_currFitnessKeys + (i*p), d_prevFitnessKeys + (i*p), d_currFitnessValues + (i*p), d_prevFitnessValues + (i*p), p);
 
 	}
 	std::swap(d_currFitnessKeys, d_prevFitnessKeys);
-	std::swap(d_currFitnessValues, d_prevFitnessValues);	
+	std::swap(d_currFitnessValues, d_prevFitnessValues);
 }
 
 template< class Decoder >
 inline void GPUBRKGA< Decoder >::evolution() {
-	
+
 	unsigned offp, offf;
 	void     *d_temp_storage = NULL;
 	size_t   temp_storage_bytes = 0;
@@ -370,31 +370,31 @@ inline void GPUBRKGA< Decoder >::evolution() {
 
 		offspring<<<p, n>>>(d_current + offp, d_previous + offp, d_currFitnessValues + offf, d_prevFitnessValues + offf,
 			p, pe, pm, rhoe, n, d_crossStates, d_mateStates);
-		
+
 		if(gpu_deco) refDecoder.Decode(d_previous + offp, d_prevFitnessKeys + offf);
 		else{
 			if(temp_pop == NULL){
 				temp_pop = (float*)malloc(p*n*sizeof(float));
 				temp_keys = (float*)malloc(p*sizeof(float));
 			}
-			
+
 			cudaMemcpy(temp_pop, d_previous + offp, p*n*sizeof(float), cudaMemcpyDeviceToHost);
 			refDecoder.Decode(temp_pop, temp_keys);
 			cudaMemcpy(d_prevFitnessKeys + offf, temp_keys, p*sizeof(float), cudaMemcpyHostToDevice);
-		}	 
+		}
 
 		// RADIX-SORT
 		// sorting fitness next
 		if(d_temp_storage == NULL)
 		{
-			cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, 
+			cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
 				d_prevFitnessKeys, d_currFitnessKeys, d_prevFitnessValues, d_currFitnessValues, p);
 			// Allocate temporary storage
 			cudaMalloc(&d_temp_storage, temp_storage_bytes);
 		}
-		
+
 		// Run sorting operation
-		cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, 
+		cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
 			d_prevFitnessKeys, d_currFitnessKeys, d_prevFitnessValues, d_currFitnessValues, p);
 	}
 }
@@ -433,13 +433,13 @@ template< class Decoder >
 unsigned GPUBRKGA< Decoder >::getThr() const { return thr; }
 
 template< class Decoder >
-unsigned GPUBRKGA< Decoder >::getOffset(int _k, bool _pop) const { 
+unsigned GPUBRKGA< Decoder >::getOffset(int _k, bool _pop) const {
 	if(_pop)return _k*p*n; // true, return chromosomes of population k offset
 	else return _k*p; // else return fitness of population k offset
 }
 
 template< class Decoder > // get index to chromosome/fitness i of population k
-unsigned GPUBRKGA< Decoder >::getInd(unsigned _k, unsigned i, bool t) const { 
+unsigned GPUBRKGA< Decoder >::getInd(unsigned _k, unsigned i, bool t) const {
 	if(t) return _k*p*n + i*n;
 	else return _k*p + i;
 }
