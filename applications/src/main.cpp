@@ -1,4 +1,5 @@
 #include "instances/CvrpInstance.hpp"
+#include "instances/Instance.hpp"
 #include "instances/TspInstance.hpp"
 #include "wrapper/BrkgaApiWrapper.hpp"
 #include "wrapper/BrkgaCudaWrapper.hpp"
@@ -79,21 +80,26 @@ int main(int argc, char** argv) {
   if (problem.empty()) mabort("Missing the problem name");
   if (logStep == 0) mabort("Missing the log-step (should be > 0)");
 
-  std::unique_ptr<Decoder> decoder;
+  std::unique_ptr<Instance> instance;
   if (problem == "cvrp") {
     auto* cvrp = new CvrpInstance(CvrpInstance::fromFile(instanceFileName));
     configBuilder.chromosomeLength(cvrp->chromosomeLength());
-    decoder.reset(cvrp);
+    instance.reset(cvrp);
   } else if (problem == "tsp") {
     auto* tsp = new TspInstance(TspInstance::fromFile(instanceFileName));
     configBuilder.chromosomeLength(tsp->chromosomeLength());
-    decoder.reset(tsp);
+    instance.reset(tsp);
   } else {
     mabort("Unknown problem:", problem);
   }
 
-  configBuilder.decoder(decoder.get());
+  configBuilder.decoder(instance.get());
   auto config = configBuilder.build();
+
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+  cudaEventRecord(start);
 
   std::unique_ptr<BaseWrapper> brkga;
   if (tool == "brkga-cuda") {
@@ -105,11 +111,6 @@ int main(int argc, char** argv) {
   } else {
     mabort("Unknown tool:", tool);
   }
-
-  cudaEvent_t start, stop;
-  cudaEventCreate(&start);
-  cudaEventCreate(&stop);
-  cudaEventRecord(start);
 
   std::vector<float> convergence;
   convergence.push_back(brkga->getBestFitness());
@@ -136,15 +137,18 @@ int main(int argc, char** argv) {
 
   logger::info("Validating the chromosome");
   auto bestChromosome = brkga->getBestChromosome();
-  // validateChromosome(bestChromosome, fitness);
   for (unsigned i = 0; i < config.chromosomeLength; ++i)
     if (bestChromosome[i] < 0 || bestChromosome[i] > 1)
       throw std::runtime_error("Chromosome is out of range [0, 1]");
 
-  if (config.decodeType == DecodeType::DEVICE_SORTED
-      || config.decodeType == DecodeType::HOST_SORTED) {
-    logger::info("Validating if the indices were sorted correctly");
+  if (config.decodeType == DecodeType::HOST
+      || config.decodeType == DecodeType::DEVICE) {
+    instance->validateChromosome(bestChromosome.data(), fitness);
+  } else {
     auto bestSorted = brkga->getBestIndices();
+    instance->validateSortedChromosome(bestSorted.data(), fitness);
+
+    logger::info("Validating if the indices were sorted correctly");
     for (unsigned i = 1; i < config.chromosomeLength; ++i) {
       const auto a = bestSorted[i - 1];
       const auto b = bestSorted[i];

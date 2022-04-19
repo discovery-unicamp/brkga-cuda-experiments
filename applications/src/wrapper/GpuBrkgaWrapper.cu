@@ -1,6 +1,7 @@
 #include "GpuBrkgaWrapper.hpp"
 #include <GPU-BRKGA/GPUBRKGA.cuh>
 #include <brkga_cuda_api/BrkgaConfiguration.hpp>
+#include <brkga_cuda_api/CudaUtils.hpp>
 #include <brkga_cuda_api/Decoder.hpp>
 #include <brkga_cuda_api/Logger.hpp>
 
@@ -13,19 +14,15 @@ public:
       : decoder(config.decoder),
         chromosomeCount(config.populationSize),
         chromosomeLength(config.chromosomeLength),
-        hostDecode(config.decodeType == DecodeType::HOST
-                   || config.decodeType == DecodeType::HOST_SORTED) {}
+        hostDecode(config.decodeType == DecodeType::HOST) {}
 
   inline void Init() const {}
 
   inline void Decode(float* chromosomes, float* fitness) const {
     if (hostDecode) {
-      decoder->evaluateChromosomesOnHost(chromosomeCount, chromosomes,
-                                          fitness);
+      decoder->hostDecode(chromosomeCount, chromosomes, fitness);
     } else {
-      cudaStream_t defaultStream = nullptr;
-      decoder->evaluateChromosomesOnDevice(defaultStream, chromosomeCount,
-                                            chromosomes, fitness);
+      decoder->deviceDecode(nullptr, chromosomeCount, chromosomes, fitness);
     }
   }
 
@@ -44,7 +41,7 @@ struct GpuBrkgaWrapper::BrkgaWrapper {
                   config.rhoe,
                   *decoder,
                   config.seed,
-                  /* decode on gpu? */ config.decodeType == DecodeType::DEVICE,
+                  /* decode on gpu? */ !decoder->hostDecode,
                   config.numberOfPopulations) {
     if (config.chromosomeLength > max_t) {
       logger::error("The chromosome length exceeds the thread limit:",

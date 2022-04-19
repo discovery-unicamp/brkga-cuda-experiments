@@ -11,8 +11,7 @@
 #define OMP_THREADS 6
 
 struct BrkgaApiWrapper::DecoderWrapper {
-  DecoderWrapper(const BrkgaConfiguration& config)
-      : decoder(config.decoder) {}
+  DecoderWrapper(const BrkgaConfiguration& config) : decoder(config.decoder) {}
 
   double decode(const std::vector<double>& chromosomeDouble) const {
     const std::size_t n = chromosomeDouble.size();
@@ -22,7 +21,7 @@ struct BrkgaApiWrapper::DecoderWrapper {
       chromosome[i] = (float)chromosomeDouble[i];
 
     float fitness = 0;
-    decoder->evaluateChromosomesOnHost(1, chromosome.data(), &fitness);
+    decoder->hostDecode(1, chromosome.data(), &fitness);
     return fitness;
   }
 

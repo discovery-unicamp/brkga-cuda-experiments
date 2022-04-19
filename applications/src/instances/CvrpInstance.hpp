@@ -2,9 +2,7 @@
 #define INSTANCES_CVRPINSTANCE_HPP 1
 
 #include "../Point.hpp"
-#include <brkga_cuda_api/Decoder.hpp>
-
-#include <cuda_runtime.h>
+#include "Instance.hpp"
 
 #include <functional>
 #include <string>
@@ -12,25 +10,25 @@
 
 extern unsigned threadsPerBlock;  // FIXME remove this
 
-class CvrpInstance : public Decoder {
+class CvrpInstance : public Instance {
 public:  // decoders
-  void evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
-                                 const float* chromosomes,
-                                 float* results) const override;
+  void hostDecode(unsigned int numberOfChromosomes,
+                  const float* chromosomes,
+                  float* results) const override;
 
-  void evaluateChromosomesOnDevice(cudaStream_t stream,
-                                   unsigned numberOfChromosomes,
-                                   const float* dChromosomes,
-                                   float* dResults) const override;
+  void deviceDecode(cudaStream_t stream,
+                    unsigned numberOfChromosomes,
+                    const float* dChromosomes,
+                    float* dResults) const override;
 
-  void evaluateIndicesOnHost(unsigned numberOfChromosomes,
-                             const unsigned* indices,
-                             float* results) const override;
+  void hostSortedDecode(unsigned numberOfChromosomes,
+                        const unsigned* indices,
+                        float* results) const override;
 
-  void evaluateIndicesOnDevice(cudaStream_t stream,
-                               unsigned numberOfChromosomes,
-                               const unsigned* dIndices,
-                               float* dResults) const override;
+  void deviceSortedDecode(cudaStream_t stream,
+                          unsigned numberOfChromosomes,
+                          const unsigned* dIndices,
+                          float* dResults) const override;
 
 private:
   float getFitness(const unsigned* tour, bool hasDepot) const;
@@ -41,23 +39,26 @@ public:  // general
   static std::pair<float, std::vector<unsigned> > readBestKnownSolution(
       const std::string& filename);
 
-  CvrpInstance(const CvrpInstance&) = delete;
-  CvrpInstance(CvrpInstance&&) = default;
-  CvrpInstance& operator=(const CvrpInstance&) = delete;
-  CvrpInstance& operator=(CvrpInstance&&) = delete;
+  CvrpInstance(CvrpInstance&& that)
+      : capacity(that.capacity),
+        numberOfClients(that.numberOfClients),
+        dDistances(that.dDistances),
+        dDemands(that.dDemands),
+        distances(std::move(that.distances)),
+        demands(std::move(that.demands)) {}
 
   ~CvrpInstance();
-
-  void validateSolution(const std::vector<unsigned>& tour,
-                        const float fitness,
-                        bool hasDepot = false) const;
-
-  void validateChromosome(const std::vector<float>& chromosome,
-                          const float fitness) const;
 
   [[nodiscard]] inline unsigned chromosomeLength() const {
     return numberOfClients;
   }
+
+  void validateSortedChromosome(const unsigned* sortedChromosome,
+                                const float fitness) const override;
+
+  void validateTour(const std::vector<unsigned>& tour,
+                    const float fitness,
+                    const bool hasDepot = false) const;
 
 private:
   CvrpInstance()
@@ -72,7 +73,6 @@ private:
   unsigned* dDemands;
   std::vector<float> distances;
   std::vector<unsigned> demands;
-  std::vector<Point> locations;
 };
 
 #endif  // INSTANCES_CVRPINSTANCE_HPP

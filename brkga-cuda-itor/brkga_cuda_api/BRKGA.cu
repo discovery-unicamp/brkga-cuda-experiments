@@ -79,23 +79,22 @@ void BRKGA::evaluateChromosomesPipe(unsigned p) {
                 toString(decodeType));
 
   if (decodeType == DecodeType::DEVICE) {
-    decoder->evaluateChromosomesOnDevice(streams[p], populationSize,
-                                         population.deviceRow(p),
-                                         fitness.deviceRow(p));
+    decoder->deviceDecode(streams[p], populationSize, population.deviceRow(p),
+                          fitness.deviceRow(p));
     CUDA_CHECK_LAST();
   } else if (decodeType == DecodeType::DEVICE_SORTED) {
-    decoder->evaluateIndicesOnDevice(streams[p], populationSize,
-                                     chromosomeIdx.deviceRow(p),
-                                     fitness.deviceRow(p));
+    decoder->deviceSortedDecode(streams[p], populationSize,
+                                chromosomeIdx.deviceRow(p),
+                                fitness.deviceRow(p));
     CUDA_CHECK_LAST();
   } else if (decodeType == DecodeType::HOST_SORTED) {
     cuda::sync(streams[p]);
-    decoder->evaluateIndicesOnHost(populationSize, chromosomeIdx.hostRow(p),
-                                   fitness.hostRow(p));
+    decoder->hostSortedDecode(populationSize, chromosomeIdx.hostRow(p),
+                              fitness.hostRow(p));
   } else if (decodeType == DecodeType::HOST) {
     cuda::sync(streams[p]);
-    decoder->evaluateChromosomesOnHost(populationSize, population.hostRow(p),
-                                       fitness.hostRow(p));
+    decoder->hostDecode(populationSize, population.hostRow(p),
+                        fitness.hostRow(p));
   } else {
     throw std::domain_error("Function decode type is unknown");
   }

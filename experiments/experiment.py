@@ -26,6 +26,8 @@ logging.basicConfig(
     datefmt='%Y-%m-%dT%H:%M:%S',
 )
 
+failures = []  # FIXME
+
 SOURCE_PATH = Path('applications')
 INSTANCES_PATH = Path('instances')
 OUTPUT_PATH = Path('results')
@@ -104,9 +106,14 @@ def run_experiment(
     results = []
     for instance in instances:
         logging.info(f'[{problem}] Testing {instance}')
-        for test in range(test_count):
-            seed = test + 1
-            results.append(__run_test(problem, params, instance, seed))
+        try:
+            tmp = []
+            for test in range(test_count):
+                seed = test + 1
+                tmp.append(__run_test(problem, params, instance, seed))
+            results += tmp
+        except:
+            failures.append(f'{problem} - {instance}')
 
     results = pd.DataFrame([{**r, **info} for r in results])
     results['tool'] = params.get('tool', 'default')
@@ -225,6 +232,9 @@ def test_all():
     output.mkdir(parents=True, exist_ok=True)
     output = output.joinpath(f'{test_time}.tsv')
     results.to_csv(output, index=False, sep='\t')
+
+    if failures:
+        logging.error(f'Failures:\n{"\n".join(failures)}')
 
 
 if __name__ == '__main__':

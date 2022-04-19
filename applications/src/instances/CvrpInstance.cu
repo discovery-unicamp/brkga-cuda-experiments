@@ -7,24 +7,25 @@
 
 #include <string>
 
-void CvrpInstance::evaluateChromosomesOnDevice(cudaStream_t stream,
-                                               unsigned numberOfChromosomes,
-                                               const float* dChromosomes,
-                                               float* dResults) const {
+void CvrpInstance::deviceDecode(cudaStream_t stream,
+                                unsigned numberOfChromosomes,
+                                const float* dChromosomes,
+                                float* dResults) const {
   const auto numberOfGenes = numberOfChromosomes * chromosomeLength();
 
   float* dChromosomesCopy = cuda::alloc<float>(numberOfGenes);
   cuda::copy(stream, dChromosomesCopy, dChromosomes, numberOfGenes);
 
   unsigned* idx = cuda::alloc<unsigned>(numberOfGenes);
-  cuda::iotaMod(stream, idx, numberOfGenes, chromosomeLength(), threadsPerBlock);
+  cuda::iotaMod(stream, idx, numberOfGenes, chromosomeLength(),
+                threadsPerBlock);
 
   // FIXME We need to block the host
   cuda::sync(stream);
   cuda::segSort(dChromosomesCopy, idx, numberOfGenes, chromosomeLength());
   cuda::sync();
 
-  evaluateIndicesOnDevice(stream, numberOfChromosomes, idx, dResults);
+  deviceSortedDecode(stream, numberOfChromosomes, idx, dResults);
 
   cuda::free(dChromosomesCopy);
   cuda::free(idx);
@@ -64,16 +65,16 @@ __global__ void setupCosts(float* accCostList,
     accCost[i] = accCost[i - 1] + distances[tour[i - 1] * (n + 1) + tour[i]];
 }
 
-__global__ void cvrpEvaluateIndicesOnDevice(float* results,
-                                            const unsigned* accDemandList,
-                                            const float* accCostList,
-                                            float* bestCostList,
-                                            const unsigned* tourList,
-                                            const unsigned numberOfChromosomes,
-                                            const unsigned chromosomeLength,
-                                            const unsigned capacity,
-                                            const float* distances,
-                                            const unsigned* demands) {
+__global__ void sortedDecode(float* results,
+                             const unsigned* accDemandList,
+                             const float* accCostList,
+                             float* bestCostList,
+                             const unsigned* tourList,
+                             const unsigned numberOfChromosomes,
+                             const unsigned chromosomeLength,
+                             const unsigned capacity,
+                             const float* distances,
+                             const unsigned* demands) {
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= numberOfChromosomes) return;
 
@@ -106,10 +107,10 @@ __global__ void cvrpEvaluateIndicesOnDevice(float* results,
   results[tid] = bestCost[0];
 }
 
-void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
-                                           unsigned numberOfChromosomes,
-                                           const unsigned* dIndices,
-                                           float* dResults) const {
+void CvrpInstance::deviceSortedDecode(cudaStream_t stream,
+                                      unsigned numberOfChromosomes,
+                                      const unsigned* dIndices,
+                                      float* dResults) const {
   static bool warned = false;
   if (!warned) {
     logger::warning("Decoding CVRP on device is very slow!");
@@ -121,17 +122,16 @@ void CvrpInstance::evaluateIndicesOnDevice(cudaStream_t stream,
   auto* accCost = cuda::alloc<float>(total);
   auto* bestCost = cuda::alloc<float>(total + 1);
 
-  const unsigned threads = 256;
-  const unsigned blocks = cuda::blocks(numberOfChromosomes, threads);
-  setupDemands<<<blocks, threads, 0, stream>>>(
+  const unsigned blocks = cuda::blocks(numberOfChromosomes, threadsPerBlock);
+  setupDemands<<<blocks, threadsPerBlock, 0, stream>>>(
       accDemand, numberOfChromosomes, chromosomeLength(), dIndices, dDemands);
   CUDA_CHECK_LAST();
 
-  setupCosts<<<blocks, threads, 0, stream>>>(
+  setupCosts<<<blocks, threadsPerBlock, 0, stream>>>(
       accCost, numberOfChromosomes, chromosomeLength(), dIndices, dDistances);
   CUDA_CHECK_LAST();
 
-  cvrpEvaluateIndicesOnDevice<<<blocks, threads, 0, stream>>>(
+  sortedDecode<<<blocks, threadsPerBlock, 0, stream>>>(
       dResults, accDemand, accCost, bestCost, dIndices, numberOfChromosomes,
       chromosomeLength(), capacity, dDistances, dDemands);
   CUDA_CHECK_LAST();

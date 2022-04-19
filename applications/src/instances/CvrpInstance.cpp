@@ -17,9 +17,9 @@
 #include <vector>
 
 // decoders ====================================================================
-void CvrpInstance::evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
-                                             const float* chromosomes,
-                                             float* results) const {
+void CvrpInstance::hostDecode(unsigned int numberOfChromosomes,
+                              const float* chromosomes,
+                              float* results) const {
 #pragma omp parallel for if (numberOfChromosomes > 1) default(shared)
   for (unsigned i = 0; i < numberOfChromosomes; ++i) {
     const float* chromosome = &chromosomes[i * numberOfClients];
@@ -34,9 +34,9 @@ void CvrpInstance::evaluateChromosomesOnHost(unsigned int numberOfChromosomes,
   }
 }
 
-void CvrpInstance::evaluateIndicesOnHost(unsigned numberOfChromosomes,
-                                         const unsigned* indices,
-                                         float* results) const {
+void CvrpInstance::hostSortedDecode(unsigned numberOfChromosomes,
+                                    const unsigned* indices,
+                                    float* results) const {
 #pragma omp parallel for if (numberOfChromosomes > 1) default(shared)
   for (unsigned i = 0; i < numberOfChromosomes; ++i) {
     const auto* tour = &indices[i * numberOfClients];
@@ -122,12 +122,13 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
   }
 
   // Read the locations
+  std::vector<Point> locations;
   while ((file >> str) && str != "DEMAND_SECTION") {
     float x, y;
     file >> x >> y;
-    instance.locations.push_back({x, y});
+    locations.push_back({x, y});
   }
-  instance.numberOfClients = (unsigned)(instance.locations.size() - 1);
+  instance.numberOfClients = (unsigned)(locations.size() - 1);
 
   // Read the demands
   while ((file >> str) && str != "DEPOT_SECTION") {
@@ -143,8 +144,8 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
   assert(!instance.name.empty());
   assert(instance.numberOfClients != static_cast<unsigned>(-1));
   assert(instance.capacity != static_cast<unsigned>(-1));
-  assert(instance.locations.size() > 1);
-  assert(instance.locations.size() == instance.numberOfClients + 1);
+  assert(locations.size() > 1);
+  assert(locations.size() == instance.numberOfClients + 1);
   assert(instance.demands.size() == instance.numberOfClients + 1);
   assert(instance.demands[0] == 0);
   assert(std::all_of(instance.demands.begin() + 1, instance.demands.end(),
@@ -155,8 +156,7 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
   instance.distances.resize((n + 1) * (n + 1));
   for (unsigned i = 0; i <= n; ++i)
     for (unsigned j = 0; j <= n; ++j)
-      instance.distances[i * (n + 1) + j] =
-          instance.locations[i].distance(instance.locations[j]);
+      instance.distances[i * (n + 1) + j] = locations[i].distance(locations[j]);
 
   instance.dDistances = cuda::alloc<float>(instance.distances.size());
   cuda::copy_htod(nullptr, instance.dDistances, instance.distances.data(),
@@ -197,9 +197,16 @@ CvrpInstance::~CvrpInstance() {
   cuda::free(dDemands);
 }
 
-void CvrpInstance::validateSolution(const std::vector<unsigned>& tour,
-                                    const float fitness,
-                                    bool hasDepot) const {
+void CvrpInstance::validateSortedChromosome(const unsigned* sortedChromosome,
+                                            const float fitness) const {
+  std::vector<unsigned> tour(sortedChromosome,
+                             sortedChromosome + chromosomeLength());
+  validateTour(tour, fitness);
+}
+
+void CvrpInstance::validateTour(const std::vector<unsigned>& tour,
+                                const float fitness,
+                                const bool hasDepot) const {
   massert(!tour.empty(), "Tour is empty");
   if (hasDepot) {
     massert(tour[0] == 0 && tour.back() == 0,
@@ -227,19 +234,8 @@ void CvrpInstance::validateSolution(const std::vector<unsigned>& tour,
           "Wrong number of clients: %u != %u", (unsigned)alreadyVisited.size(),
           numberOfClients + (int)hasDepot);
 
-  std::vector<unsigned> accDemand;
-  std::vector<float> accCost;
   float expectedFitness = getFitness(tour.data(), hasDepot);
   massert(std::abs(expectedFitness - fitness) < 1e-6,
           "Wrong fitness evaluation: expected %f, but found %f",
           expectedFitness, fitness);
-}
-
-void CvrpInstance::validateChromosome(const std::vector<float>& chromosome,
-                                      const float fitness) const {
-  std::vector<unsigned> indices(numberOfClients);
-  std::iota(indices.begin(), indices.end(), 0);
-  std::sort(indices.begin(), indices.end(),
-            [&](int a, int b) { return chromosome[a] < chromosome[b]; });
-  validateSolution(indices, fitness);
 }
