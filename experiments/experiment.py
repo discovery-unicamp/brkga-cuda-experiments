@@ -245,7 +245,7 @@ def test_all():
             }
 
             results.append(run_experiment(
-                problem, params, INSTANCES[problem], test_count=1))
+                problem, params, INSTANCES[problem], test_count=10))
 
     if not results:
         logging.warning('All tests failed')
