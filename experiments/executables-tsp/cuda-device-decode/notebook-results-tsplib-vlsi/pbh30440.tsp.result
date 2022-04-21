@@ -1,6 +1,0 @@
-Instance file: ../tsplib-vlsi/pbh30440.tsp
-Instance read; here's the info:
-	Dimension: 30440
-Total Memory Used In GPU 374062080 bytes(374 Mbytes)
-Extra Memory Used In GPU due to Instance Info 3706374400 bytes(3706 Mbytes)
-Total Time: 4.4524617195129395

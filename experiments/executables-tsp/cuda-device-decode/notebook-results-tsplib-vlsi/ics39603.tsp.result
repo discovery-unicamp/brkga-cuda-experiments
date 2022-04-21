@@ -1,6 +1,0 @@
-Instance file: ../tsplib-vlsi/ics39603.tsp
-Instance read; here's the info:
-	Dimension: 39603
-Total Memory Used In GPU 486657024 bytes(486 Mbytes)
-Extra Memory Used In GPU due to Instance Info 6273590436 bytes(6273 Mbytes)
-Total Time: 7.425978660583496
