@@ -8,10 +8,6 @@
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 
-// Defined by the bb_segsort implementation.
-template <class Key, class Value>
-void bbSegSort(Key*, Value*, std::size_t, std::size_t);
-
 /// C++ wrapper for operations in the device.
 namespace cuda {
 /// Synchronize the host with the main thread in the device.
@@ -217,13 +213,10 @@ inline void sortByKey(cudaStream_t stream,
  * @throw std::invalid_argument if @p size doesn't fit 31 bit integer.
  * @throw std::runtime_error if the algorithm (bb_segsort) fails.
  */
-inline void segSort(float* dKeys,
-                    unsigned* dValues,
-                    std::size_t size,
-                    std::size_t step) {
-  bbSegSort(dKeys, dValues, size, step);
-  CUDA_CHECK_LAST();
-}
+void segSort(float* dKeys,
+             unsigned* dValues,
+             std::size_t size,
+             std::size_t step);
 }  // namespace cuda
 
 #endif  // BRKGA_CUDA_API_CUDAUTILS_CUH
