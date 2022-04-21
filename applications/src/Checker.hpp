@@ -15,13 +15,13 @@ inline void _massert_fail(const std::string& condition,
   throw std::logic_error(log);
 }
 
-#define massert(cond, ...)                                                \
-  do {                                                                    \
-    if (!static_cast<bool>(cond)) {                                       \
-      std::string buf(2048, '.');                                         \
-      snprintf((char*)buf.data(), buf.size(), __VA_ARGS__);               \
-      _massert_fail(#cond, __FILE__, __LINE__, __PRETTY_FUNCTION__, buf); \
-    }                                                                     \
+#define massert(cond, ...)                                         \
+  do {                                                             \
+    if (!static_cast<bool>(cond)) {                                \
+      std::string buf(2048, '.');                                  \
+      snprintf((char*)buf.data(), buf.size(), __VA_ARGS__);        \
+      _massert_fail(#cond, __FILE__, __LINE__, __FUNCTION__, buf); \
+    }                                                              \
   } while (false)
 
 #endif  // APPLICATIONS_CHECKER_HPP`

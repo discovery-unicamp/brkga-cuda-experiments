@@ -11,6 +11,9 @@ def get_instance_path(problem: str, instance: str) -> Path:
         ext = 'vrp'
         if instance[:2] == 'X-':
             group = 'set-x'
+    elif problem == 'scp':
+        ext = 'txt'
+        group = 'scplib'
     elif problem == 'tsp':
         ext = 'tsp'
         group = 'tsplib'

@@ -64,6 +64,8 @@ add_executable(brkga-optimizer
   src/instances/CvrpInstance.hpp
   src/instances/Instance.cpp
   src/instances/Instance.hpp
+  src/instances/ScpInstance.cpp
+  src/instances/ScpInstance.hpp
   src/instances/TspInstance.cpp
   src/instances/TspInstance.cu
   src/instances/TspInstance.hpp

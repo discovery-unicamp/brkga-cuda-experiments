@@ -35,6 +35,7 @@ OUTPUT_PATH = Path('results')
 EXECUTABLES = {
     'cvrp': Path('brkga-cuda'),
     'tsp': Path('brkga-cuda'),
+    'scp': Path('brkga-cuda'),
 }
 
 INSTANCES = {
@@ -63,6 +64,32 @@ INSTANCES = {
         'X-n957-k87',
         'X-n979-k58',
         'X-n1001-k43',
+    ],
+    'scp': [
+        'scp41',
+        'scp42',
+        'scp43',
+        'scp44',
+        'scp45',
+        'scp46',
+        'scp47',
+        'scp48',
+        'scp49',
+        # Missing instances:
+        # 'scp51',
+        # 'scp52',
+        # 'scp53',
+        # 'scp54',
+        # 'scp55',
+        # 'scp56',
+        # 'scp57',
+        # 'scp58',
+        # 'scp59',
+        # 'scp61',
+        # 'scp62',
+        # 'scp63',
+        # 'scp64',
+        # 'scp65',
     ],
     'tsp': [
         'zi929',
@@ -112,7 +139,10 @@ def run_experiment(
                 seed = test + 1
                 tmp.append(__run_test(problem, params, instance, seed))
             results += tmp
+        except (KeyboardInterrupt, AssertionError):
+            raise
         except:
+            logging.exception(f'Failed to run instance {instance} ({problem})')
             failures.append(f'{problem} - {instance}')
 
     results = pd.DataFrame([{**r, **info} for r in results])
@@ -192,7 +222,7 @@ def __parse_param(value: Union[int, float, str]) -> str:
 
 def test_all():
     results = []
-    for problem in ['tsp', 'cvrp']:
+    for problem in ['scp', 'cvrp', 'tsp']:
         for tool in ['brkga-cuda', 'gpu-brkga', 'brkga-api']:
             if tool == 'gpu-brkga' and problem == 'tsp':
                 logging.warning('GPU-BRKGA doesn\'t support the TSP instance')
@@ -215,7 +245,11 @@ def test_all():
             }
 
             results.append(run_experiment(
-                problem, params, INSTANCES[problem], test_count=10))
+                problem, params, INSTANCES[problem], test_count=1))
+
+    if not results:
+        logging.warning('All tests failed')
+        return
 
     test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
     results = pd.concat(results)
@@ -234,7 +268,8 @@ def test_all():
     results.to_csv(output, index=False, sep='\t')
 
     if failures:
-        logging.error(f'Failures:\n{"\n".join(failures)}')
+        format_failures = "".join("\n - " + f for f in failures)
+        logging.error(f'Failures:{format_failures}')
 
 
 if __name__ == '__main__':

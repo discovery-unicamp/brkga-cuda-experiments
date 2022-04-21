@@ -1,5 +1,6 @@
 #include "instances/CvrpInstance.hpp"
 #include "instances/Instance.hpp"
+#include "instances/ScpInstance.hpp"
 #include "instances/TspInstance.hpp"
 #include "wrapper/BrkgaApiWrapper.hpp"
 #include "wrapper/BrkgaCudaWrapper.hpp"
@@ -82,18 +83,17 @@ int main(int argc, char** argv) {
 
   std::unique_ptr<Instance> instance;
   if (problem == "cvrp") {
-    auto* cvrp = new CvrpInstance(CvrpInstance::fromFile(instanceFileName));
-    configBuilder.chromosomeLength(cvrp->chromosomeLength());
-    instance.reset(cvrp);
+    instance.reset(new CvrpInstance(CvrpInstance::fromFile(instanceFileName)));
+  } else if (problem == "scp") {
+    instance.reset(new ScpInstance(ScpInstance::fromFile(instanceFileName)));
   } else if (problem == "tsp") {
-    auto* tsp = new TspInstance(TspInstance::fromFile(instanceFileName));
-    configBuilder.chromosomeLength(tsp->chromosomeLength());
-    instance.reset(tsp);
+    instance.reset(new TspInstance(TspInstance::fromFile(instanceFileName)));
   } else {
     mabort("Unknown problem:", problem);
   }
 
-  configBuilder.decoder(instance.get());
+  configBuilder.chromosomeLength(instance->chromosomeLength())
+      .decoder(instance.get());
   auto config = configBuilder.build();
 
   cudaEvent_t start, stop;
