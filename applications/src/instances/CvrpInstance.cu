@@ -1,6 +1,5 @@
 #include "../MinQueue.hpp"
 #include "CvrpInstance.hpp"
-#include <brkga_cuda_api/BBSegSort.cuh>
 #include <brkga_cuda_api/CudaError.cuh>
 #include <brkga_cuda_api/CudaUtils.hpp>
 #include <brkga_cuda_api/Logger.hpp>

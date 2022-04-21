@@ -1,24 +1,21 @@
 /*
-* (c) 2015 Virginia Polytechnic Institute & State University (Virginia Tech)
-*
-*   This program is free software: you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation, version 2.1
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*   GNU General Public License, version 2.1, for more details.
-*
-*   You should have received a copy of the GNU General Public License
-*
+* (c) 2015 Virginia Polytechnic Institute & State University (Virginia Tech)   
+*                                                                              
+*   This program is free software: you can redistribute it and/or modify       
+*   it under the terms of the GNU General Public License as published by       
+*   the Free Software Foundation, version 2.1                                  
+*                                                                              
+*   This program is distributed in the hope that it will be useful,            
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of             
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              
+*   GNU General Public License, version 2.1, for more details.                 
+*                                                                              
+*   You should have received a copy of the GNU General Public License          
+*                                                                              
 */
 
 #ifndef _H_BB_EXCH
 #define _H_BB_EXCH
-
-#include <cuda.h>
-#include <cuda_runtime.h>
 
 #define CMP_SWP(t1,_a,_b,t2,_c,_d) if(_a>_b)  {t1 _t=_a;_a=_b;_b=_t; t2 _s=_c;_c=_d;_d=_s;}
 #define EQL_SWP(t1,_a,_b,t2,_c,_d) if(_a!=_b) {t1 _t=_a;_a=_b;_b=_t; t2 _s=_c;_c=_d;_d=_s;}

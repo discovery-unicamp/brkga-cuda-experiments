@@ -1,5 +1,4 @@
 #include "TspInstance.hpp"
-#include <brkga_cuda_api/BBSegSort.cuh>
 #include <brkga_cuda_api/CudaUtils.hpp>
 
 #include <cuda_runtime.h>

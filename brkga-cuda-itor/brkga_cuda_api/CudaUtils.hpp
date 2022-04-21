@@ -8,6 +8,10 @@
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 
+// Defined by the bb_segsort implementation.
+template <class Key, class Value>
+void bbSegSort(Key*, Value*, std::size_t, std::size_t);
+
 /// C++ wrapper for operations in the device.
 namespace cuda {
 /// Synchronize the host with the main thread in the device.
@@ -195,6 +199,29 @@ inline void sortByKey(cudaStream_t stream,
   } else {
     thrust::stable_sort_by_key(keysPtr, keysPtr + n, valuesPtr);
   }
+  CUDA_CHECK_LAST();
+}
+
+/**
+ * Sorts the segments of an array.
+ *
+ * This method sorts the ranges `[0, step)`, `[step, 2 * step)`, and so on.
+ *
+ * Both the keys and the values are sorted on the process.
+ *
+ * @param dKeys The (mutable) key to use on comparator.
+ * @param dValues The values to sort.
+ * @param size The size of the arrays.
+ * @param step The size of the segments to sort.
+ * @throw std::invalid_argument if @p size is not a multiple of @p step.
+ * @throw std::invalid_argument if @p size doesn't fit 31 bit integer.
+ * @throw std::runtime_error if the algorithm (bb_segsort) fails.
+ */
+inline void segSort(float* dKeys,
+                    unsigned* dValues,
+                    std::size_t size,
+                    std::size_t step) {
+  bbSegSort(dKeys, dValues, size, step);
   CUDA_CHECK_LAST();
 }
 }  // namespace cuda

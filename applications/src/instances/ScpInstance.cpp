@@ -99,10 +99,10 @@ ScpInstance ScpInstance::fromFile(const std::string& fileName) {
   // Estimates the threshold based on the probability of the chromosome be valid
   unsigned elementsCovered = 0;
   for (unsigned i = 0; i < instance.numberOfSets; ++i)
-    elementsCovered += static_cast<unsigned>(instance.sets[i].size());
+    elementsCovered += (unsigned)instance.sets[i].size();
   instance.threshold =
-      1.0f * instance.numberOfSets / static_cast<float>(elementsCovered);
-  logger::info("Estimated threshold:", instance.threshold);
+      1.0f * (float)instance.numberOfSets / (float)elementsCovered;
+  logger::info("SCP estimated threshold:", instance.threshold);
 
   return instance;
 }

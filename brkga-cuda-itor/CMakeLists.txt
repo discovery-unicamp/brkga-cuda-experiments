@@ -3,7 +3,6 @@ project(brkga_cuda LANGUAGES CUDA CXX)
 
 set(BB_SEGSORT_ROOT "${CMAKE_CURRENT_LIST_DIR}/bb_segsort")
 include("${BB_SEGSORT_ROOT}/CMakeLists.txt")
-include_directories(SYSTEM "${BB_SEGSORT_ROOT}")
 
 find_package(OpenMP)
 find_package(CUDA REQUIRED)
@@ -11,7 +10,6 @@ enable_language(CUDA)
 include_directories(SYSTEM "${CUDA_INCLUDE_DIRS}")
 
 add_library(brkga-cuda
-  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BBSegSort.cuh
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BRKGA.cu
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BRKGA.hpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BrkgaConfiguration.cpp

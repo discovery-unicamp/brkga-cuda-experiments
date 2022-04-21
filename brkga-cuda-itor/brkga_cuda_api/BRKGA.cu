@@ -5,7 +5,6 @@
  *
  *
  */
-#include "BBSegSort.cuh"
 #include "BRKGA.hpp"
 #include "BrkgaConfiguration.hpp"
 #include "CudaContainers.cuh"

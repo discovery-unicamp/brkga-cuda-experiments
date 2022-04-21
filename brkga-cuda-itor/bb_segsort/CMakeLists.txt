@@ -9,11 +9,8 @@ include_directories(SYSTEM "${CUDA_INCLUDE_DIRS}")
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr")
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
 
-add_library(bb_segsort
-  ${CMAKE_CURRENT_LIST_DIR}/bb_segsort.h
-)
-
-set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/bb_segsort.h PROPERTIES LANGUAGE CUDA)
+add_library(bb_segsort ${CMAKE_CURRENT_LIST_DIR}/bb_segsort.cu)
+set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/bb_segsort.cuh PROPERTIES LANGUAGE CUDA)
 
 set_target_properties(bb_segsort PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(bb_segsort PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

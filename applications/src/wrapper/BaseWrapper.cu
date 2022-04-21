@@ -1,5 +1,4 @@
 #include "BaseWrapper.hpp"
-#include <brkga_cuda_api/BBSegSort.cuh>
 #include <brkga_cuda_api/CudaUtils.hpp>
 #include <brkga_cuda_api/Logger.hpp>
 
