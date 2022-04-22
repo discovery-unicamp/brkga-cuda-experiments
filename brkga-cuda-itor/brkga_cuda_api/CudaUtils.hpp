@@ -190,10 +190,10 @@ inline void sortByKey(cudaStream_t stream,
   thrust::device_ptr<Key> keysPtr(keys);
   thrust::device_ptr<Value> valuesPtr(values);
   if (stream) {
-    thrust::stable_sort_by_key(thrust::cuda::par.on(stream), keysPtr,
-                               keysPtr + n, valuesPtr);
+    thrust::sort_by_key(thrust::cuda::par.on(stream), keysPtr, keysPtr + n,
+                        valuesPtr);
   } else {
-    thrust::stable_sort_by_key(keysPtr, keysPtr + n, valuesPtr);
+    thrust::sort_by_key(keysPtr, keysPtr + n, valuesPtr);
   }
   CUDA_CHECK_LAST();
 }
