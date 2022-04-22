@@ -199,11 +199,11 @@ inline void sortByKey(cudaStream_t stream,
 }
 
 /**
- * Sorts the segments of an array.
- *
- * This method sorts the ranges `[0, step)`, `[step, 2 * step)`, and so on.
+ * Sorts the segments `[0, step)`, `[step, 2 * step)`, and so on.
  *
  * Both the keys and the values are sorted on the process.
+ *
+ * This method blocks the host until the kernel finishes.
  *
  * @param dKeys The (mutable) key to use on comparator.
  * @param dValues The values to sort.
@@ -211,7 +211,6 @@ inline void sortByKey(cudaStream_t stream,
  * @param step The size of the segments to sort.
  * @throw std::invalid_argument if @p size is not a multiple of @p step.
  * @throw std::invalid_argument if @p size doesn't fit 31 bit integer.
- * @throw std::runtime_error if the algorithm (bb_segsort) fails.
  */
 void segSort(float* dKeys,
              unsigned* dValues,

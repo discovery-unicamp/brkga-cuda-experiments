@@ -8,13 +8,15 @@
 #include <stdexcept>
 #include <string>
 
-class CudaException : public std::runtime_error {
+class CudaError : public std::runtime_error {
 public:
-  CudaException(const std::string& message) : std::runtime_error(message) {}
+  static inline void check(cudaError_t status, const std::string& func) {
+    if (status != cudaSuccess) throw CudaError(status, func);
+  }
 
-  CudaException(cudaError_t status, const std::string& file, int line)
-      : std::runtime_error(file + ":" + std::to_string(line) + ": "
-                           + cudaGetErrorString(status)) {}
+private:
+  CudaError(cudaError_t status, const std::string& func)
+      : std::runtime_error(func + " failed: " + cudaGetErrorString(status)) {}
 };
 
 static inline void _brkgaFail(const char* expr,
@@ -36,14 +38,8 @@ static inline void _brkgaFail(const char* expr,
 #undef CUDA_CHECK_LAST
 #undef BRKGA_CHECK
 
-#define CUDA_CHECK(statement)                                    \
-  do {                                                           \
-    const auto _cudaCheckStatus = statement;                     \
-    if (_cudaCheckStatus != cudaSuccess)                         \
-      throw CudaException(_cudaCheckStatus, __FILE__, __LINE__); \
-  } while (false)
-
-#define CUDA_CHECK_LAST() void(0)
+#define CUDA_CHECK(cmd) CudaError::check((cmd), __PRETTY_FUNCTION__)
+#define CUDA_CHECK_LAST() CUDA_CHECK(cudaPeekAtLastError())
 
 #define BRKGA_CHECK(expr, ...)                                         \
   do {                                                                 \

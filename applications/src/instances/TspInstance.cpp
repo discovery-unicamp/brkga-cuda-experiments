@@ -136,7 +136,7 @@ void TspInstance::validateTour(const std::vector<unsigned>& tour,
 
   float expectedFitness =
       getFitness(tour.data(), chromosomeLength(), distances.data());
-  massert(std::abs(expectedFitness - fitness) < 1e-6,
+  massert(std::abs(expectedFitness - fitness) < 1e-6f,
           "Wrong fitness evaluation: expected %f, but found %f",
           expectedFitness, fitness);
 }

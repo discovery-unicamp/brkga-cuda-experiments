@@ -100,8 +100,7 @@ ScpInstance ScpInstance::fromFile(const std::string& fileName) {
   unsigned elementsCovered = 0;
   for (unsigned i = 0; i < instance.numberOfSets; ++i)
     elementsCovered += (unsigned)instance.sets[i].size();
-  instance.threshold =
-      1.0f * (float)instance.numberOfSets / (float)elementsCovered;
+  instance.threshold = (float)instance.numberOfSets / (float)elementsCovered;
   logger::info("SCP estimated threshold:", instance.threshold);
 
   return instance;
@@ -119,7 +118,7 @@ void ScpInstance::validateChromosome(const float* chromosome,
   }
 
   for (auto cover : covered) massert(cover, "Element wasn't covered");
-  massert(std::abs(expectedFitness - fitness) < 1e-6,
+  massert(std::abs(expectedFitness - fitness) < 1e-6f,
           "Wrong fitness evaluation: expected %f, but found %f",
           expectedFitness, fitness);
 }
@@ -140,7 +139,7 @@ void ScpInstance::validateSortedChromosome(const unsigned* sortedChromosome,
 
   massert(uncoveredCount == 0, "Chromosome doesn't cover %u elements",
           uncoveredCount);
-  massert(std::abs(expectedFitness - fitness) < 1e-6,
+  massert(std::abs(expectedFitness - fitness) < 1e-6f,
           "Wrong fitness evaluation: expected %f, but found %f",
           expectedFitness, fitness);
 }

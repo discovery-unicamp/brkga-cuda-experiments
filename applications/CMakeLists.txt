@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD 11)
 set(BRKGA_OPENCL_ENABLED false)
 
 add_compile_options(
-  -Wall -Wextra -Wshadow -Wformat=2 -Wfloat-equal -Wshift-overflow
-  -Wconversion -Wno-sign-conversion
+  -Wall -Wextra -Wshadow -Wformat=2 -Wformat-truncation -Wfloat-equal
+  -Wshift-overflow -Wconversion -Wno-sign-conversion -Wundef -fno-common
 )
 add_compile_definitions(LOG_LEVEL=3)
 
@@ -58,6 +58,7 @@ add_library(brkga-api INTERFACE
   ${BRKGA_API_ROOT}/brkgaAPI/Population.h
 )
 
+# The applications executable
 add_executable(brkga-optimizer
   src/instances/CvrpInstance.cpp
   src/instances/CvrpInstance.cu

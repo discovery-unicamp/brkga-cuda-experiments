@@ -235,7 +235,7 @@ void CvrpInstance::validateTour(const std::vector<unsigned>& tour,
           numberOfClients + (int)hasDepot);
 
   float expectedFitness = getFitness(tour.data(), hasDepot);
-  massert(std::abs(expectedFitness - fitness) < 1e-6,
+  massert(std::abs(expectedFitness - fitness) < 1e-6f,
           "Wrong fitness evaluation: expected %f, but found %f",
           expectedFitness, fitness);
 }

@@ -28,12 +28,10 @@ void bbSegSort(Key* keys, Value* values, std::size_t size, std::size_t step) {
              cudaMemcpyHostToDevice);
 
   // Perform the sorting
-  auto error = bb_segsort(keys, values, static_cast<int>(size), dSegs,
-                          static_cast<int>(segCount));
+  bb_segsort(keys, values, (int)size, dSegs, (int)segCount);
 
-  // Clean-up and validations
+  // Clean-up
   cudaFree(dSegs);
-  if (error) throw std::runtime_error("bb_segsort returned an error");
 }
 
 // Define the required interfaces for brkga-cuda

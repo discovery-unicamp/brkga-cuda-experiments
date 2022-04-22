@@ -95,8 +95,8 @@ BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::mutantsProportion(
 }
 
 BrkgaConfiguration::Builder& BrkgaConfiguration::Builder::rhoe(float r) {
-  if (r < .5 || r >= 1)
-    throw std::invalid_argument("Rhoe should be in range [0.5, 1)");
+  if (r <= .5f || r > 1.0)
+    throw std::invalid_argument("Rhoe should be in range (0.5, 1]");
   _rhoe = r;
   return *this;
 }
@@ -127,7 +127,7 @@ BrkgaConfiguration BrkgaConfiguration::Builder::build() const {
   if (_eliteCount == 0) throw std::invalid_argument("Elite count wasn't set");
   if (_mutantsCount == 0)
     throw std::invalid_argument("Mutants count wasn't set");
-  if (std::abs(_rhoe) < 1e-6) throw std::invalid_argument("Rhoe wasn't set");
+  if (std::abs(_rhoe) < 1e-6f) throw std::invalid_argument("Rhoe wasn't set");
   if (_decodeType == DecodeType::NONE)
     throw std::invalid_argument("Decode type wasn't set");
 

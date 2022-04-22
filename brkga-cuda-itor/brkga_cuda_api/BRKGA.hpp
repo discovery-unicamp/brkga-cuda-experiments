@@ -83,7 +83,7 @@ private:
    *
    * @param p The index of the population to decode.
    */
-  void decodePopulation(unsigned p, bool decodeAll);
+  void decodePopulation(unsigned p, bool ignoreElite);
 
   /// Sorts the indices of the chromosomes in case of sorted decode
   void sortChromosomesGenes();
@@ -100,7 +100,7 @@ private:
    *
    * This operation should be executed after each change to any chromosome.
    */
-  void updateFitness(bool decodeAll);
+  void updateFitness(bool ignoreElite);
 
   /// The main stream to run the operations indenpendently
   constexpr static cudaStream_t defaultStream = nullptr;
