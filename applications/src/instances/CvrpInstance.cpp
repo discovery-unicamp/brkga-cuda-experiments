@@ -16,18 +16,18 @@
 #include <string>
 #include <vector>
 
-// decoders ====================================================================
 void CvrpInstance::hostDecode(unsigned int numberOfChromosomes,
                               const float* chromosomes,
                               float* results) const {
 #pragma omp parallel for if (numberOfChromosomes > 1) default(shared)
   for (unsigned i = 0; i < numberOfChromosomes; ++i) {
-    const float* chromosome = &chromosomes[i * numberOfClients];
+    const auto* chromosome = chromosomes + i * chromosomeLength();
 
-    std::vector<unsigned> indices(numberOfClients);
+    std::vector<unsigned> indices(chromosomeLength());
     std::iota(indices.begin(), indices.end(), 0);
-    std::sort(indices.begin(), indices.end(),
-              [&](int a, int b) { return chromosome[a] < chromosome[b]; });
+    std::sort(indices.begin(), indices.end(), [&](unsigned a, unsigned b) {
+      return chromosome[a] < chromosome[b];
+    });
 
     const auto* tour = indices.data();
     results[i] = getFitness(tour, /* hasDepot: */ false);
@@ -39,7 +39,7 @@ void CvrpInstance::hostSortedDecode(unsigned numberOfChromosomes,
                                     float* results) const {
 #pragma omp parallel for if (numberOfChromosomes > 1) default(shared)
   for (unsigned i = 0; i < numberOfChromosomes; ++i) {
-    const auto* tour = &indices[i * numberOfClients];
+    const auto* tour = indices + i * chromosomeLength();
     results[i] = getFitness(tour, /* hasDepot: */ false);
   }
 }
@@ -141,7 +141,6 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
                   instance.demands.size());
 
   // Perform validations
-  assert(!instance.name.empty());
   assert(instance.numberOfClients != static_cast<unsigned>(-1));
   assert(instance.capacity != static_cast<unsigned>(-1));
   assert(locations.size() > 1);

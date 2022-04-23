@@ -2,6 +2,7 @@
 #define BRKGA_CUDA_API_CUDAUTILS_CUH
 
 #include "CudaError.cuh"
+#include "Logger.hpp"
 
 #include <cuda_runtime.h>
 #include <curand.h>
@@ -12,11 +13,13 @@
 namespace cuda {
 /// Synchronize the host with the main thread in the device.
 inline void sync() {
+  logger::debug("Sync with the main stream");
   CUDA_CHECK(cudaDeviceSynchronize());
 }
 
 /// Synchronize the host with the specified stream.
 inline void sync(cudaStream_t stream) {
+  logger::debug("Sync with stream", stream);
   CUDA_CHECK(cudaStreamSynchronize(stream));
 }
 
@@ -31,6 +34,7 @@ inline void sync(cudaStream_t stream) {
  */
 template <class T>
 inline T* alloc(size_t n) {
+  logger::debug("Allocating", n, "elements of", sizeof(T), "bytes");
   T* ptr = nullptr;
   CUDA_CHECK(cudaMalloc(&ptr, n * sizeof(T)));
   return ptr;
@@ -45,6 +49,7 @@ inline T* alloc(size_t n) {
  */
 template <class T>
 inline void free(T* ptr) {
+  logger::debug("Free", ptr);
   CUDA_CHECK(cudaFree(ptr));
 }
 
@@ -57,6 +62,7 @@ inline cudaStream_t allocStream() {
 
 /// Releases an allocated stream.
 inline void free(cudaStream_t stream) {
+  logger::debug("Free stream", stream);
   CUDA_CHECK(cudaStreamDestroy(stream));
 }
 
@@ -72,6 +78,7 @@ inline curandGenerator_t allocRandomGenerator(
 
 /// Releases an allocated random generator.
 inline void free(curandGenerator_t generator) {
+  logger::debug("Free generator", generator);
   curandDestroyGenerator(generator);
 }
 
@@ -189,12 +196,8 @@ inline void sortByKey(cudaStream_t stream,
                       std::size_t n) {
   thrust::device_ptr<Key> keysPtr(keys);
   thrust::device_ptr<Value> valuesPtr(values);
-  if (stream) {
-    thrust::sort_by_key(thrust::cuda::par.on(stream), keysPtr, keysPtr + n,
-                        valuesPtr);
-  } else {
-    thrust::sort_by_key(keysPtr, keysPtr + n, valuesPtr);
-  }
+  thrust::sort_by_key(thrust::cuda::par.on(stream), keysPtr, keysPtr + n,
+                      valuesPtr);
   CUDA_CHECK_LAST();
 }
 

@@ -42,4 +42,5 @@ void cuda::segSort(float* dKeys,
                    std::size_t step) {
   bbSegSort(dKeys, dValues, size, step);
   CUDA_CHECK_LAST();
+  cuda::sync();
 }
