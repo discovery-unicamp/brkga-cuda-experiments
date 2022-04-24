@@ -271,10 +271,11 @@ __global__ void deviceExchangeElite(float* population,
                                     unsigned* fitnessIdx,
                                     unsigned count) {
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid >= chromosomeSize) return;
 
-  for (unsigned i = 0; i < numberOfPopulations; ++i) {
-    for (unsigned j = 0; j < numberOfPopulations; ++j) {
-      if (i != j) {  // don't duplicate chromosomes
+  for (unsigned i = 0; i < numberOfPopulations; ++i)
+    for (unsigned j = 0; j < numberOfPopulations; ++j)
+      if (i != j)  // don't duplicate chromosomes
         for (unsigned k = 0; k < count; ++k) {
           // Position of the bad chromosome to be replaced
           // Note that `j < i` is due the condition above
@@ -292,9 +293,6 @@ __global__ void deviceExchangeElite(float* population,
           population[dest * chromosomeSize + tid] =
               population[src * chromosomeSize + tid];
         }
-      }
-    }
-  }
 }
 
 void BRKGA::exchangeElite(unsigned count) {
@@ -312,7 +310,8 @@ void BRKGA::exchangeElite(unsigned count) {
 
   for (unsigned p = 0; p < numberOfPopulations; ++p) cuda::sync(streams[p]);
 
-  deviceExchangeElite<<<1, chromosomeSize>>>(
+  const auto blocks = cuda::blocks(chromosomeSize, threadsPerBlock);
+  deviceExchangeElite<<<blocks, threadsPerBlock>>>(
       population.device(), chromosomeSize, populationSize, numberOfPopulations,
       fitnessIdx.device(), count);
   CUDA_CHECK_LAST();
