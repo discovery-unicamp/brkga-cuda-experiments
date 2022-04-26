@@ -16,6 +16,7 @@
 #include <vector>
 
 unsigned threadsPerBlock = 0;  // FIXME remove this
+DecodeType decodeType;
 
 #define mabort(...)             \
   do {                          \
@@ -65,7 +66,8 @@ int main(int argc, char** argv) {
     } else if (arg == "--seed") {
       configBuilder.seed(std::stoi(value));
     } else if (arg == "--decode") {
-      configBuilder.decodeType(fromString(value));
+      decodeType = fromString(value);
+      configBuilder.decodeType(decodeType);
     } else if (arg == "--tool") {
       tool = value;
     } else if (arg == "--problem") {

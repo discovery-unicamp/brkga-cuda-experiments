@@ -5,6 +5,7 @@
 #include <vector>
 
 std::vector<unsigned> BaseWrapper::getBestIndices() {
+  // Note that only the BrkgaCuda implements the sorted decoder.
   std::vector<float> chromosome = getBestChromosome();
   const auto chromosomeLength = static_cast<unsigned>(chromosome.size());
 

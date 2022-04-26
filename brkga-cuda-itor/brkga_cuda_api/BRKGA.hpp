@@ -78,12 +78,15 @@ public:
   std::vector<unsigned> getBestIndices();
 
 private:
+  /// Sync all streams (except the default) with the host
+  void syncStreams();
+
   /**
    * Call the decode method to the population `p`.
    *
    * @param p The index of the population to decode.
    */
-  void decodePopulation(unsigned p, bool ignoreElite);
+  void decodePopulation(unsigned p);
 
   /// Sorts the indices of the chromosomes in case of sorted decode
   void sortChromosomesGenes();
@@ -100,7 +103,7 @@ private:
    *
    * This operation should be executed after each change to any chromosome.
    */
-  void updateFitness(bool ignoreElite);
+  void updateFitness();
 
   /// The main stream to run the operations indenpendently
   constexpr static cudaStream_t defaultStream = nullptr;

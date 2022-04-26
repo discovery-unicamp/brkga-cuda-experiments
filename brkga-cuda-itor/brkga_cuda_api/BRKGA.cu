@@ -65,7 +65,7 @@ BRKGA::BRKGA(const BrkgaConfiguration& config)
     cuda::random(streams[p], generators[p], population.deviceRow(p),
                  populationSize * chromosomeSize);
 
-  updateFitness(/* ignoreElite: */ false);
+  updateFitness();
   logger::debug("BRKGA was configured successfully");
 }
 
@@ -74,37 +74,29 @@ BRKGA::~BRKGA() {
   for (unsigned p = 0; p < numberOfPopulations; ++p) cuda::free(streams[p]);
 }
 
-void BRKGA::decodePopulation(unsigned p, bool ignoreElite) {
+void BRKGA::decodePopulation(unsigned p) {
   logger::debug("Decode population", p, "with", toString(decodeType),
                 "decoder");
 
   if (decodeType == DecodeType::HOST || decodeType == DecodeType::HOST_SORTED)
-    cuda::sync(streams[p]);
-
-  // Ignore the elites since they don't change.
-  const unsigned offset = ignoreElite ? eliteSize : 0;
+    syncStreams();
 
   logger::debug("Calling", toString(decodeType), "decoder");
   if (decodeType == DecodeType::DEVICE) {
-    decoder->deviceDecode(streams[p], populationSize - offset,
-                          population.deviceRow(p) + offset * chromosomeSize,
-                          fitness.deviceRow(p) + offset);
+    decoder->deviceDecode(streams[p], populationSize, population.deviceRow(p),
+                          fitness.deviceRow(p));
     CUDA_CHECK_LAST();
   } else if (decodeType == DecodeType::DEVICE_SORTED) {
-    decoder->deviceSortedDecode(
-        streams[p], populationSize - offset,
-        chromosomeIdx.deviceRow(p) + offset * chromosomeSize,
-        fitness.deviceRow(p) + offset);
+    decoder->deviceSortedDecode(streams[p], populationSize,
+                                chromosomeIdx.deviceRow(p),
+                                fitness.deviceRow(p));
     CUDA_CHECK_LAST();
   } else if (decodeType == DecodeType::HOST) {
-    decoder->hostDecode(populationSize - offset,
-                        population.hostRow(p) + offset * chromosomeSize,
-                        fitness.hostRow(p) + offset);
+    decoder->hostDecode(populationSize, population.hostRow(p),
+                        fitness.hostRow(p));
   } else if (decodeType == DecodeType::HOST_SORTED) {
-    decoder->hostSortedDecode(
-        populationSize - offset,
-        chromosomeIdx.hostRow(p) + offset * chromosomeSize,
-        fitness.hostRow(p) + offset);
+    decoder->hostSortedDecode(populationSize, chromosomeIdx.hostRow(p),
+                              fitness.hostRow(p));
   } else {
     throw std::domain_error("Function decode type is unknown");
   }
@@ -205,19 +197,18 @@ void BRKGA::evolve() {
   // Saves the new generation.
   std::swap(population, populationTemp);
 
-  updateFitness(/* ignoreElite: */ true);
+  updateFitness();
   logger::debug("A new generation of the population was created");
 }
 
-void BRKGA::updateFitness(bool ignoreElite) {
+void BRKGA::updateFitness() {
   logger::debug("Updating the population fitness");
 
   if (decodeType == DecodeType::DEVICE_SORTED
       || decodeType == DecodeType::HOST_SORTED)
     sortChromosomesGenes();
 
-  for (unsigned p = 0; p < numberOfPopulations; ++p)
-    decodePopulation(p, ignoreElite);
+  for (unsigned p = 0; p < numberOfPopulations; ++p) decodePopulation(p);
   for (unsigned p = 0; p < numberOfPopulations; ++p) sortChromosomesPipe(p);
 }
 
@@ -238,8 +229,7 @@ void BRKGA::sortChromosomesGenes() {
 
   // FIXME We should sort each chromosome on its own thread to avoid
   //  synchonization.
-  for (unsigned p = 0; p < numberOfPopulations; ++p) cuda::sync(streams[p]);
-
+  syncStreams();
   cuda::segSort(populationTemp.device(), chromosomeIdx.device(),
                 numberOfChromosomes * chromosomeSize, chromosomeSize);
 }
@@ -280,7 +270,7 @@ __global__ void deviceExchangeElite(float* population,
           // Position of the bad chromosome to be replaced
           // Note that `j < i` is due the condition above
           // Over the iterations of each population, `p` will be:
-          //  `size`, `size - 1`, `size - 2`, ...
+          //  `size - 1`, `size - 2`, ...
           const auto p = populationSize - (i - (j < i)) * count - k - 1;
 
           // Global position of source/destination chromosomes
@@ -308,7 +298,7 @@ void BRKGA::exchangeElite(unsigned count) {
         + std::to_string(populationSize / numberOfPopulations) + ").");
   }
 
-  for (unsigned p = 0; p < numberOfPopulations; ++p) cuda::sync(streams[p]);
+  syncStreams();
 
   const auto blocks = cuda::blocks(chromosomeSize, threadsPerBlock);
   deviceExchangeElite<<<blocks, threadsPerBlock>>>(
@@ -317,13 +307,12 @@ void BRKGA::exchangeElite(unsigned count) {
   CUDA_CHECK_LAST();
   cuda::sync();
 
-  updateFitness(/* ignoreElite: */ true);
+  updateFitness();
 }
 
 std::vector<float> BRKGA::getBestChromosome() {
   logger::debug("Searching the best chromosome among the populations");
-
-  for (unsigned p = 1; p < numberOfPopulations; ++p) cuda::sync(streams[p]);
+  syncStreams();
 
   unsigned bestPopulation = 0;
   unsigned bestChromosome = fitnessIdx.hostRow(0)[0];
@@ -353,7 +342,7 @@ std::vector<unsigned> BRKGA::getBestIndices() {
     throw std::runtime_error("Only sorted decodes can get the sorted indices");
   }
 
-  for (unsigned p = 1; p < numberOfPopulations; ++p) cuda::sync(streams[p]);
+  syncStreams();
 
   unsigned bestPopulation = 0;
   unsigned bestChromosome = fitnessIdx.hostRow(0)[0];
@@ -377,8 +366,7 @@ std::vector<unsigned> BRKGA::getBestIndices() {
 
 float BRKGA::getBestFitness() {
   logger::debug("Searching the best fitness among the populations");
-
-  for (unsigned p = 1; p < numberOfPopulations; ++p) cuda::sync(streams[p]);
+  syncStreams();
 
   float bestFitness = fitness.hostRow(0)[0];
   for (unsigned p = 1; p < numberOfPopulations; ++p) {
@@ -386,4 +374,8 @@ float BRKGA::getBestFitness() {
     if (pFitness < bestFitness) bestFitness = pFitness;
   }
   return bestFitness;
+}
+
+void BRKGA::syncStreams() {
+  for (unsigned p = 0; p < numberOfPopulations; ++p) cuda::sync(streams[p]);
 }

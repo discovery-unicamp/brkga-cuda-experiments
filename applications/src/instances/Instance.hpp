@@ -1,7 +1,10 @@
 #ifndef INSTANCES_INSTANCE_HPP
 #define INSTANCES_INSTANCE_HPP 1
 
+#include <brkga_cuda_api/DecodeType.hpp>
 #include <brkga_cuda_api/Decoder.hpp>
+
+extern DecodeType decodeType;
 
 class Instance : public Decoder {
 public:

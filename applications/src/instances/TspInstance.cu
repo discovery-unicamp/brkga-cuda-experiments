@@ -24,7 +24,7 @@ void TspInstance::deviceDecode(cudaStream_t stream,
 __device__ float deviceGetFitness(const unsigned* tour,
                                   const unsigned n,
                                   const float* distances) {
-  float fitness = distances[tour[0] * n + tour[n - 1]];
+  float fitness = distances[tour[n - 1] * n + tour[0]];
   for (unsigned i = 1; i < n; ++i)
     fitness += distances[tour[i - 1] * n + tour[i]];
   return fitness;
@@ -50,4 +50,5 @@ void TspInstance::deviceSortedDecode(cudaStream_t stream,
   const auto blocks = (numberOfChromosomes + threads - 1) / threads;
   sortedDecode<<<blocks, threads, 0, stream>>>(
       numberOfChromosomes, chromosomeLength(), dDistances, dIndices, dResults);
+  CUDA_CHECK_LAST();
 }
