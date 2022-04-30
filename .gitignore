@@ -4,12 +4,11 @@
 
 # ignore for while
 results/
-Makefile
 *.json
-config.txt
 
 # generated
+.setup
 __pycache__
-*build*
+build*
 prof.txt
 *.qdrep

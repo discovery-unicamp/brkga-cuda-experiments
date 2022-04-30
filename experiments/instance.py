@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-INSTANCES_PATH = Path('instances')
+INSTANCES_PATH = Path('experiments', 'instances')
 
 
 def get_instance_path(problem: str, instance: str) -> Path:

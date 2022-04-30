@@ -8,8 +8,6 @@ import pandas as pd
 from instance import get_instance_path
 
 
-# docker build -t brkga -f experiments/Dockerfile . && docker run -v ~/brkga-cuda/experiments/results/:/main/results/ --rm --gpus all brkga
-
 #             threads exchange-interval exchange-count pop-count pop-size elite   mutant  rhoe
 # best time:  256     25                1              3         128      0.10    0.10    0.75
 # avg-1 time: 256     25                1              3         128      0.05    0.10    0.75
@@ -31,7 +29,6 @@ failures = []  # FIXME
 BUILD_TYPE = 'release'
 BUILD_TARGET = 'brkga-optimizer'
 SOURCE_PATH = Path('applications')
-INSTANCES_PATH = Path('instances')
 OUTPUT_PATH = Path('results')
 
 INSTANCES = {
@@ -123,8 +120,8 @@ def compile_optimizer():
 
 def __cmake(src: str, build: str, target: str, threads: int = 6):
     folder = f'build-{build}'
-    __shell(f'cmake -DCMAKE_BUILD_TYPE={build} -B{folder} {src}')
-    __shell(f'cmake --build {folder} --target {target} -j{threads}')
+    __shell(f'cmake -DCMAKE_BUILD_TYPE={build} -B{folder} {src}', get=False)
+    __shell(f'cmake --build {folder} --target {target} -j{threads}', get=False)
     return Path(folder, target)
 
 
@@ -165,29 +162,39 @@ def run_experiment(
 
 
 def __get_system_info() -> Dict[str, str]:
-    with open('info.txt') as f:
-        data = f.read()
-    return dict(line.split(': ') for line in data.split('\n') if line)
+    # Tell to git on docker that this is safe.
+    __shell('git config --global --add safe.directory /brkga')
+    return {
+        'commit': __shell('git log --format="%H" -n 1'),
+        'system': __shell('uname -v'),
+        'cpu': __shell('cat /proc/cpuinfo | grep "model name"'
+                       ' | uniq | cut -d" " -f 3-'),
+        'host-memory':
+            __shell('grep MemTotal /proc/meminfo | awk \'{print $2 / 1024}\'')
+            + 'MiB',
+        'gpu': __shell('lspci | grep " VGA " | cut -d" " -f 5-'),
+        'gpu-memory':
+            __shell('lshw -C display | grep product | cut -d":" -f2-'),
+        'nvcc': __shell('nvcc --version | grep "release" | grep -o "V.*"'),
+        'g++': __shell('g++ --version | grep "g++"'),
+    }
 
 
 def __shell(cmd: str, get: bool = True) -> str:
     logging.debug(f'Execute command `{cmd}`')
+    output = ''
     try:
         stdout = subprocess.PIPE if get else None
         process = subprocess.run(
             cmd, stdout=stdout, text=True, shell=True, check=True)
+        output = process.stdout.strip() if get else ''
     except subprocess.CalledProcessError as error:
         output = error.stdout.strip() if get else ''
-        if output:
-            logging.info(f'Script output before error:\n'
-                         f'--- begin ---\n{output}\n==== end ====')
         raise
+    finally:
+        if output:
+            logging.info(f'Script output:\n{output}')
 
-    if not get:
-        return ''
-
-    output = process.stdout.strip()
-    logging.debug(f'Script output:\n--- begin ---\n{output}\n==== end ====')
     return output
 
 
@@ -266,12 +273,13 @@ def test_all():
                                )
             )
 
-    if not results:
+    test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
+    results = pd.concat(results)
+
+    if results.empty:
         logging.warning('All tests failed')
         return
 
-    test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
-    results = pd.concat(results)
     results['test_time'] = test_time
 
     # Define the first columns of the .tsv
