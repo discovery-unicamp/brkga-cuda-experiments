@@ -28,6 +28,7 @@ failures = []  # FIXME
 
 BUILD_TYPE = 'release'
 BUILD_TARGET = 'brkga-optimizer'
+USE_FAST_DECODER = True
 SOURCE_PATH = Path('applications')
 OUTPUT_PATH = Path('results')
 
@@ -115,12 +116,20 @@ def compile_optimizer():
     return __cmake(str(SOURCE_PATH.absolute()),
                    build=BUILD_TYPE,
                    target=BUILD_TARGET,
+                   macros='-DUSE_FAST_DECODER=ON' if USE_FAST_DECODER else ''
                    )
 
 
-def __cmake(src: str, build: str, target: str, threads: int = 6):
+def __cmake(
+        src: str,
+        build: str,
+        target: str,
+        threads: int = 6,
+        macros: str = '',
+        ):
     folder = f'build-{build}'
-    __shell(f'cmake -DCMAKE_BUILD_TYPE={build} -B{folder} {src}', get=False)
+    __shell(f'cmake {macros} -DCMAKE_BUILD_TYPE={build} -B{folder} {src}',
+            get=False)
     __shell(f'cmake --build {folder} --target {target} -j{threads}', get=False)
     return Path(folder, target)
 

@@ -30,6 +30,38 @@ void CvrpInstance::deviceDecode(cudaStream_t stream,
   cuda::free(idx);
 }
 
+__global__ void fastSortedDecoder(float* results,
+                                  const unsigned numberOfTours,
+                                  const unsigned* tourList,
+                                  const unsigned tourLength,
+                                  const unsigned capacity,
+                                  const unsigned* demands,
+                                  const float* distances) {
+  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid >= numberOfTours) return;
+
+  const auto* tour = tourList + tid * tourLength;
+  unsigned truckFilled = 0;
+  unsigned u = 0;
+  float fitness = 0;
+  for (unsigned i = 0; i < tourLength; ++i) {
+    auto v = tour[i];
+    if (truckFilled + demands[v] >= capacity) {
+      // Truck is full: return from the previous client to the depot.
+      fitness += distances[u];
+      u = 0;
+      truckFilled = 0;
+    }
+
+    fitness += distances[u * (tourLength + 1) + v];
+    truckFilled += demands[v];
+    u = v;
+  }
+
+  fitness += distances[u];  // Back to the depot.
+  results[tid] = fitness;
+}
+
 __global__ void setupDemands(unsigned* accDemandList,
                              const unsigned numberOfChromosomes,
                              const unsigned chromosomeLength,
@@ -110,12 +142,12 @@ void CvrpInstance::deviceSortedDecode(cudaStream_t stream,
                                       unsigned numberOfChromosomes,
                                       const unsigned* dIndices,
                                       float* dResults) const {
-  static bool warned = false;
-  if (!warned) {
-    logger::warning("Decoding CVRP on device is very slow!");
-    warned = true;
-  }
-
+#ifdef FAST_DECODER
+  const auto blocks = cuda::blocks(numberOfChromosomes, threadsPerBlock);
+  fastSortedDecoder<<<blocks, threadsPerBlock, 0, stream>>>(
+      dResults, numberOfChromosomes, dIndices, chromosomeLength(), capacity,
+      dDemands, dDistances);
+#else
   const auto total = numberOfChromosomes * chromosomeLength();
   auto* accDemand = cuda::alloc<unsigned>(total);
   auto* accCost = cuda::alloc<float>(total);
@@ -138,4 +170,5 @@ void CvrpInstance::deviceSortedDecode(cudaStream_t stream,
   cuda::free(accDemand);
   cuda::free(accCost);
   cuda::free(bestCost);
+#endif  // FAST_DECODER
 }

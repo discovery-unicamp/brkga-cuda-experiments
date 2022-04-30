@@ -45,22 +45,44 @@ void CvrpInstance::hostSortedDecode(unsigned numberOfChromosomes,
 }
 
 float CvrpInstance::getFitness(const unsigned* tour, bool hasDepot) const {
+  const auto n = numberOfClients;
+
   if (hasDepot) {
-    unsigned n = numberOfClients + 1;
+    unsigned depots = 1;
     float fitness = 0;
-    for (unsigned i = 1; i < n; ++i) {
+    for (unsigned i = 1; i < n + depots; ++i) {
       const auto u = tour[i - 1];
       const auto v = tour[i];
-      fitness += distances[u * (numberOfClients + 1) + v];
-      if (v == 0) ++n;
+      fitness += distances[u * (n + 1) + v];
+      if (v == 0) ++depots;
     }
 
-    fitness += distances[tour[n - 1]];  // Back to depot
+    fitness += distances[tour[n - 1]];  // Back to the depot.
     return fitness;
   }
 
+#ifdef FAST_DECODER
+  unsigned truckFilled = 0;
+  unsigned u = 0;
+  float fitness = 0;
+  for (unsigned i = 0; i < n; ++i) {
+    auto v = tour[i];
+    if (truckFilled + demands[v] >= capacity) {
+      // Truck is full: return from the previous client to the depot.
+      fitness += distances[u];
+      u = 0;
+      truckFilled = 0;
+    }
+
+    fitness += distances[u * (n + 1) + v];
+    truckFilled += demands[v];
+    u = v;
+  }
+
+  fitness += distances[u];  // Back to the depot.
+  return fitness;
+#else
   // calculates the optimal tour cost in O(n) using dynamic programming
-  const auto n = numberOfClients;
   unsigned i = 0;  // first client of the truck
   unsigned filled = 0;  // the amount used from the capacity of the truck
 
@@ -100,6 +122,7 @@ float CvrpInstance::getFitness(const unsigned* tour, bool hasDepot) const {
   fitness += distances[u];  // back to the depot
 
   return fitness;
+#endif  // DECODE_CVRP_GREEDY
 }
 
 // general =====================================================================
@@ -154,8 +177,11 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
   const auto n = instance.numberOfClients;
   instance.distances.resize((n + 1) * (n + 1));
   for (unsigned i = 0; i <= n; ++i)
-    for (unsigned j = 0; j <= n; ++j)
-      instance.distances[i * (n + 1) + j] = locations[i].distance(locations[j]);
+    for (unsigned j = i; j <= n; ++j) {
+      instance.distances[i * (n + 1) + j] =
+          instance.distances[j * (n + 1) + i] =
+              locations[i].distance(locations[j]);
+    }
 
   instance.dDistances = cuda::alloc<float>(instance.distances.size());
   cuda::copy_htod(nullptr, instance.dDistances, instance.distances.data(),
