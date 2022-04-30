@@ -49,7 +49,7 @@ inline void _log(std::ostream& out,
                  const T&... x) {
   out << color << type;
   _log_impl(out, x...);
-  out << RESET << '\n';
+  out << RESET << std::endl;  // Use std::endl to avoid missing any log.
 }
 
 template <class... T>

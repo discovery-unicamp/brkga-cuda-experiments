@@ -70,7 +70,7 @@ TspInstance TspInstance::fromFile(const std::string& filename) {
 
   TspInstance instance;
 
-  // Read the basic data
+  logger::debug("Reading instance header");
   std::pair<std::string, std::string> key;
   while (key = readValue(file), key.first != "NODE_COORD_SECTION")
     if (key.first == "DIMENSION")
@@ -78,7 +78,7 @@ TspInstance TspInstance::fromFile(const std::string& filename) {
   if (instance.numberOfClients == static_cast<unsigned>(-1))
     throw std::runtime_error("Missing number of clients in the instance file");
 
-  // Read the locations
+  logger::debug("Reading the locations");
   std::vector<Point> locations;
   std::string str;
   while ((file >> str) && str != "EOF") {
@@ -89,13 +89,16 @@ TspInstance TspInstance::fromFile(const std::string& filename) {
   if (locations.size() != instance.numberOfClients)
     throw std::runtime_error("Wrong number of locations");
 
-  // Calculates the distance between every pair of clients
+  // TODO Test if calculating the distances on the decoder have any performance
+  //  impact.
+  logger::debug("Calculating the distance between every pair of clients");
   const auto n = instance.numberOfClients;
   instance.distances.resize(n * n);
   for (unsigned i = 0; i < n; ++i)
     for (unsigned j = 0; j < n; ++j)
       instance.distances[i * n + j] = locations[i].distance(locations[j]);
 
+  logger::debug("Copying data to the device");
   instance.dDistances = cuda::alloc<float>(instance.distances.size());
   cuda::copy_htod(nullptr, instance.dDistances, instance.distances.data(),
                   instance.distances.size());

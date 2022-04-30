@@ -83,6 +83,7 @@ int main(int argc, char** argv) {
   if (problem.empty()) mabort("Missing the problem name");
   if (logStep == 0) mabort("Missing the log-step (should be > 0)");
 
+  logger::info("Reading instance from", instanceFileName);
   std::unique_ptr<Instance> instance;
   if (problem == "cvrp") {
     instance.reset(new CvrpInstance(CvrpInstance::fromFile(instanceFileName)));
@@ -103,6 +104,7 @@ int main(int argc, char** argv) {
   cudaEventCreate(&stop);
   cudaEventRecord(start);
 
+  logger::info("Building the algorithm");
   std::unique_ptr<BaseWrapper> brkga;
   if (tool == "brkga-cuda") {
     brkga.reset(new BrkgaCudaWrapper(config));
@@ -117,6 +119,8 @@ int main(int argc, char** argv) {
   std::vector<float> convergence;
   convergence.push_back(brkga->getBestFitness());
 
+  logger::info("Evolving the population for", config.generations,
+               "generations");
   for (unsigned k = 1; k <= config.generations; ++k) {
     brkga->evolve();
     if (k % config.exchangeBestInterval == 0 && k != config.generations)
