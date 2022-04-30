@@ -28,15 +28,11 @@ logging.basicConfig(
 
 failures = []  # FIXME
 
+BUILD_TYPE = 'release'
+BUILD_TARGET = 'brkga-optimizer'
 SOURCE_PATH = Path('applications')
 INSTANCES_PATH = Path('instances')
 OUTPUT_PATH = Path('results')
-
-EXECUTABLES = {
-    'cvrp': Path('brkga-cuda'),
-    'tsp': Path('brkga-cuda'),
-    'scp': Path('brkga-cuda'),
-}
 
 INSTANCES = {
     'cvrp': [
@@ -118,12 +114,27 @@ INSTANCES = {
 }
 
 
+def compile_optimizer():
+    return __cmake(str(SOURCE_PATH.absolute()),
+                   build=BUILD_TYPE,
+                   target=BUILD_TARGET,
+                   )
+
+
+def __cmake(src: str, build: str, target: str, threads: int = 6):
+    folder = f'build-{build}'
+    __shell(f'cmake -DCMAKE_BUILD_TYPE={build} -B{folder} {src}')
+    __shell(f'cmake --build {folder} --target {target} -j{threads}')
+    return Path(folder, target)
+
+
 def run_experiment(
+        executable: Path,
         problem: str,
         params: Dict[str, Union[str, float, int]],
         instances: List[str],
         test_count: int,
-) -> Optional[pd.DataFrame]:
+        ) -> Optional[pd.DataFrame]:
     if test_count == 0:
         raise ValueError('Test count is zero')
 
@@ -137,7 +148,8 @@ def run_experiment(
             tmp = []
             for test in range(test_count):
                 seed = test + 1
-                tmp.append(__run_test(problem, params, instance, seed))
+                tmp.append(__run_test(
+                    executable, problem, params, instance, seed))
             results += tmp
         except (KeyboardInterrupt, AssertionError):
             raise
@@ -180,13 +192,12 @@ def __shell(cmd: str, get: bool = True) -> str:
 
 
 def __run_test(
+        executable: Path,
         problem: str,
         params: Dict[str, Union[str, float, int]],
         instance: str,
         seed: int,
-) -> Dict[str, str]:
-    executable = EXECUTABLES[problem]
-
+        ) -> Dict[str, str]:
     logging.info(f'Test instance {instance} of {problem} ({str(executable)})')
     logging.info(f'Test with seed {seed} and params {params}')
 
@@ -221,6 +232,8 @@ def __parse_param(value: Union[int, float, str]) -> str:
 
 
 def test_all():
+    executable = compile_optimizer()
+
     results = []
     for problem in ['scp', 'cvrp', 'tsp']:
         for tool in ['brkga-cuda', 'gpu-brkga', 'brkga-api']:
@@ -244,8 +257,14 @@ def test_all():
                 'log-step': 25,
             }
 
-            results.append(run_experiment(
-                problem, params, INSTANCES[problem], test_count=10))
+            results.append(
+                run_experiment(executable,
+                               problem,
+                               params,
+                               INSTANCES[problem],
+                               test_count=10,
+                               )
+            )
 
     if not results:
         logging.warning('All tests failed')
