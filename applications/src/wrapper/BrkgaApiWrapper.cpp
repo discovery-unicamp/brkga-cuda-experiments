@@ -8,7 +8,7 @@
 
 #include <limits>
 
-#define OMP_THREADS 6
+extern unsigned ompThreads;
 
 struct BrkgaApiWrapper::DecoderWrapper {
   DecoderWrapper(const BrkgaConfiguration& config) : decoder(config.decoder) {}
@@ -40,7 +40,7 @@ struct BrkgaApiWrapper::BrkgaWrapper {
                   *decoder,
                   rng,
                   config.numberOfPopulations,
-                  OMP_THREADS) {
+                  ompThreads) {
     if (config.decodeType != DecodeType::HOST)
       throw std::runtime_error("BRKGA-API only works with HOST decode");
   }

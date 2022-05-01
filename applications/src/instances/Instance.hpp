@@ -5,6 +5,7 @@
 #include <brkga_cuda_api/Decoder.hpp>
 
 extern DecodeType decodeType;
+extern unsigned ompThreads;
 
 class Instance : public Decoder {
 public:

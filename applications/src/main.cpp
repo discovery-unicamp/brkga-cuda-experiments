@@ -15,8 +15,9 @@
 #include <string>
 #include <vector>
 
-unsigned threadsPerBlock = 0;  // FIXME remove this
 DecodeType decodeType = DecodeType::NONE;
+unsigned threadsPerBlock = 0;
+unsigned ompThreads = 4;
 bool isFastDecode = false;
 
 #define mabort(...)             \

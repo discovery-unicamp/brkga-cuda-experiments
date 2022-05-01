@@ -16,7 +16,8 @@ void ScpInstance::hostDecode(unsigned int numberOfChromosomes,
   massert(threshold > 0, "No threshold defined");
   massert(threshold < 1, "Threshold is too high");
 
-#pragma omp parallel for if (numberOfChromosomes > 1) default(shared)
+#pragma omp parallel for if (numberOfChromosomes > 1) default(shared) \
+    num_threads(ompThreads)
   for (unsigned i = 0; i < numberOfChromosomes; ++i) {
     const auto* chromosome = chromosomes + i * chromosomeLength();
 
@@ -40,7 +41,8 @@ void ScpInstance::hostDecode(unsigned int numberOfChromosomes,
 void ScpInstance::hostSortedDecode(unsigned numberOfChromosomes,
                                    const unsigned* indices,
                                    float* results) const {
-#pragma omp parallel for if (numberOfChromosomes > 1) default(shared)
+#pragma omp parallel for if (numberOfChromosomes > 1) default(shared) \
+    num_threads(ompThreads)
   for (unsigned i = 0; i < numberOfChromosomes; ++i) {
     const auto* index = indices + i * chromosomeLength();
 

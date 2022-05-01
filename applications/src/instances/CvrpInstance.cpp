@@ -19,7 +19,8 @@
 void CvrpInstance::hostDecode(unsigned int numberOfChromosomes,
                               const float* chromosomes,
                               float* results) const {
-#pragma omp parallel for if (numberOfChromosomes > 1) default(shared)
+#pragma omp parallel for if (numberOfChromosomes > 1) default(shared) \
+    num_threads(ompThreads)
   for (unsigned i = 0; i < numberOfChromosomes; ++i) {
     const auto* chromosome = chromosomes + i * chromosomeLength();
 
@@ -37,7 +38,8 @@ void CvrpInstance::hostDecode(unsigned int numberOfChromosomes,
 void CvrpInstance::hostSortedDecode(unsigned numberOfChromosomes,
                                     const unsigned* indices,
                                     float* results) const {
-#pragma omp parallel for if (numberOfChromosomes > 1) default(shared)
+#pragma omp parallel for if (numberOfChromosomes > 1) default(shared) \
+    num_threads(ompThreads)
   for (unsigned i = 0; i < numberOfChromosomes; ++i) {
     const auto* tour = indices + i * chromosomeLength();
     results[i] = getFitness(tour, /* hasDepot: */ false);

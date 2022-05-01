@@ -26,7 +26,8 @@ float getFitness(const unsigned* tour,
 void TspInstance::hostDecode(const unsigned numberOfChromosomes,
                              const float* chromosomes,
                              float* results) const {
-#pragma omp parallel for if (numberOfChromosomes > 1) default(shared)
+#pragma omp parallel for if (numberOfChromosomes > 1) default(shared) \
+    num_threads(ompThreads)
   for (unsigned i = 0; i < numberOfChromosomes; ++i) {
     const float* chromosome = chromosomes + i * chromosomeLength();
 
@@ -43,7 +44,8 @@ void TspInstance::hostDecode(const unsigned numberOfChromosomes,
 void TspInstance::hostSortedDecode(const unsigned numberOfChromosomes,
                                    const unsigned* indices,
                                    float* results) const {
-#pragma omp parallel for if (numberOfChromosomes > 1) default(shared)
+#pragma omp parallel for if (numberOfChromosomes > 1) default(shared) \
+    num_threads(ompThreads)
   for (unsigned i = 0; i < numberOfChromosomes; ++i) {
     const auto* tour = indices + i * chromosomeLength();
     results[i] = getFitness(tour, chromosomeLength(), distances.data());
