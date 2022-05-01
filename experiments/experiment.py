@@ -1,8 +1,9 @@
 import datetime
+from http.server import executable
 import logging
 from pathlib import Path
 import subprocess
-from typing import Dict, List, Optional, Union
+from typing import Callable, Dict, Iterable, List, Optional, Union, cast
 import pandas as pd
 
 from instance import get_instance_path
@@ -24,13 +25,11 @@ logging.basicConfig(
     datefmt='%Y-%m-%dT%H:%M:%S',
 )
 
-failures = []  # FIXME
-
 BUILD_TYPE = 'release'
 BUILD_TARGET = 'brkga-optimizer'
 USE_FAST_DECODER = True
 SOURCE_PATH = Path('applications')
-OUTPUT_PATH = Path('results')
+OUTPUT_PATH = Path('experiments', 'results')
 
 INSTANCES = {
     'cvrp': [
@@ -126,48 +125,12 @@ def __cmake(
         target: str,
         threads: int = 6,
         macros: str = '',
-        ):
+):
     folder = f'build-{build}'
     __shell(f'cmake {macros} -DCMAKE_BUILD_TYPE={build} -B{folder} {src}',
             get=False)
     __shell(f'cmake --build {folder} --target {target} -j{threads}', get=False)
     return Path(folder, target)
-
-
-def run_experiment(
-        executable: Path,
-        problem: str,
-        params: Dict[str, Union[str, float, int]],
-        instances: List[str],
-        test_count: int,
-        ) -> Optional[pd.DataFrame]:
-    if test_count == 0:
-        raise ValueError('Test count is zero')
-
-    # Take info here to avoid changes by the user
-    info = __get_system_info()
-
-    results = []
-    for instance in instances:
-        logging.info(f'[{problem}] Testing {instance}')
-        try:
-            tmp = []
-            for test in range(test_count):
-                seed = test + 1
-                tmp.append(__run_test(
-                    executable, problem, params, instance, seed))
-            results += tmp
-        except (KeyboardInterrupt, AssertionError):
-            raise
-        except:
-            logging.exception(f'Failed to run instance {instance} ({problem})')
-            failures.append(f'{problem} - {instance}')
-
-    results = pd.DataFrame([{**r, **info} for r in results])
-    results['tool'] = params.get('tool', 'default')
-
-    logging.info('Experiment finished')
-    return results
 
 
 def __get_system_info() -> Dict[str, str]:
@@ -209,20 +172,14 @@ def __shell(cmd: str, get: bool = True) -> str:
 
 def __run_test(
         executable: Path,
-        problem: str,
         params: Dict[str, Union[str, float, int]],
-        instance: str,
-        seed: int,
-        ) -> Dict[str, str]:
-    logging.info(f'Test instance {instance} of {problem} ({str(executable)})')
-    logging.info(f'Test with seed {seed} and params {params}')
-
-    instance_path = get_instance_path(problem, instance)
+) -> Dict[str, str]:
+    logging.info(f'Test instance {params["instance"]} of {params["problem"]}')
+    logging.debug(f'Executable: {str(executable)}')
+    logging.debug(f'Test with params {params}')
 
     parsed_params = {key: __parse_param(value)
                      for key, value in params.items()}
-    parsed_params['instance'] = str(instance_path.absolute())
-    parsed_params['seed'] = str(seed)
 
     cmd = str(executable.absolute())
     cmd += ''.join(f' --{arg} {value}' for arg, value in parsed_params.items())
@@ -233,8 +190,6 @@ def __run_test(
 
     return {
         **parsed_params,
-        'seed': str(seed),
-        'instance': instance,
         'ans': result['ans'],
         'elapsed': result['elapsed'],
         'convergence': result.get('convergence', '?'),
@@ -247,48 +202,51 @@ def __parse_param(value: Union[int, float, str]) -> str:
     return str(value)
 
 
-def test_all():
-    executable = compile_optimizer()
+def experiment(
+        executable: Path,
+        problems: List[str],
+        tools: List[str],
+        test_count: int,
+        decoder: str,
+) -> Iterable[Dict[str, str]]:
+    for problem in problems:
+        for instance in INSTANCES[problem]:
+            instance_path = str(get_instance_path(problem, instance))
+            for seed in range(1, test_count + 1):
+                for tool in tools:
+                    if problem == 'tsp' and tool == 'gpu-brkga':
+                        continue
 
-    results = []
-    for problem in ['scp', 'cvrp', 'tsp']:
-        for tool in ['brkga-cuda', 'gpu-brkga', 'brkga-api']:
-            if tool == 'gpu-brkga' and problem == 'tsp':
-                logging.warning('GPU-BRKGA doesn\'t support the TSP instance')
-                continue
+                    params = {
+                        'threads': 256,
+                        'generations': 1000,
+                        'exchange-interval': 50,
+                        'exchange-count': 2,
+                        'pop-count': 3,
+                        'pop-size': 256,
+                        'elite': .1,
+                        'mutant': .1,
+                        'rhoe': .75,
+                        'decode': decoder,
+                        'tool': tool,
+                        'problem': problem,
+                        'instance': instance_path,
+                        'seed': seed,
+                        'log-step': 25,
+                    }
 
-            params = {
-                'threads': 256,
-                'generations': 1000,
-                'exchange-interval': 50,
-                'exchange-count': 2,
-                'pop-count': 3,
-                'pop-size': 256,
-                'elite': .1,
-                'mutant': .1,
-                'rhoe': .75,
-                'decode': 'host',
-                'tool': tool,
-                'problem': problem,
-                'log-step': 25,
-            }
+                    result = __run_test(executable, params)
+                    result['instance'] = instance
+                    yield result
 
-            results.append(
-                run_experiment(executable,
-                               problem,
-                               params,
-                               INSTANCES[problem],
-                               test_count=10,
-                               )
-            )
 
-    test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
-    results = pd.concat(results)
-
+def save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]]):
+    results = pd.DataFrame([{**res, **info} for res in iter_results])
     if results.empty:
         logging.warning('All tests failed')
         return
 
+    test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
     results['test_time'] = test_time
 
     # Define the first columns of the .tsv
@@ -298,15 +256,95 @@ def test_all():
     other_columns = [c for c in results.columns if c not in first_columns]
     results = results[first_columns + other_columns]
 
-    output = OUTPUT_PATH.joinpath('all')
-    output.mkdir(parents=True, exist_ok=True)
-    output = output.joinpath(f'{test_time}.tsv')
+    OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
+    output = OUTPUT_PATH.joinpath(f'{test_time}.tsv')
     results.to_csv(output, index=False, sep='\t')
 
-    if failures:
-        format_failures = "".join("\n - " + f for f in failures)
-        logging.error(f'Failures:{format_failures}')
+
+def main():
+    global USE_FAST_DECODER
+
+    # Execute here to avoid changes by the user.
+    info = __get_system_info()
+    executable = compile_optimizer()
+
+    # # Test
+    # save_results(info, experiment(
+    #     executable,
+    #     problems=['scp', 'cvrp', 'tsp'],
+    #     tools=['brkga-cuda', 'gpu-brkga', 'brkga-api'],
+    #     test_count=10,
+    #     decoder='host',
+    # ))
+    # save_results(info, experiment(
+    #     executable,
+    #     problems=['cvrp', 'tsp'],
+    #     tools=['brkga-cuda', 'gpu-brkga'],
+    #     test_count=10,
+    #     decoder='device',
+    # ))
+    # exit()
+
+    USE_FAST_DECODER = True
+    # save_results(info, experiment(
+    #     executable,
+    #     problems=['scp', 'cvrp', 'tsp'],
+    #     tools=['brkga-cuda', 'gpu-brkga', 'brkga-api'],
+    #     test_count=10,
+    #     decoder='host',
+    # ))
+    save_results(info, experiment(
+        executable,
+        problems=['cvrp', 'tsp'],
+        tools=['brkga-cuda', 'gpu-brkga'],
+        test_count=10,
+        decoder='device',
+    ))
+    save_results(info, experiment(
+        executable,
+        problems=['cvrp', 'tsp'],
+        tools=['brkga-cuda'],
+        test_count=10,
+        decoder='host-sorted',
+    ))
+    save_results(info, experiment(
+        executable,
+        problems=['cvrp', 'tsp'],
+        tools=['brkga-cuda'],
+        test_count=10,
+        decoder='device-sorted',
+    ))
+
+    USE_FAST_DECODER = False
+    save_results(info, experiment(
+        executable,
+        problems=['cvrp'],
+        tools=['brkga-cuda', 'gpu-brkga', 'brkga-api'],
+        test_count=10,
+        decoder='host',
+    ))
+    save_results(info, experiment(
+        executable,
+        problems=['cvrp'],
+        tools=['brkga-cuda', 'gpu-brkga'],
+        test_count=10,
+        decoder='device',
+    ))
+    save_results(info, experiment(
+        executable,
+        problems=['cvrp'],
+        tools=['brkga-cuda'],
+        test_count=10,
+        decoder='host-sorted',
+    ))
+    save_results(info, experiment(
+        executable,
+        problems=['cvrp'],
+        tools=['brkga-cuda'],
+        test_count=10,
+        decoder='device-sorted',
+    ))
 
 
 if __name__ == '__main__':
-    test_all()
+    main()
