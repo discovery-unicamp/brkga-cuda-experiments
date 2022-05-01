@@ -1,4 +1,5 @@
-FROM nvidia/cuda:11.3.0-devel-ubuntu20.04 AS build
+ARG CUDA_VERSION
+FROM nvidia/cuda:${CUDA_VERSION}.0-devel-ubuntu20.04 AS build
 
 WORKDIR /brkga
 
