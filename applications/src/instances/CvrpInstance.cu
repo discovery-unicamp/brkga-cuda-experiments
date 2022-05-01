@@ -142,12 +142,15 @@ void CvrpInstance::deviceSortedDecode(cudaStream_t stream,
                                       unsigned numberOfChromosomes,
                                       const unsigned* dIndices,
                                       float* dResults) const {
-#ifdef FAST_DECODER
-  const auto blocks = cuda::blocks(numberOfChromosomes, threadsPerBlock);
-  fastSortedDecoder<<<blocks, threadsPerBlock, 0, stream>>>(
-      dResults, numberOfChromosomes, dIndices, chromosomeLength(), capacity,
-      dDemands, dDistances);
-#else
+  if (isFastDecode) {
+    const auto blocks = cuda::blocks(numberOfChromosomes, threadsPerBlock);
+    fastSortedDecoder<<<blocks, threadsPerBlock, 0, stream>>>(
+        dResults, numberOfChromosomes, dIndices, chromosomeLength(), capacity,
+        dDemands, dDistances);
+    CUDA_CHECK_LAST();
+    return;
+  }
+
   const auto total = numberOfChromosomes * chromosomeLength();
   auto* accDemand = cuda::alloc<unsigned>(total);
   auto* accCost = cuda::alloc<float>(total);
@@ -170,5 +173,4 @@ void CvrpInstance::deviceSortedDecode(cudaStream_t stream,
   cuda::free(accDemand);
   cuda::free(accCost);
   cuda::free(bestCost);
-#endif  // FAST_DECODER
 }

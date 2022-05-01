@@ -1,9 +1,8 @@
 import datetime
-from http.server import executable
 import logging
 from pathlib import Path
 import subprocess
-from typing import Callable, Dict, Iterable, List, Optional, Union, cast
+from typing import Dict, Iterable, List, Union
 import pandas as pd
 
 from instance import get_instance_path
@@ -25,9 +24,9 @@ logging.basicConfig(
     datefmt='%Y-%m-%dT%H:%M:%S',
 )
 
+TEST_COUNT = 10
 BUILD_TYPE = 'release'
 BUILD_TARGET = 'brkga-optimizer'
-USE_FAST_DECODER = True
 SOURCE_PATH = Path('applications')
 OUTPUT_PATH = Path('experiments', 'results')
 
@@ -115,7 +114,6 @@ def compile_optimizer():
     return __cmake(str(SOURCE_PATH.absolute()),
                    build=BUILD_TYPE,
                    target=BUILD_TARGET,
-                   macros='-DUSE_FAST_DECODER=ON' if USE_FAST_DECODER else ''
                    )
 
 
@@ -124,11 +122,9 @@ def __cmake(
         build: str,
         target: str,
         threads: int = 6,
-        macros: str = '',
 ):
     folder = f'build-{build}'
-    __shell(f'cmake {macros} -DCMAKE_BUILD_TYPE={build} -B{folder} {src}',
-            get=False)
+    __shell(f'cmake -DCMAKE_BUILD_TYPE={build} -B{folder} {src}', get=False)
     __shell(f'cmake --build {folder} --target {target} -j{threads}', get=False)
     return Path(folder, target)
 
@@ -206,9 +202,13 @@ def experiment(
         executable: Path,
         problems: List[str],
         tools: List[str],
-        test_count: int,
         decoder: str,
+        is_fast_decode: bool,
+        test_count: int = TEST_COUNT,
 ) -> Iterable[Dict[str, str]]:
+    if 'tsp' in problems and 'gpu-brkga' in tools:
+        logging.warning('Ignoring GPU-BRKGA for TSP')
+
     for problem in problems:
         for instance in INSTANCES[problem]:
             instance_path = str(get_instance_path(problem, instance))
@@ -228,6 +228,7 @@ def experiment(
                         'mutant': .1,
                         'rhoe': .75,
                         'decode': decoder,
+                        'fast-decode': int(is_fast_decode),
                         'tool': tool,
                         'problem': problem,
                         'instance': instance_path,
@@ -262,87 +263,77 @@ def save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]]):
 
 
 def main():
-    global USE_FAST_DECODER
-
     # Execute here to avoid changes by the user.
     info = __get_system_info()
     executable = compile_optimizer()
 
-    # # Test
+    # Test
     # save_results(info, experiment(
     #     executable,
-    #     problems=['scp', 'cvrp', 'tsp'],
-    #     tools=['brkga-cuda', 'gpu-brkga', 'brkga-api'],
-    #     test_count=10,
+    #     problems=['cvrp'],
+    #     tools=['brkga-cuda'],
     #     decoder='host',
-    # ))
-    # save_results(info, experiment(
-    #     executable,
-    #     problems=['cvrp', 'tsp'],
-    #     tools=['brkga-cuda', 'gpu-brkga'],
-    #     test_count=10,
-    #     decoder='device',
+    #     is_fast_decode=True,
+    #     test_count=1,
     # ))
     # exit()
 
-    USE_FAST_DECODER = True
-    # save_results(info, experiment(
-    #     executable,
-    #     problems=['scp', 'cvrp', 'tsp'],
-    #     tools=['brkga-cuda', 'gpu-brkga', 'brkga-api'],
-    #     test_count=10,
-    #     decoder='host',
-    # ))
-    save_results(info, experiment(
-        executable,
-        problems=['cvrp', 'tsp'],
-        tools=['brkga-cuda', 'gpu-brkga'],
-        test_count=10,
-        decoder='device',
-    ))
-    save_results(info, experiment(
-        executable,
-        problems=['cvrp', 'tsp'],
-        tools=['brkga-cuda'],
-        test_count=10,
-        decoder='host-sorted',
-    ))
-    save_results(info, experiment(
-        executable,
-        problems=['cvrp', 'tsp'],
-        tools=['brkga-cuda'],
-        test_count=10,
-        decoder='device-sorted',
-    ))
-
-    USE_FAST_DECODER = False
     save_results(info, experiment(
         executable,
         problems=['cvrp'],
         tools=['brkga-cuda', 'gpu-brkga', 'brkga-api'],
-        test_count=10,
         decoder='host',
+        is_fast_decode=True,
     ))
     save_results(info, experiment(
         executable,
         problems=['cvrp'],
         tools=['brkga-cuda', 'gpu-brkga'],
-        test_count=10,
         decoder='device',
+        is_fast_decode=True,
     ))
     save_results(info, experiment(
         executable,
         problems=['cvrp'],
         tools=['brkga-cuda'],
-        test_count=10,
         decoder='host-sorted',
+        is_fast_decode=True,
     ))
     save_results(info, experiment(
         executable,
         problems=['cvrp'],
         tools=['brkga-cuda'],
-        test_count=10,
         decoder='device-sorted',
+        is_fast_decode=True,
+    ))
+
+    save_results(info, experiment(
+        executable,
+        problems=['scp', 'cvrp', 'tsp'],
+        tools=['brkga-cuda', 'gpu-brkga', 'brkga-api'],
+        decoder='host',
+        is_fast_decode=False,
+    ))
+    save_results(info, experiment(
+        executable,
+        problems=['cvrp', 'tsp'],
+        tools=['brkga-cuda', 'gpu-brkga'],
+        decoder='device',
+        is_fast_decode=False,
+    ))
+    save_results(info, experiment(
+        executable,
+        problems=['cvrp', 'tsp'],
+        tools=['brkga-cuda'],
+        decoder='host-sorted',
+        is_fast_decode=False,
+    ))
+    save_results(info, experiment(
+        executable,
+        problems=['cvrp', 'tsp'],
+        tools=['brkga-cuda'],
+        decoder='device-sorted',
+        is_fast_decode=False,
     ))
 
 

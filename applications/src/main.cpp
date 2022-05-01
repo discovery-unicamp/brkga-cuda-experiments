@@ -16,7 +16,8 @@
 #include <vector>
 
 unsigned threadsPerBlock = 0;  // FIXME remove this
-DecodeType decodeType;
+DecodeType decodeType = DecodeType::NONE;
+bool isFastDecode = false;
 
 #define mabort(...)             \
   do {                          \
@@ -68,6 +69,8 @@ int main(int argc, char** argv) {
     } else if (arg == "--decode") {
       decodeType = fromString(value);
       configBuilder.decodeType(decodeType);
+    } else if (arg == "--fast-decode") {
+      isFastDecode = (bool)std::stoi(value);
     } else if (arg == "--tool") {
       tool = value;
     } else if (arg == "--problem") {

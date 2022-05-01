@@ -6,4 +6,9 @@ run: .setup
 
 .setup: experiments/Dockerfile experiments/requirements.txt
 	docker build --no-cache -t brkga -f experiments/Dockerfile .
-	echo "Setup on: $(date)" >.setup
+	echo "Setup on: $$(date)" >.setup
+
+.PHONY: clean
+clean:
+	rm -f .setup core
+	rm -rf build-*

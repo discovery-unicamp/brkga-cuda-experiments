@@ -61,27 +61,28 @@ float CvrpInstance::getFitness(const unsigned* tour, bool hasDepot) const {
     return fitness;
   }
 
-#ifdef FAST_DECODER
-  unsigned truckFilled = 0;
-  unsigned u = 0;
-  float fitness = 0;
-  for (unsigned i = 0; i < n; ++i) {
-    auto v = tour[i];
-    if (truckFilled + demands[v] >= capacity) {
-      // Truck is full: return from the previous client to the depot.
-      fitness += distances[u];
-      u = 0;
-      truckFilled = 0;
+  if (isFastDecode) {
+    unsigned truckFilled = 0;
+    unsigned u = 0;
+    float fitness = 0;
+    for (unsigned i = 0; i < n; ++i) {
+      auto v = tour[i];
+      if (truckFilled + demands[v] >= capacity) {
+        // Truck is full: return from the previous client to the depot.
+        fitness += distances[u];
+        u = 0;
+        truckFilled = 0;
+      }
+
+      fitness += distances[u * (n + 1) + v];
+      truckFilled += demands[v];
+      u = v;
     }
 
-    fitness += distances[u * (n + 1) + v];
-    truckFilled += demands[v];
-    u = v;
+    fitness += distances[u];  // Back to the depot.
+    return fitness;
   }
 
-  fitness += distances[u];  // Back to the depot.
-  return fitness;
-#else
   // calculates the optimal tour cost in O(n) using dynamic programming
   unsigned i = 0;  // first client of the truck
   unsigned filled = 0;  // the amount used from the capacity of the truck
@@ -122,7 +123,6 @@ float CvrpInstance::getFitness(const unsigned* tour, bool hasDepot) const {
   fitness += distances[u];  // back to the depot
 
   return fitness;
-#endif  // DECODE_CVRP_GREEDY
 }
 
 // general =====================================================================

@@ -5,16 +5,11 @@ project(brkga-optimizer LANGUAGES CUDA CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(BRKGA_OPENCL_ENABLED false)
 
-OPTION(USE_FAST_DECODER "Improves time but loses quality" OFF)
-
 add_compile_options(
   -Wall -Wextra -Wshadow -Wformat=2 -Wformat-truncation -Wfloat-equal
   -Wshift-overflow -Wconversion -Wno-sign-conversion -Wundef -fno-common
 )
 add_compile_definitions(LOG_LEVEL=3)
-if (USE_FAST_DECODER)
-  add_compile_definitions(FAST_DECODER)
-endif()
 
 # Dependencies
 find_package(OpenMP REQUIRED)

@@ -10,5 +10,6 @@ results/
 .setup
 __pycache__
 build*
+core
 prof.txt
 *.qdrep

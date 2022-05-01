@@ -8,7 +8,8 @@
 #include <string>
 #include <vector>
 
-extern unsigned threadsPerBlock;  // FIXME remove this
+extern unsigned threadsPerBlock;
+extern bool isFastDecode;
 
 class CvrpInstance : public Instance {
 public:  // decoders
