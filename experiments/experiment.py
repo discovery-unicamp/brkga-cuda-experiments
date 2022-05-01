@@ -281,13 +281,6 @@ def main():
     save_results(info, experiment(
         executable,
         problems=['cvrp'],
-        tools=['brkga-cuda', 'gpu-brkga', 'brkga-api'],
-        decoder='host',
-        is_fast_decode=True,
-    ))
-    save_results(info, experiment(
-        executable,
-        problems=['cvrp'],
         tools=['brkga-cuda', 'gpu-brkga'],
         decoder='device',
         is_fast_decode=True,
@@ -296,29 +289,36 @@ def main():
         executable,
         problems=['cvrp'],
         tools=['brkga-cuda'],
-        decoder='host-sorted',
+        decoder='device-sorted',
+        is_fast_decode=True,
+    ))
+    save_results(info, experiment(
+        executable,
+        problems=['cvrp'],
+        tools=['brkga-cuda', 'gpu-brkga', 'brkga-api'],
+        decoder='host',
         is_fast_decode=True,
     ))
     save_results(info, experiment(
         executable,
         problems=['cvrp'],
         tools=['brkga-cuda'],
-        decoder='device-sorted',
+        decoder='host-sorted',
         is_fast_decode=True,
     ))
 
     save_results(info, experiment(
         executable,
-        problems=['scp', 'cvrp', 'tsp'],
-        tools=['brkga-cuda', 'gpu-brkga', 'brkga-api'],
-        decoder='host',
+        problems=['cvrp', 'tsp'],
+        tools=['brkga-cuda', 'gpu-brkga'],
+        decoder='device',
         is_fast_decode=False,
     ))
     save_results(info, experiment(
         executable,
         problems=['cvrp', 'tsp'],
-        tools=['brkga-cuda', 'gpu-brkga'],
-        decoder='device',
+        tools=['brkga-cuda'],
+        decoder='device-sorted',
         is_fast_decode=False,
     ))
     save_results(info, experiment(
@@ -330,9 +330,9 @@ def main():
     ))
     save_results(info, experiment(
         executable,
-        problems=['cvrp', 'tsp'],
-        tools=['brkga-cuda'],
-        decoder='device-sorted',
+        problems=['scp', 'cvrp', 'tsp'],
+        tools=['brkga-cuda', 'gpu-brkga', 'brkga-api'],
+        decoder='host',
         is_fast_decode=False,
     ))
 
