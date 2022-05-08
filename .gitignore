@@ -2,10 +2,6 @@
 .idea
 .vscode
 
-# ignore for while
-results/
-*.json
-
 # generated
 .setup
 __pycache__
