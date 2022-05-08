@@ -9,27 +9,27 @@
 #include <string>
 #include <vector>
 
+extern unsigned threadsPerBlock;
+
 class ScpInstance : public Instance {
 public:  // decoders
   void hostDecode(unsigned int numberOfChromosomes,
                   const float* chromosomes,
                   float* results) const override;
 
-  virtual void deviceDecode(cudaStream_t,
-                            unsigned,
-                            const float*,
-                            float*) const {
-    throw std::runtime_error("device-decode for SCP wasn't implemented");
-  }
+  void deviceDecode(cudaStream_t stream,
+                    unsigned numberOfChromosomes,
+                    const float* dChromosomes,
+                    float* dResults) const;
 
   void hostSortedDecode(unsigned numberOfChromosomes,
                         const unsigned* indices,
                         float* results) const override;
 
-  virtual void deviceSortedDecode(cudaStream_t,
-                                  unsigned,
-                                  const unsigned*,
-                                  float*) const {
+  void deviceSortedDecode(cudaStream_t,
+                          unsigned,
+                          const unsigned*,
+                          float*) const {
     throw std::runtime_error("device-sorted-decode for SCP wasn't implemented");
   }
 
@@ -64,6 +64,9 @@ private:
   unsigned numberOfSets;  ///< Number of sets to join
   float penalty;  ///< Penalty applied to each uncovered element
   float threshold;  ///< Set was selected if gene is in range [0, threshold)
+  float* dCosts;
+  unsigned* dSets;
+  unsigned* dSetEnd;
   std::vector<float> costs;
   std::vector<std::vector<unsigned>> sets;
 };

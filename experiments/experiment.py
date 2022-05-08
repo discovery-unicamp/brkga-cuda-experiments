@@ -309,7 +309,7 @@ def main():
 
     save_results(info, experiment(
         executable,
-        problems=['cvrp', 'tsp'],
+        problems=['scp', 'cvrp', 'tsp'],
         tools=['brkga-cuda', 'gpu-brkga'],
         decoder='device',
         is_fast_decode=False,

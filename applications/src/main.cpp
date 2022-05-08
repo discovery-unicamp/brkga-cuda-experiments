@@ -33,6 +33,8 @@ int main(int argc, char** argv) {
   unsigned logStep = 0;
 
   BrkgaConfiguration::Builder configBuilder;
+
+  logger::info("Reading parameters");
   for (int i = 1; i < argc; i += 2) {
     std::string arg = argv[i];
     if (arg.substr(0, 2) != "--")

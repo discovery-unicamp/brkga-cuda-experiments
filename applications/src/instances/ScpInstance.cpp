@@ -1,6 +1,7 @@
 #include "ScpInstance.hpp"
 
 #include "../Checker.hpp"
+#include <brkga_cuda_api/CudaUtils.hpp>
 #include <brkga_cuda_api/Logger.hpp>
 
 #include <cmath>
@@ -104,6 +105,29 @@ ScpInstance ScpInstance::fromFile(const std::string& fileName) {
     elementsCovered += (unsigned)instance.sets[i].size();
   instance.threshold = (float)instance.numberOfSets / (float)elementsCovered;
   logger::info("SCP estimated threshold:", instance.threshold);
+
+  logger::debug("Copying data to the device");
+  instance.dCosts = cuda::alloc<float>(instance.costs.size());
+  cuda::copy_htod(nullptr, instance.dCosts, instance.costs.data(),
+                  instance.costs.size());
+
+  std::vector<unsigned> deviceSets;
+  std::vector<unsigned> deviceSetEnd;
+  for (auto set : instance.sets) {
+    deviceSetEnd.push_back(deviceSetEnd.empty() ? 0 : deviceSetEnd.back());
+    for (auto element : set) {
+      deviceSets.push_back(element);
+      ++deviceSetEnd.back();
+    }
+  }
+
+  instance.dSets = cuda::alloc<unsigned>(deviceSets.size());
+  cuda::copy_htod(nullptr, instance.dSets, deviceSets.data(),
+                  deviceSets.size());
+
+  instance.dSetEnd = cuda::alloc<unsigned>(deviceSetEnd.size());
+  cuda::copy_htod(nullptr, instance.dSetEnd, deviceSetEnd.data(),
+                  deviceSetEnd.size());
 
   return instance;
 }
