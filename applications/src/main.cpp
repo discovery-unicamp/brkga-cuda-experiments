@@ -17,7 +17,7 @@
 
 DecodeType decodeType = DecodeType::NONE;
 unsigned threadsPerBlock = 0;
-unsigned ompThreads = 4;
+unsigned ompThreads = 16;
 bool isFastDecode = false;
 
 #define mabort(...)             \
@@ -128,10 +128,15 @@ int main(int argc, char** argv) {
   logger::info("Evolving the population for", config.generations,
                "generations");
   for (unsigned k = 1; k <= config.generations; ++k) {
+    logger::debug("Calling `evolve` to build the generation", k);
     brkga->evolve();
-    if (k % config.exchangeBestInterval == 0 && k != config.generations)
+    if (k % config.exchangeBestInterval == 0 && k != config.generations) {
+      logger::debug("Calling `exchangeElite` to exchange",
+                    config.exchangeBestCount, "chromosomes");
       brkga->exchangeElite(config.exchangeBestCount);
+    }
     if (k % logStep == 0 || k == config.generations) {
+      logger::debug("Calling `getBestFitness`");
       float best = brkga->getBestFitness();
       std::clog << "Generation " << k << "; best: " << best << "        \r";
       convergence.push_back(best);

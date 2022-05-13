@@ -44,4 +44,5 @@ void ScpInstance::deviceDecode(cudaStream_t stream,
                     threadsPerBlock, 0, stream>>>(
       dResults, numberOfChromosomes, chromosomeLength(), dChromosomes,
       universeSize, dSets, dSetEnd, dCosts, penalty, threshold);
+  CUDA_CHECK_LAST();
 }

@@ -14,7 +14,7 @@ void cuda::iota(cudaStream_t stream,
                 unsigned* arr,
                 unsigned n,
                 unsigned threads) {
-  deviceIota<<<blocks(n, threads), threads, 0, stream>>>(arr, n);
+  deviceIota<<<cuda::blocks(n, threads), threads, 0, stream>>>(arr, n);
   CUDA_CHECK_LAST();
 }
 
@@ -28,7 +28,7 @@ void cuda::iotaMod(cudaStream_t stream,
                    unsigned n,
                    unsigned k,
                    unsigned threads) {
-  deviceIotaMod<<<blocks(n, threads), threads, 0, stream>>>(arr, n, k);
+  deviceIotaMod<<<cuda::blocks(n, threads), threads, 0, stream>>>(arr, n, k);
   CUDA_CHECK_LAST();
 }
 

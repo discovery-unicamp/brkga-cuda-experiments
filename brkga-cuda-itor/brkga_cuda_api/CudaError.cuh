@@ -10,13 +10,21 @@
 
 class CudaError : public std::runtime_error {
 public:
-  static inline void check(cudaError_t status, const std::string& func) {
-    if (status != cudaSuccess) throw CudaError(status, func);
+  static inline void check(const cudaError_t status,
+                           const char* file,
+                           const int line,
+                           const char* func) {
+    if (status != cudaSuccess) throw CudaError(status, file, line, func);
   }
 
 private:
-  CudaError(cudaError_t status, const std::string& func)
-      : std::runtime_error(func + " failed: " + cudaGetErrorString(status)) {}
+  CudaError(const cudaError_t status,
+            const char* file,
+            const int line,
+            const char* func)
+      : std::runtime_error(std::string(file) + ":" + std::to_string(line)
+                           + ": On " + func + ": "
+                           + cudaGetErrorString(status)) {}
 };
 
 static inline void _brkgaFail(const char* expr,
@@ -38,7 +46,8 @@ static inline void _brkgaFail(const char* expr,
 #undef CUDA_CHECK_LAST
 #undef BRKGA_CHECK
 
-#define CUDA_CHECK(cmd) CudaError::check((cmd), __PRETTY_FUNCTION__)
+#define CUDA_CHECK(cmd) \
+  CudaError::check((cmd), __FILE__, __LINE__, __PRETTY_FUNCTION__)
 #define CUDA_CHECK_LAST() CUDA_CHECK(cudaPeekAtLastError())
 
 #define BRKGA_CHECK(expr, ...)                                         \

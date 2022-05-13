@@ -16,12 +16,14 @@ public:
         chromosomeLength(config.chromosomeLength),
         hostDecode(config.decodeType == DecodeType::HOST) {}
 
-  inline void Init() const {}
+  void Init() const {}
 
-  inline void Decode(float* chromosomes, float* fitness) const {
+  void Decode(float* chromosomes, float* fitness) const {
+    CUDA_CHECK_LAST();  // Check for errors in GPU-BRKGA
     if (hostDecode) {
       decoder->hostDecode(chromosomeCount, chromosomes, fitness);
     } else {
+      // The GPU-BRKGA doesn't provide any stream; we use the default instead
       decoder->deviceDecode(nullptr, chromosomeCount, chromosomes, fitness);
     }
   }
@@ -45,8 +47,7 @@ struct GpuBrkgaWrapper::BrkgaWrapper {
                   config.numberOfPopulations) {
     if (config.chromosomeLength > max_t) {
       logger::error("The chromosome length exceeds the thread limit:",
-                    config.chromosomeLength, ">", max_t,
-                    "(the algorithm will produce invalid chromosomes)");
+                    config.chromosomeLength, ">", max_t);
       abort();
     }
     if (config.decodeType != DecodeType::DEVICE
@@ -71,19 +72,23 @@ GpuBrkgaWrapper::~GpuBrkgaWrapper() {
 
 void GpuBrkgaWrapper::evolve() {
   brkga->algorithm.evolve();
+  CUDA_CHECK_LAST();
 }
 
 void GpuBrkgaWrapper::exchangeElite(unsigned count) {
   brkga->algorithm.exchangeElite(count);
+  CUDA_CHECK_LAST();
 }
 
 float GpuBrkgaWrapper::getBestFitness() {
   auto best = brkga->algorithm.getBestIndividual();
+  CUDA_CHECK_LAST();
   return best.fitness.first;
 }
 
 std::vector<float> GpuBrkgaWrapper::getBestChromosome() {
   auto best = brkga->algorithm.getBestIndividual();
+  CUDA_CHECK_LAST();
   return std::vector<float>(best.aleles,
                             best.aleles + decoder->chromosomeLength);
 }

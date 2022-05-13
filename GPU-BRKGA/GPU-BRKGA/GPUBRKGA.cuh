@@ -180,6 +180,7 @@ GPUBRKGA< Decoder >::GPUBRKGA(unsigned _n, unsigned _p, double _pe, double _pm, 
 	cudaMalloc((void**)&d_mateStates, 2 * p * sizeof(curandState));
 
 	//init_genrand(seed);
+	assert(thr <= max_t);
 	setup_kernel<<<p, thr>>>(d_crossStates, d_mateStates, seed);
 
 	refDecoder.Init();
@@ -229,6 +230,8 @@ Individual GPUBRKGA< Decoder >::getBestIndividual() {
 
 	Individual bInd(al, ft);
 
+	cudaFree(d_bk);
+
 	return bInd;
 }
 
@@ -276,7 +279,7 @@ void GPUBRKGA< Decoder >::exchangeElite(unsigned M) throw(std::range_error) {
 	std::swap(d_currFitnessKeys, d_prevFitnessKeys);
 	std::swap(d_currFitnessValues, d_prevFitnessValues);
 
-	//cudaFree(d_temp_storage);
+	cudaFree(d_temp_storage);
 }
 
 template< class Decoder >
@@ -326,6 +329,7 @@ inline void GPUBRKGA< Decoder >::initializeGPU()
 		offp = getOffset(i, true);
 		offf = getOffset(i, false);
 
+		assert(thr <= max_t);
 		gpuInit<<<p, thr>>>(n, d_current + offp, d_currFitnessValues + offf, d_crossStates);
 
 		if(gpu_deco) refDecoder.Decode(d_current + offp, d_currFitnessKeys + offf);
@@ -354,6 +358,8 @@ inline void GPUBRKGA< Decoder >::initializeGPU()
 	}
 	std::swap(d_currFitnessKeys, d_prevFitnessKeys);
 	std::swap(d_currFitnessValues, d_prevFitnessValues);
+
+	cudaFree(d_temp_storage);
 }
 
 template< class Decoder >
@@ -368,6 +374,7 @@ inline void GPUBRKGA< Decoder >::evolution() {
 		offp = getOffset(_k, true);
 		offf = getOffset(_k, false);
 
+		assert(n <= max_t);
 		offspring<<<p, n>>>(d_current + offp, d_previous + offp, d_currFitnessValues + offf, d_prevFitnessValues + offf,
 			p, pe, pm, rhoe, n, d_crossStates, d_mateStates);
 
@@ -388,15 +395,17 @@ inline void GPUBRKGA< Decoder >::evolution() {
 		if(d_temp_storage == NULL)
 		{
 			cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
-				d_prevFitnessKeys, d_currFitnessKeys, d_prevFitnessValues, d_currFitnessValues, p);
+				d_prevFitnessKeys + offf, d_currFitnessKeys + offf, d_prevFitnessValues + offf, d_currFitnessValues + offf, p);
 			// Allocate temporary storage
 			cudaMalloc(&d_temp_storage, temp_storage_bytes);
 		}
 
 		// Run sorting operation
 		cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
-			d_prevFitnessKeys, d_currFitnessKeys, d_prevFitnessValues, d_currFitnessValues, p);
+			d_prevFitnessKeys + offf, d_currFitnessKeys + offf, d_prevFitnessValues + offf, d_currFitnessValues + offf, p);
 	}
+
+	cudaFree(d_temp_storage);
 }
 
 template< class Decoder >
