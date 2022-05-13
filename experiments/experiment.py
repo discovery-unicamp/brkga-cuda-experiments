@@ -1,5 +1,6 @@
 import datetime
 import logging
+import os
 from pathlib import Path
 import subprocess
 from typing import Dict, Iterable, List, Union
@@ -24,6 +25,7 @@ logging.basicConfig(
     datefmt='%Y-%m-%dT%H:%M:%S',
 )
 
+DEVICE = int(os.environ['DEVICE'])
 TEST_COUNT = 10
 BUILD_TYPE = 'release'
 BUILD_TARGET = 'brkga-optimizer'
@@ -140,9 +142,11 @@ def __get_system_info() -> Dict[str, str]:
         'host-memory':
             __shell('grep MemTotal /proc/meminfo | awk \'{print $2 / 1024}\'')
             + 'MiB',
-        'gpu': __shell('lspci | grep " VGA " | cut -d" " -f 5-'),
+        'gpu': __shell('lspci | grep " VGA " | cut -d" " -f 5-')
+                .split('\n')[DEVICE],
         'gpu-memory':
-            __shell('lshw -C display | grep product | cut -d":" -f2-'),
+            __shell('lshw -C display | grep product | cut -d":" -f2-')
+                .split('\n')[DEVICE],
         'nvcc': __shell('nvcc --version | grep "release" | grep -o "V.*"'),
         'g++': __shell('g++ --version | grep "g++"'),
     }
@@ -242,7 +246,14 @@ def experiment(
 
 
 def save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]]):
-    results = pd.DataFrame([{**res, **info} for res in iter_results])
+    OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
+
+    backup_file = OUTPUT_PATH.joinpath('.backup.tsv')
+    results = pd.DataFrame()
+    for res in iter_results:
+        results = pd.concat((results, pd.DataFrame([{**res, **info}])))
+        results.to_csv(backup_file, index=False, sep='\t')
+
     if results.empty:
         logging.warning('All tests failed')
         return
@@ -257,7 +268,6 @@ def save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]]):
     other_columns = [c for c in results.columns if c not in first_columns]
     results = results[first_columns + other_columns]
 
-    OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
     output = OUTPUT_PATH.joinpath(f'{test_time}.tsv')
     results.to_csv(output, index=False, sep='\t')
 
