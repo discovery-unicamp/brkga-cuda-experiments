@@ -35,7 +35,9 @@ public:
 };
 
 struct GpuBrkgaWrapper::BrkgaWrapper {
-  BrkgaWrapper(const BrkgaConfiguration& config, DecoderWrapper* decoder)
+  BrkgaWrapper(const BrkgaConfiguration& config,
+               DecoderWrapper* decoder,
+               bool useFixedVersion)
       : algorithm(config.chromosomeLength,
                   config.populationSize,
                   (double)config.eliteCount / (double)config.populationSize,
@@ -44,7 +46,8 @@ struct GpuBrkgaWrapper::BrkgaWrapper {
                   *decoder,
                   config.seed,
                   /* decode on gpu? */ !decoder->hostDecode,
-                  config.numberOfPopulations) {
+                  config.numberOfPopulations,
+                  useFixedVersion) {
     if (config.chromosomeLength > max_t) {
       logger::error("The chromosome length exceeds the thread limit:",
                     config.chromosomeLength, ">", max_t);
@@ -61,9 +64,10 @@ struct GpuBrkgaWrapper::BrkgaWrapper {
   GPUBRKGA<DecoderWrapper> algorithm;
 };
 
-GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config)
+GpuBrkgaWrapper::GpuBrkgaWrapper(const BrkgaConfiguration& config,
+                                 bool useFixedVersion)
     : decoder(new DecoderWrapper(config)),
-      brkga(new BrkgaWrapper(config, decoder)) {}
+      brkga(new BrkgaWrapper(config, decoder, useFixedVersion)) {}
 
 GpuBrkgaWrapper::~GpuBrkgaWrapper() {
   delete brkga;

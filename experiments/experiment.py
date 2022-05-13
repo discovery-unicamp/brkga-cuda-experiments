@@ -210,7 +210,7 @@ def experiment(
         is_fast_decode: bool,
         test_count: int = TEST_COUNT,
 ) -> Iterable[Dict[str, str]]:
-    if 'tsp' in problems and 'gpu-brkga' in tools:
+    if 'tsp' in problems and 'gpu-brkga', 'gpu-brkga-fixed' in tools:
         logging.warning('Ignoring GPU-BRKGA for TSP')
 
     for problem in problems:
@@ -218,7 +218,7 @@ def experiment(
             instance_path = str(get_instance_path(problem, instance))
             for seed in range(1, test_count + 1):
                 for tool in tools:
-                    if problem == 'tsp' and tool == 'gpu-brkga':
+                    if problem == 'tsp' and tool == 'gpu-brkga', 'gpu-brkga-fixed':
                         continue
 
                     params = {
@@ -281,9 +281,9 @@ def main():
     # save_results(info, experiment(
     #     executable,
     #     problems=['cvrp'],
-    #     tools=['brkga-cuda'],
+    #     tools=['gpu-brkga-fixed'],
     #     decoder='host',
-    #     is_fast_decode=True,
+    #     is_fast_decode=False,
     #     test_count=1,
     # ))
     # exit()
@@ -291,7 +291,7 @@ def main():
     save_results(info, experiment(
         executable,
         problems=['cvrp'],
-        tools=['brkga-cuda', 'gpu-brkga'],
+        tools=['brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed'],
         decoder='device',
         is_fast_decode=True,
     ))
@@ -305,7 +305,7 @@ def main():
     save_results(info, experiment(
         executable,
         problems=['cvrp'],
-        tools=['brkga-cuda', 'gpu-brkga', 'brkga-api'],
+        tools=['brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
         decoder='host',
         is_fast_decode=True,
     ))
@@ -320,7 +320,7 @@ def main():
     save_results(info, experiment(
         executable,
         problems=['scp', 'cvrp', 'tsp'],
-        tools=['brkga-cuda', 'gpu-brkga'],
+        tools=['brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed'],
         decoder='device',
         is_fast_decode=False,
     ))
@@ -341,7 +341,7 @@ def main():
     save_results(info, experiment(
         executable,
         problems=['scp', 'cvrp', 'tsp'],
-        tools=['brkga-cuda', 'gpu-brkga', 'brkga-api'],
+        tools=['brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
         decoder='host',
         is_fast_decode=False,
     ))

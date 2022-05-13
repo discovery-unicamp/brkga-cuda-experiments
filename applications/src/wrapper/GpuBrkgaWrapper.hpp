@@ -8,7 +8,7 @@
 
 class GpuBrkgaWrapper : public BaseWrapper {
 public:
-  GpuBrkgaWrapper(const BrkgaConfiguration& config);
+  GpuBrkgaWrapper(const BrkgaConfiguration& config, bool useFixedVersion);
   ~GpuBrkgaWrapper();
 
   void evolve() override;

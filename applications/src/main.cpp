@@ -115,7 +115,9 @@ int main(int argc, char** argv) {
   if (tool == "brkga-cuda") {
     brkga.reset(new BrkgaCudaWrapper(config));
   } else if (tool == "gpu-brkga") {
-    brkga.reset(new GpuBrkgaWrapper(config));
+    brkga.reset(new GpuBrkgaWrapper(config, /* fixed? */ false));
+  } else if (tool == "gpu-brkga-fixed") {
+    brkga.reset(new GpuBrkgaWrapper(config, /* fixed? */ true));
   } else if (tool == "brkga-api") {
     brkga.reset(new BrkgaApiWrapper(config));
   } else {

@@ -14,7 +14,6 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC \
     && apt-get install --no-install-recommends -y libgomp1 \
     && apt-get install --no-install-recommends -y python3 python3-pip \
     && pip3 install -r requirements.txt \
-    && apt-get remove -y python3-pip \
     && wget https://github.com/Kitware/CMake/releases/download/v3.20.6/cmake-3.20.6.tar.gz \
     && tar -xf cmake*.tar.gz \
     && cd cmake* \
@@ -22,6 +21,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC \
     && make -j6 \
     && make install \
     && cmake --version \
+    && apt-get remove -y python3-pip wget \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 

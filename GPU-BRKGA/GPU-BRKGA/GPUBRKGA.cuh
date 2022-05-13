@@ -48,7 +48,7 @@ public:
 	 - K: number of independent populations
 	 */
 	GPUBRKGA(	unsigned n, unsigned p, double pe, double pm, double rhoe, const Decoder& refDecoder, int seed, bool gpu_deco,
-			unsigned K = 1) throw(std::range_error);
+			unsigned K = 1, bool isFixedVersion = false) throw(std::range_error);
 
 	// destructor
 	~GPUBRKGA();
@@ -121,8 +121,11 @@ private:
 	curandState* d_crossStates;
 	curandState* d_mateStates;
 
+	// Fix bad results
+	bool isFixedVersion;
+
 	// Local operations:
-	void evolution();
+	virtual void evolution();
 	bool isRepeated(const std::vector< double >& chrA, const std::vector< double >& chrB) const;
 	unsigned getInd(unsigned _k, unsigned i, bool t) const;
 	unsigned getOffset(int _k, bool _pop) const;
@@ -145,9 +148,9 @@ void GPUBRKGA< Decoder >::cpyHost()
 
 template< class Decoder >
 GPUBRKGA< Decoder >::GPUBRKGA(unsigned _n, unsigned _p, double _pe, double _pm, double _rhoe, const Decoder& _refDecoder, int _seed, bool _gpu_deco,
-		unsigned _K) throw(std::range_error) :
+		unsigned _K, bool rf) throw(std::range_error) :
 		n(_n), p(_p), pe(unsigned(_pe * p)), pm(unsigned(_pm * p)), rhoe(_rhoe), refDecoder(_refDecoder), seed(_seed), gpu_deco(_gpu_deco),
-		K(_K){
+		K(_K), isFixedVersion(rf) {
 	// Error check:
 	using std::range_error;
 	if(n == 0) { throw range_error("Chromosome size equals zero."); }
@@ -395,17 +398,17 @@ inline void GPUBRKGA< Decoder >::evolution() {
 		if(d_temp_storage == NULL)
 		{
 			cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
-				d_prevFitnessKeys + offf, d_currFitnessKeys + offf, d_prevFitnessValues + offf, d_currFitnessValues + offf, p);
+				d_prevFitnessKeys + isFixedVersion * offf, d_currFitnessKeys + isFixedVersion * offf, 
+				d_prevFitnessValues + isFixedVersion * offf, d_currFitnessValues + isFixedVersion * offf, p);
 			// Allocate temporary storage
 			cudaMalloc(&d_temp_storage, temp_storage_bytes);
 		}
 
 		// Run sorting operation
 		cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
-			d_prevFitnessKeys + offf, d_currFitnessKeys + offf, d_prevFitnessValues + offf, d_currFitnessValues + offf, p);
+			d_prevFitnessKeys + isFixedVersion * offf, d_currFitnessKeys + isFixedVersion * offf, 
+			d_prevFitnessValues + isFixedVersion * offf, d_currFitnessValues + isFixedVersion * offf, p);
 	}
-
-	cudaFree(d_temp_storage);
 }
 
 template< class Decoder >
