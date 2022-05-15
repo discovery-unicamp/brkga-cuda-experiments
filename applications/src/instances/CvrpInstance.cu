@@ -45,7 +45,7 @@ __global__ void fastSortedDecoder(float* results,
   unsigned u = 0;
   float fitness = 0;
   for (unsigned i = 0; i < tourLength; ++i) {
-    auto v = tour[i];
+    auto v = tour[i] + 1;
     if (truckFilled + demands[v] >= capacity) {
       // Truck is full: return from the previous client to the depot.
       fitness += distances[u];
@@ -74,9 +74,9 @@ __global__ void setupDemands(unsigned* accDemandList,
   const auto* tour = tourList + tid * n;
   auto* accDemand = accDemandList + tid * n;
 
-  accDemand[0] = demands[tour[0]];
+  accDemand[0] = demands[tour[0] + 1];
   for (unsigned i = 1; i < n; ++i)
-    accDemand[i] = accDemand[i - 1] + demands[tour[i]];
+    accDemand[i] = accDemand[i - 1] + demands[tour[i] + 1];
 }
 
 __global__ void setupCosts(float* accCostList,
@@ -92,8 +92,12 @@ __global__ void setupCosts(float* accCostList,
   auto* accCost = accCostList + tid * n;
 
   accCost[0] = 0;
-  for (unsigned i = 1; i < n; ++i)
-    accCost[i] = accCost[i - 1] + distances[tour[i - 1] * (n + 1) + tour[i]];
+  unsigned u = tour[0] + 1;
+  for (unsigned i = 1; i < n; ++i) {
+    unsigned v = tour[i] + 1;
+    accCost[i] = accCost[i - 1] + distances[u * (n + 1) + v];
+    u = v;
+  }
 }
 
 __global__ void sortedDecode(float* results,
@@ -119,7 +123,7 @@ __global__ void sortedDecode(float* results,
     if (accDemand[r] - (l == 0 ? 0 : accDemand[l - 1]) > capacity)
       return INFINITY;
 
-    float fromToDepot = distances[tour[l]] + distances[tour[r]];
+    float fromToDepot = distances[tour[l] + 1] + distances[tour[r] + 1];
     float tourCost = accCost[r] - accCost[l];
     return fromToDepot + tourCost;
   };
