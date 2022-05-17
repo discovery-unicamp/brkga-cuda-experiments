@@ -140,27 +140,18 @@ inline void copy_dtoh(cudaStream_t stream, T* dest, const T* src, size_t n) {
  * Sets the sequence `0, 1, ..., n-1` to an array.
  * @param arr The array to store the sequence
  * @param n The size of the array.
- * @param threads The number of threads on the device to use.
  * @param stream The stream to process.
  */
-void iota(cudaStream_t stream,
-          unsigned* arr,
-          unsigned n,
-          unsigned threads = 256);
+void iota(cudaStream_t stream, unsigned* arr, unsigned n);
 
 /**
  * Sets the sequence `0, 1, ..., k-1, 0, 1, ...` and so on to an array.
  * @param arr The array to store the sequence
  * @param n The size of the array.
  * @param k The steps of the sequence.
- * @param threads The number of threads on the device to use.
  * @param stream The stream to process.
  */
-void iotaMod(cudaStream_t stream,
-             unsigned* arr,
-             unsigned n,
-             unsigned k,
-             unsigned threads = 256);
+void iotaMod(cudaStream_t stream, unsigned* arr, unsigned n, unsigned k);
 
 /**
  * Set all values of an array to random values in range [0, 1].

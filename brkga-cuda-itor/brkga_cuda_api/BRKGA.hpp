@@ -95,13 +95,6 @@ private:
   void sortChromosomesGenes();
 
   /**
-   * Sorts the population `p`.
-   *
-   * @param p The index of the population to sort.
-   */
-  void sortChromosomesPipe(unsigned p);
-
-  /**
    * Ensures the fitness is sorted.
    *
    * This operation should be executed after each change to any chromosome.
@@ -118,7 +111,6 @@ private:
 
   CudaMatrix<float> fitness;  /// The (sorted) fitness of each chromosome
   cuda::Matrix<unsigned> dFitnessIdx;
-  std::vector<std::vector<unsigned>> fitnessIdx;
   CudaMatrix<unsigned> chromosomeIdx;  /// Index of the genes when sorted
 
   CudaMatrix<float> randomEliteParent;  /// The elite parent

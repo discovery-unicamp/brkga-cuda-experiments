@@ -12,7 +12,7 @@ void TspInstance::deviceDecode(cudaStream_t stream,
   auto* indices = cuda::alloc<unsigned>(length);
 
   cuda::copy(stream, keys, dChromosomes, length);
-  cuda::iotaMod(stream, indices, length, chromosomeLength(), threadsPerBlock);
+  cuda::iotaMod(stream, indices, length, chromosomeLength());
   cuda::segSort(keys, indices, length, chromosomeLength());
 
   deviceSortedDecode(stream, numberOfChromosomes, indices, dResults);

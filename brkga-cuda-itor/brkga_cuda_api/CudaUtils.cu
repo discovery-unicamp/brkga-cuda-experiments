@@ -9,11 +9,8 @@ __global__ void deviceIota(unsigned* arr, unsigned n) {
   for (unsigned i = threadIdx.x; i < n; i += blockDim.x) arr[i] = i;
 }
 
-void cuda::iota(cudaStream_t stream,
-                unsigned* arr,
-                unsigned n,
-                unsigned threads) {
-  logger::debug("iota", n, threads);
+void cuda::iota(cudaStream_t stream, unsigned* arr, unsigned n) {
+  constexpr auto threads = 256;
   deviceIota<<<1, threads, 0, stream>>>(arr, n);
   CUDA_CHECK_LAST();
 }
@@ -22,12 +19,8 @@ __global__ void deviceIotaMod(unsigned* arr, unsigned n, unsigned k) {
   for (unsigned i = threadIdx.x; i < n; i += blockDim.x) arr[i] = i % k;
 }
 
-void cuda::iotaMod(cudaStream_t stream,
-                   unsigned* arr,
-                   unsigned n,
-                   unsigned k,
-                   unsigned threads) {
-  logger::debug("iota", n, k, threads);
+void cuda::iotaMod(cudaStream_t stream, unsigned* arr, unsigned n, unsigned k) {
+  constexpr auto threads = 256;
   deviceIotaMod<<<1, threads, 0, stream>>>(arr, n, k);
   CUDA_CHECK_LAST();
 }

@@ -16,8 +16,7 @@ void CvrpInstance::deviceDecode(cudaStream_t stream,
   cuda::copy(stream, dChromosomesCopy, dChromosomes, numberOfGenes);
 
   unsigned* idx = cuda::alloc<unsigned>(numberOfGenes);
-  cuda::iotaMod(stream, idx, numberOfGenes, chromosomeLength(),
-                threadsPerBlock);
+  cuda::iotaMod(stream, idx, numberOfGenes, chromosomeLength());
 
   // FIXME We need to block the host
   cuda::sync(stream);
