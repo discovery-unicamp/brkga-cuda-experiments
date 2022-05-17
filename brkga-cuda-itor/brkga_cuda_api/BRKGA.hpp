@@ -106,8 +106,9 @@ private:
 
   Decoder* decoder;  /// The decoder of the problem
 
-  CudaMatrix<float> population;  /// All the chromosomes
-  CudaMatrix<float> populationTemp;  /// Temp memory for chromosomes
+  cuda::Matrix<float> dPopulation;  /// All the chromosomes
+  std::vector<std::vector<float>> population;
+  cuda::Matrix<float> dPopulationTemp;  /// Temp memory for chromosomes
 
   cuda::Matrix<float> dFitness;  /// The (sorted) fitness of each chromosome
   std::vector<std::vector<float>> fitness;
