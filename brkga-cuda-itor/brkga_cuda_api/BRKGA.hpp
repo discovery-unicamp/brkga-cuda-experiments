@@ -109,7 +109,8 @@ private:
   CudaMatrix<float> population;  /// All the chromosomes
   CudaMatrix<float> populationTemp;  /// Temp memory for chromosomes
 
-  CudaMatrix<float> fitness;  /// The (sorted) fitness of each chromosome
+  cuda::Matrix<float> dFitness;  /// The (sorted) fitness of each chromosome
+  std::vector<std::vector<float>> fitness;
   cuda::Matrix<unsigned> dFitnessIdx;
   cuda::Matrix<unsigned> dChromosomeIdx;  /// Indices of the genes when sorted
   std::vector<std::vector<unsigned>> chromosomeIdx;

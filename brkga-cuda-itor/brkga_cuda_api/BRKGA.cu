@@ -29,7 +29,7 @@ BRKGA::BRKGA(const BrkgaConfiguration& config)
                  config.populationSize * config.chromosomeLength),
       populationTemp(config.numberOfPopulations,
                      config.populationSize * config.chromosomeLength),
-      fitness(config.numberOfPopulations, config.populationSize),
+      dFitness(config.numberOfPopulations, config.populationSize),
       dFitnessIdx(config.numberOfPopulations, config.populationSize),
       dChromosomeIdx(config.numberOfPopulations,
                      config.populationSize * config.chromosomeLength),
@@ -179,16 +179,36 @@ void BRKGA::updateFitness() {
     sortChromosomesGenes();
 
   if (decodeType == DecodeType::HOST_SORTED) {
+    chromosomeIdx.resize(numberOfPopulations);
     for (unsigned p = 0; p < numberOfPopulations; ++p) {
+      chromosomeIdx[p].resize(populationSize * chromosomeSize);
       cuda::copy_dtoh(streams[p], chromosomeIdx[p].data(),
                       dChromosomeIdx.row(p), populationSize * chromosomeSize);
     }
   }
 
+  if (decodeType == DecodeType::HOST || decodeType == DecodeType::HOST_SORTED) {
+    fitness.resize(numberOfPopulations);
+    for (unsigned p = 0; p < numberOfPopulations; ++p) {
+      fitness[p].resize(populationSize);
+      cuda::copy_dtoh(streams[p], fitness[p].data(), dFitness.row(p),
+                      populationSize);
+    }
+
+    syncStreams();  // Sync to decode on host
+  }
+
   for (unsigned p = 0; p < numberOfPopulations; ++p) {
     decodePopulation(p);
+
+    if (decodeType == DecodeType::HOST
+        || decodeType == DecodeType::HOST_SORTED) {
+      cuda::copy_htod(streams[p], dFitness.row(p), fitness[p].data(),
+                      populationSize);
+    }
+
     cuda::iota(streams[p], dFitnessIdx.row(p), populationSize);
-    cuda::sortByKey(streams[p], fitness.deviceRow(p), dFitnessIdx.row(p),
+    cuda::sortByKey(streams[p], dFitness.row(p), dFitnessIdx.row(p),
                     populationSize);
   }
 }
@@ -197,24 +217,21 @@ void BRKGA::decodePopulation(unsigned p) {
   logger::debug("Decode population", p, "with", toString(decodeType),
                 "decoder");
 
-  if (decodeType == DecodeType::HOST || decodeType == DecodeType::HOST_SORTED)
-    cuda::sync(streams[p]);
-
   logger::debug("Calling", toString(decodeType), "decoder");
   if (decodeType == DecodeType::DEVICE) {
     decoder->deviceDecode(streams[p], populationSize, population.deviceRow(p),
-                          fitness.deviceRow(p));
+                          dFitness.row(p));
     CUDA_CHECK_LAST();
   } else if (decodeType == DecodeType::DEVICE_SORTED) {
     decoder->deviceSortedDecode(streams[p], populationSize,
-                                dChromosomeIdx.row(p), fitness.deviceRow(p));
+                                dChromosomeIdx.row(p), dFitness.row(p));
     CUDA_CHECK_LAST();
   } else if (decodeType == DecodeType::HOST) {
     decoder->hostDecode(populationSize, population.hostRow(p),
-                        fitness.hostRow(p));
+                        fitness[p].data());
   } else if (decodeType == DecodeType::HOST_SORTED) {
     decoder->hostSortedDecode(populationSize, chromosomeIdx[p].data(),
-                              fitness.hostRow(p));
+                              fitness[p].data());
   } else {
     throw std::domain_error("Function decode type is unknown");
   }
@@ -347,31 +364,32 @@ std::vector<unsigned> BRKGA::getBestIndices() {
 
 float BRKGA::getBestFitness() {
   auto bestPopulation = getBest().first;
-  auto bestFitness = fitness.hostRow(bestPopulation)[0];
+  float bestFitness = -1;
+  cuda::copy_dtoh(nullptr, &bestFitness, dFitness.row(bestPopulation), 1);
   return bestFitness;
 }
 
 std::pair<unsigned, unsigned> BRKGA::getBest() {
   logger::debug("Searching for the best population/chromosome");
+
+  std::vector<float> bestFitness(numberOfPopulations, -1);
+  for (unsigned p = 0; p < numberOfPopulations; ++p)
+    cuda::copy_dtoh(streams[p], &bestFitness[p], dFitness.row(p), 1);
+
   syncStreams();
 
   // Find the best population
   unsigned bestPopulation = 0;
-  float bestFitness = fitness.hostRow(0)[0];
   for (unsigned p = 1; p < numberOfPopulations; ++p) {
-    float pFitness = fitness.hostRow(p)[0];
-    if (pFitness < bestFitness) {
-      bestFitness = pFitness;
-      bestPopulation = p;
-    }
+    if (bestFitness[p] < bestFitness[bestPopulation]) bestPopulation = p;
   }
 
   // Get the index of the best chromosome
   unsigned bestChromosome = (unsigned)(-1);
   cuda::copy_dtoh(nullptr, &bestChromosome, dFitnessIdx.row(bestPopulation), 1);
 
-  logger::debug("Best fitness:", bestFitness, "on population", bestPopulation,
-                "and chromosome", bestChromosome);
+  logger::debug("Best fitness:", bestFitness[bestPopulation], "on population",
+                bestPopulation, "and chromosome", bestChromosome);
 
   return {bestPopulation, bestChromosome};
 }
