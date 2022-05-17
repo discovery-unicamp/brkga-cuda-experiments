@@ -11,6 +11,7 @@
 
 #include "BrkgaConfiguration.hpp"
 #include "CudaContainers.cuh"
+#include "CudaUtils.hpp"
 
 #include <curand.h>  // TODO check if this header is required here
 
@@ -78,6 +79,8 @@ public:
   std::vector<unsigned> getBestIndices();
 
 private:
+  std::pair<unsigned, unsigned> getBest();
+
   /// Sync all streams (except the default) with the host
   void syncStreams();
 
@@ -114,7 +117,8 @@ private:
   CudaMatrix<float> populationTemp;  /// Temp memory for chromosomes
 
   CudaMatrix<float> fitness;  /// The (sorted) fitness of each chromosome
-  CudaMatrix<unsigned> fitnessIdx;  /// Index of the chromosome with cur fitness
+  cuda::Matrix<unsigned> dFitnessIdx;
+  std::vector<std::vector<unsigned>> fitnessIdx;
   CudaMatrix<unsigned> chromosomeIdx;  /// Index of the genes when sorted
 
   CudaMatrix<float> randomEliteParent;  /// The elite parent

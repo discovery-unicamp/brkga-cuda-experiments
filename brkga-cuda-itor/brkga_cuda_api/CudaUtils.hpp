@@ -9,6 +9,8 @@
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 
+#include <stdexcept>
+
 /// C++ wrapper for operations in the device.
 namespace cuda {
 /// Synchronize the host with the main thread in the device.
@@ -219,6 +221,27 @@ void segSort(float* dKeys,
              unsigned* dValues,
              std::size_t size,
              std::size_t step);
+
+template <class T>
+class Matrix {
+public:
+  inline Matrix(std::size_t _nrows, std::size_t _ncols)
+      : nrows(_nrows), ncols(_ncols), matrix(alloc<T>(nrows * ncols)) {}
+
+  ~Matrix() { free(matrix); }
+
+  inline T* get() { return matrix; }
+
+  inline T* row(std::size_t k) {
+    if (k >= nrows) throw std::out_of_range("Invalid matrix row");
+    return matrix + k * ncols;
+  }
+
+private:
+  std::size_t nrows;
+  std::size_t ncols;
+  T* matrix;
+};
 }  // namespace cuda
 
 #endif  // BRKGA_CUDA_API_CUDAUTILS_CUH
