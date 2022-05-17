@@ -111,7 +111,8 @@ private:
 
   CudaMatrix<float> fitness;  /// The (sorted) fitness of each chromosome
   cuda::Matrix<unsigned> dFitnessIdx;
-  CudaMatrix<unsigned> chromosomeIdx;  /// Index of the genes when sorted
+  cuda::Matrix<unsigned> dChromosomeIdx;  /// Indices of the genes when sorted
+  std::vector<std::vector<unsigned>> chromosomeIdx;
 
   CudaMatrix<float> randomEliteParent;  /// The elite parent
   CudaMatrix<float> randomParent;  /// The non-elite parent

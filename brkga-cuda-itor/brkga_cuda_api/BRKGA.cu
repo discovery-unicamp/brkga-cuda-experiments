@@ -31,8 +31,8 @@ BRKGA::BRKGA(const BrkgaConfiguration& config)
                      config.populationSize * config.chromosomeLength),
       fitness(config.numberOfPopulations, config.populationSize),
       dFitnessIdx(config.numberOfPopulations, config.populationSize),
-      chromosomeIdx(config.numberOfPopulations,
-                    config.populationSize * config.chromosomeLength),
+      dChromosomeIdx(config.numberOfPopulations,
+                     config.populationSize * config.chromosomeLength),
       randomEliteParent(config.numberOfPopulations, config.populationSize),
       randomParent(config.numberOfPopulations, config.populationSize) {
   CUDA_CHECK_LAST();
@@ -178,6 +178,13 @@ void BRKGA::updateFitness() {
       || decodeType == DecodeType::HOST_SORTED)
     sortChromosomesGenes();
 
+  if (decodeType == DecodeType::HOST_SORTED) {
+    for (unsigned p = 0; p < numberOfPopulations; ++p) {
+      cuda::copy_dtoh(streams[p], chromosomeIdx[p].data(),
+                      dChromosomeIdx.row(p), populationSize * chromosomeSize);
+    }
+  }
+
   for (unsigned p = 0; p < numberOfPopulations; ++p) {
     decodePopulation(p);
     cuda::iota(streams[p], dFitnessIdx.row(p), populationSize);
@@ -200,14 +207,13 @@ void BRKGA::decodePopulation(unsigned p) {
     CUDA_CHECK_LAST();
   } else if (decodeType == DecodeType::DEVICE_SORTED) {
     decoder->deviceSortedDecode(streams[p], populationSize,
-                                chromosomeIdx.deviceRow(p),
-                                fitness.deviceRow(p));
+                                dChromosomeIdx.row(p), fitness.deviceRow(p));
     CUDA_CHECK_LAST();
   } else if (decodeType == DecodeType::HOST) {
     decoder->hostDecode(populationSize, population.hostRow(p),
                         fitness.hostRow(p));
   } else if (decodeType == DecodeType::HOST_SORTED) {
-    decoder->hostSortedDecode(populationSize, chromosomeIdx.hostRow(p),
+    decoder->hostSortedDecode(populationSize, chromosomeIdx[p].data(),
                               fitness.hostRow(p));
   } else {
     throw std::domain_error("Function decode type is unknown");
@@ -220,7 +226,7 @@ void BRKGA::sortChromosomesGenes() {
   logger::debug("Sorting the chromosomes for sorted decode");
 
   for (unsigned p = 0; p < numberOfPopulations; ++p)
-    cuda::iotaMod(streams[p], chromosomeIdx.deviceRow(p),
+    cuda::iotaMod(streams[p], dChromosomeIdx.row(p),
                   populationSize * chromosomeSize, chromosomeSize);
 
   // Copy to temp memory since the sort modifies the original array.
@@ -233,7 +239,7 @@ void BRKGA::sortChromosomesGenes() {
   // FIXME We should sort each chromosome on its own thread to avoid
   //  synchonization.
   syncStreams();
-  cuda::segSort(populationTemp.device(), chromosomeIdx.device(),
+  cuda::segSort(populationTemp.device(), dChromosomeIdx.get(),
                 numberOfChromosomes * chromosomeSize, chromosomeSize);
 }
 
@@ -331,9 +337,10 @@ std::vector<unsigned> BRKGA::getBestIndices() {
 
   // Copy the best chromosome
   std::vector<unsigned> best(chromosomeSize);
-  chromosomeIdx.row(bestPopulation)
-      .subarray(bestChromosome * chromosomeSize, chromosomeSize)
-      .copyTo(best.data());
+  cuda::copy_dtoh(
+      nullptr, best.data(),
+      dChromosomeIdx.row(bestPopulation) + bestChromosome * chromosomeSize,
+      chromosomeSize);
 
   return best;
 }
