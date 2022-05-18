@@ -10,7 +10,6 @@
 #define BRKGA_H
 
 #include "BrkgaConfiguration.hpp"
-#include "CudaContainers.cuh"
 #include "CudaUtils.hpp"
 
 #include <curand.h>  // TODO check if this header is required here
@@ -116,8 +115,8 @@ private:
   cuda::Matrix<unsigned> dChromosomeIdx;  /// Indices of the genes when sorted
   std::vector<std::vector<unsigned>> chromosomeIdx;
 
-  CudaMatrix<float> randomEliteParent;  /// The elite parent
-  CudaMatrix<float> randomParent;  /// The non-elite parent
+  cuda::Matrix<float> dRandomEliteParent;  /// The elite parent
+  cuda::Matrix<float> dRandomParent;  /// The non-elite parent
 
   unsigned numberOfChromosomes;  /// Total number of chromosomes
   unsigned numberOfGenes;  /// Total number of genes

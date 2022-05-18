@@ -7,7 +7,6 @@
  */
 #include "BRKGA.hpp"
 #include "BrkgaConfiguration.hpp"
-#include "CudaContainers.cuh"
 #include "CudaError.cuh"
 #include "CudaUtils.hpp"
 #include "DecodeType.hpp"
@@ -33,8 +32,8 @@ BRKGA::BRKGA(const BrkgaConfiguration& config)
       dFitnessIdx(config.numberOfPopulations, config.populationSize),
       dChromosomeIdx(config.numberOfPopulations,
                      config.populationSize * config.chromosomeLength),
-      randomEliteParent(config.numberOfPopulations, config.populationSize),
-      randomParent(config.numberOfPopulations, config.populationSize) {
+      dRandomEliteParent(config.numberOfPopulations, config.populationSize),
+      dRandomParent(config.numberOfPopulations, config.populationSize) {
   CUDA_CHECK_LAST();
   decoder = config.decoder;
   numberOfPopulations = config.numberOfPopulations;
@@ -134,10 +133,10 @@ void BRKGA::evolve() {
     cuda::random(streams[p], generators[p], dPopulationTemp.row(p),
                  populationSize * chromosomeSize);
   for (unsigned p = 0; p < numberOfPopulations; ++p)
-    cuda::random(streams[p], generators[p], randomEliteParent.deviceRow(p),
+    cuda::random(streams[p], generators[p], dRandomEliteParent.row(p),
                  populationSize - mutantsSize);
   for (unsigned p = 0; p < numberOfPopulations; ++p)
-    cuda::random(streams[p], generators[p], randomParent.deviceRow(p),
+    cuda::random(streams[p], generators[p], dRandomParent.row(p),
                  populationSize - mutantsSize);
 
   logger::debug("Copying the elites to the next generation");
@@ -156,7 +155,7 @@ void BRKGA::evolve() {
         threadsPerBlock);
     evolveMate<<<blocks, threadsPerBlock, 0, streams[p]>>>(
         dPopulationTemp.row(p), dPopulation.row(p), dFitnessIdx.row(p),
-        randomEliteParent.deviceRow(p), randomParent.deviceRow(p),
+        dRandomEliteParent.row(p), dRandomParent.row(p),
         populationSize, eliteSize, mutantsSize, chromosomeSize, rhoe);
   }
   CUDA_CHECK_LAST();
