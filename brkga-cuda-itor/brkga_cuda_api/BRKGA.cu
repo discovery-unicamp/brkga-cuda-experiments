@@ -131,7 +131,7 @@ __global__ void evolveMate(float* population,
 void BRKGA::evolve() {
   logger::debug("Selecting the parents for the evolution");
   for (unsigned p = 0; p < numberOfPopulations; ++p)
-    cuda::random(streams[p], generators[p], populationTemp.deviceRow(p),
+    cuda::random(streams[p], generators[p], dPopulationTemp.row(p),
                  populationSize * chromosomeSize);
   for (unsigned p = 0; p < numberOfPopulations; ++p)
     cuda::random(streams[p], generators[p], randomEliteParent.deviceRow(p),
@@ -219,6 +219,25 @@ void BRKGA::updateFitness() {
   }
 }
 
+void BRKGA::sortChromosomesGenes() {
+  logger::debug("Sorting the chromosomes for sorted decode");
+
+  for (unsigned p = 0; p < numberOfPopulations; ++p)
+    cuda::iotaMod(streams[p], dChromosomeIdx.row(p),
+                  populationSize * chromosomeSize, chromosomeSize);
+
+  // Copy to temp memory since the sort modifies the original array.
+  for (unsigned p = 0; p < numberOfPopulations; ++p)
+    cuda::copy(streams[p], dPopulationTemp.row(p), dPopulation.row(p),
+               populationSize * chromosomeSize);
+
+  // FIXME We should sort each chromosome on its own thread to avoid
+  //  synchonization.
+  syncStreams();
+  cuda::segSort(dPopulationTemp.get(), dChromosomeIdx.get(),
+                numberOfChromosomes * chromosomeSize, chromosomeSize);
+}
+
 void BRKGA::decodePopulation(unsigned p) {
   logger::debug("Decode population", p, "with", toString(decodeType),
                 "decoder");
@@ -243,25 +262,6 @@ void BRKGA::decodePopulation(unsigned p) {
   }
 
   logger::debug("Finished the decoder of the population", p);
-}
-
-void BRKGA::sortChromosomesGenes() {
-  logger::debug("Sorting the chromosomes for sorted decode");
-
-  for (unsigned p = 0; p < numberOfPopulations; ++p)
-    cuda::iotaMod(streams[p], dChromosomeIdx.row(p),
-                  populationSize * chromosomeSize, chromosomeSize);
-
-  // Copy to temp memory since the sort modifies the original array.
-  for (unsigned p = 0; p < numberOfPopulations; ++p)
-    cuda::copy(streams[p], dPopulationTemp.row(p), dPopulation.row(p),
-               populationSize * chromosomeSize);
-
-  // FIXME We should sort each chromosome on its own thread to avoid
-  //  synchonization.
-  syncStreams();
-  cuda::segSort(populationTemp.get(), dChromosomeIdx.get(),
-                numberOfChromosomes * chromosomeSize, chromosomeSize);
 }
 
 /**

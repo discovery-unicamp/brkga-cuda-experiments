@@ -122,6 +122,8 @@ inline void copy_htod(cudaStream_t stream, T* dest, const T* src, size_t n) {
  */
 template <class T>
 inline void copy_dtoh(cudaStream_t stream, T* dest, const T* src, size_t n) {
+  logger::debug("Copy", n, "elements from", src, "(device) to", dest,
+                "(host) on stream", stream);
   CUDA_CHECK(cudaMemcpyAsync(dest, src, n * sizeof(T), cudaMemcpyDeviceToHost,
                              stream));
 }
@@ -219,6 +221,13 @@ public:
   inline Matrix(std::size_t _nrows, std::size_t _ncols)
       : nrows(_nrows), ncols(_ncols), matrix(alloc<T>(nrows * ncols)) {}
 
+  Matrix(const Matrix&) = delete;
+
+  inline Matrix(Matrix&& that)
+      : nrows(that.nrows), ncols(that.ncols), matrix(that.matrix) {
+    that.matrix = nullptr;
+  }
+
   ~Matrix() { free(matrix); }
 
   inline T* get() { return matrix; }
@@ -228,11 +237,24 @@ public:
     return matrix + k * ncols;
   }
 
+  inline void swap(Matrix& that) {
+    std::swap(nrows, that.nrows);
+    std::swap(ncols, that.ncols);
+    std::swap(matrix, that.matrix);
+  }
+
 private:
   std::size_t nrows;
   std::size_t ncols;
   T* matrix;
 };
 }  // namespace cuda
+
+namespace std {
+template <class T>
+inline void swap(cuda::Matrix<T>& lhs, cuda::Matrix<T>& rhs) {
+  lhs.swap(rhs);
+}
+}  // namespace std
 
 #endif  // BRKGA_CUDA_API_CUDAUTILS_CUH
