@@ -14,6 +14,11 @@ run: .setup
 open-terminal:
 	docker run -v $(project_path)/:/brkga/ --rm -it ubuntu
 
+.PHONY: fix-git
+fix-git: # Rule created due the errors on dl-1
+	find .git/objects/ -size 0 -exec rm -f {} \;
+	git fetch origin
+
 .PHONY: clean
 clean:
 	docker run -v $(project_path)/:/brkga/ --rm ubuntu /bin/bash -c 'cd brkga; rm -f .setup; rm -rf build-*'
