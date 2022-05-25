@@ -289,7 +289,7 @@ def main():
         tools=['brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
         decoder='host',
         is_fast_decode=True,
-        test_count=1,
+        test_count=10,
     ))
     exit()
 

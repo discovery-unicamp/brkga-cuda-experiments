@@ -31,7 +31,6 @@ int main(int argc, char** argv) {
   std::string problem;
   std::string instanceFileName;
   unsigned logStep = 0;
-  bool printOptimalDecode = false;
 
   BrkgaConfiguration::Builder configBuilder;
 
@@ -177,7 +176,7 @@ int main(int argc, char** argv) {
   float optimalDecoderFitness = -1;
   if (isFastDecode) {
     isFastDecode = false;
-    instance->hostDecode(1, bestChromosome, &optimalDecoderFitness);
+    instance->hostDecode(1, bestChromosome.data(), &optimalDecoderFitness);
     isFastDecode = true;
   }
 
@@ -186,11 +185,10 @@ int main(int argc, char** argv) {
   logger::info("Optimization finished after", timeElapsedMs / 1000,
                "seconds with solution", fitness);
 
-  std::cout << std::fixed << std::setprecision(6) << "ans=" << fitness
-            << " elapsed=" << timeElapsedMs / 1000
-            << " convergence=" << str(convergence, ",");
+  std::cout << std::fixed << std::setprecision(6) << "ans=" << fitness;
   if (isFastDecode) std::cout << " opt-decoder-ans=" << optimalDecoderFitness;
-  std::cout << '\n';
+  std::cout << " elapsed=" << timeElapsedMs / 1000
+            << " convergence=" << str(convergence, ",") << '\n';
 
   logger::info("Exiting gracefully");
   return 0;

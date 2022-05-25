@@ -2,7 +2,7 @@
 #define BRKGA_CUDA_API_LOGGER_HPP
 
 #ifndef LOG_LEVEL
-#define LOG_LEVEL 2
+#define LOG_LEVEL _LogType::WARNING
 #endif  // LOG_LEVEL
 
 #include <iostream>
