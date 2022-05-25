@@ -16,5 +16,5 @@ open-terminal:
 
 .PHONY: clean
 clean:
-	rm -f .setup core
-	rm -rf build-*
+	docker run -v $(project_path)/:/brkga/ --rm ubuntu /bin/bash -c 'cd brkga; rm -f .setup; rm -rf build-*'
+	docker rmi $$(docker images 'brkga' -a -q) || exit 0
