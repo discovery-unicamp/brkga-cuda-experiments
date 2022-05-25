@@ -10,7 +10,7 @@
 #define BRKGA_H
 
 #include "BrkgaConfiguration.hpp"
-#include "CudaContainers.cuh"
+#include "CudaUtils.hpp"
 
 #include <curand.h>  // TODO check if this header is required here
 
@@ -78,6 +78,8 @@ public:
   std::vector<unsigned> getBestIndices();
 
 private:
+  std::pair<unsigned, unsigned> getBest();
+
   /// Sync all streams (except the default) with the host
   void syncStreams();
 
@@ -92,13 +94,6 @@ private:
   void sortChromosomesGenes();
 
   /**
-   * Sorts the population `p`.
-   *
-   * @param p The index of the population to sort.
-   */
-  void sortChromosomesPipe(unsigned p);
-
-  /**
    * Ensures the fitness is sorted.
    *
    * This operation should be executed after each change to any chromosome.
@@ -110,15 +105,18 @@ private:
 
   Decoder* decoder;  /// The decoder of the problem
 
-  CudaMatrix<float> population;  /// All the chromosomes
-  CudaMatrix<float> populationTemp;  /// Temp memory for chromosomes
+  cuda::Matrix<float> dPopulation;  /// All the chromosomes
+  std::vector<std::vector<float>> population;
+  cuda::Matrix<float> dPopulationTemp;  /// Temp memory for chromosomes
 
-  CudaMatrix<float> fitness;  /// The (sorted) fitness of each chromosome
-  CudaMatrix<unsigned> fitnessIdx;  /// Index of the chromosome with cur fitness
-  CudaMatrix<unsigned> chromosomeIdx;  /// Index of the genes when sorted
+  cuda::Matrix<float> dFitness;  /// The (sorted) fitness of each chromosome
+  std::vector<std::vector<float>> fitness;
+  cuda::Matrix<unsigned> dFitnessIdx;
+  cuda::Matrix<unsigned> dChromosomeIdx;  /// Indices of the genes when sorted
+  std::vector<std::vector<unsigned>> chromosomeIdx;
 
-  CudaMatrix<float> randomEliteParent;  /// The elite parent
-  CudaMatrix<float> randomParent;  /// The non-elite parent
+  cuda::Matrix<float> dRandomEliteParent;  /// The elite parent
+  cuda::Matrix<float> dRandomParent;  /// The non-elite parent
 
   unsigned numberOfChromosomes;  /// Total number of chromosomes
   unsigned numberOfGenes;  /// Total number of genes

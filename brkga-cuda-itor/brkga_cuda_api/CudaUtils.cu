@@ -6,29 +6,22 @@
 #include <cctype>
 
 __global__ void deviceIota(unsigned* arr, unsigned n) {
-  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid < n) arr[tid] = tid;
+  for (unsigned i = threadIdx.x; i < n; i += blockDim.x) arr[i] = i;
 }
 
-void cuda::iota(cudaStream_t stream,
-                unsigned* arr,
-                unsigned n,
-                unsigned threads) {
-  deviceIota<<<cuda::blocks(n, threads), threads, 0, stream>>>(arr, n);
+void cuda::iota(cudaStream_t stream, unsigned* arr, unsigned n) {
+  constexpr auto threads = 256;
+  deviceIota<<<1, threads, 0, stream>>>(arr, n);
   CUDA_CHECK_LAST();
 }
 
 __global__ void deviceIotaMod(unsigned* arr, unsigned n, unsigned k) {
-  auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid < n) arr[tid] = tid % k;
+  for (unsigned i = threadIdx.x; i < n; i += blockDim.x) arr[i] = i % k;
 }
 
-void cuda::iotaMod(cudaStream_t stream,
-                   unsigned* arr,
-                   unsigned n,
-                   unsigned k,
-                   unsigned threads) {
-  deviceIotaMod<<<cuda::blocks(n, threads), threads, 0, stream>>>(arr, n, k);
+void cuda::iotaMod(cudaStream_t stream, unsigned* arr, unsigned n, unsigned k) {
+  constexpr auto threads = 256;
+  deviceIotaMod<<<1, threads, 0, stream>>>(arr, n, k);
   CUDA_CHECK_LAST();
 }
 
@@ -42,5 +35,4 @@ void cuda::segSort(float* dKeys,
                    std::size_t step) {
   bbSegSort(dKeys, dValues, size, step);
   CUDA_CHECK_LAST();
-  cuda::sync();
 }

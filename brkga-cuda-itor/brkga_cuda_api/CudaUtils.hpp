@@ -9,6 +9,8 @@
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 
+#include <stdexcept>
+
 /// C++ wrapper for operations in the device.
 namespace cuda {
 /// Synchronize the host with the main thread in the device.
@@ -120,6 +122,8 @@ inline void copy_htod(cudaStream_t stream, T* dest, const T* src, size_t n) {
  */
 template <class T>
 inline void copy_dtoh(cudaStream_t stream, T* dest, const T* src, size_t n) {
+  logger::debug("Copy", n, "elements from", src, "(device) to", dest,
+                "(host) on stream", stream);
   CUDA_CHECK(cudaMemcpyAsync(dest, src, n * sizeof(T), cudaMemcpyDeviceToHost,
                              stream));
 }
@@ -138,27 +142,18 @@ inline void copy_dtoh(cudaStream_t stream, T* dest, const T* src, size_t n) {
  * Sets the sequence `0, 1, ..., n-1` to an array.
  * @param arr The array to store the sequence
  * @param n The size of the array.
- * @param threads The number of threads on the device to use.
  * @param stream The stream to process.
  */
-void iota(cudaStream_t stream,
-          unsigned* arr,
-          unsigned n,
-          unsigned threads = 256);
+void iota(cudaStream_t stream, unsigned* arr, unsigned n);
 
 /**
  * Sets the sequence `0, 1, ..., k-1, 0, 1, ...` and so on to an array.
  * @param arr The array to store the sequence
  * @param n The size of the array.
  * @param k The steps of the sequence.
- * @param threads The number of threads on the device to use.
  * @param stream The stream to process.
  */
-void iotaMod(cudaStream_t stream,
-             unsigned* arr,
-             unsigned n,
-             unsigned k,
-             unsigned threads = 256);
+void iotaMod(cudaStream_t stream, unsigned* arr, unsigned n, unsigned k);
 
 /**
  * Set all values of an array to random values in range [0, 1].
@@ -219,6 +214,47 @@ void segSort(float* dKeys,
              unsigned* dValues,
              std::size_t size,
              std::size_t step);
+
+template <class T>
+class Matrix {
+public:
+  inline Matrix(std::size_t _nrows, std::size_t _ncols)
+      : nrows(_nrows), ncols(_ncols), matrix(alloc<T>(nrows * ncols)) {}
+
+  Matrix(const Matrix&) = delete;
+
+  inline Matrix(Matrix&& that)
+      : nrows(that.nrows), ncols(that.ncols), matrix(that.matrix) {
+    that.matrix = nullptr;
+  }
+
+  ~Matrix() { free(matrix); }
+
+  inline T* get() { return matrix; }
+
+  inline T* row(std::size_t k) {
+    if (k >= nrows) throw std::out_of_range("Invalid matrix row");
+    return matrix + k * ncols;
+  }
+
+  inline void swap(Matrix& that) {
+    std::swap(nrows, that.nrows);
+    std::swap(ncols, that.ncols);
+    std::swap(matrix, that.matrix);
+  }
+
+private:
+  std::size_t nrows;
+  std::size_t ncols;
+  T* matrix;
+};
 }  // namespace cuda
+
+namespace std {
+template <class T>
+inline void swap(cuda::Matrix<T>& lhs, cuda::Matrix<T>& rhs) {
+  lhs.swap(rhs);
+}
+}  // namespace std
 
 #endif  // BRKGA_CUDA_API_CUDAUTILS_CUH
