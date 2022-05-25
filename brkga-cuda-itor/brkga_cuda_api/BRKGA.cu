@@ -193,6 +193,8 @@ void BRKGA::updateFitness() {
   }
 
   if (decodeType == DecodeType::HOST || decodeType == DecodeType::HOST_SORTED) {
+    logger::debug("Copy data and synchronize to decode on host");
+
     fitness.resize(numberOfPopulations);
     for (unsigned p = 0; p < numberOfPopulations; ++p) {
       fitness[p].resize(populationSize);
