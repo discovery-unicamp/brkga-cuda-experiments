@@ -3,6 +3,7 @@
 .vscode
 
 # generated
+.backup*
 .setup
 __pycache__
 build*

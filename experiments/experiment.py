@@ -210,7 +210,7 @@ def experiment(
         is_fast_decode: bool,
         test_count: int = TEST_COUNT,
 ) -> Iterable[Dict[str, str]]:
-    if 'tsp' in problems and ('gpu-brkga' in tools 
+    if 'tsp' in problems and ('gpu-brkga' in tools
                               or 'gpu-brkga-fixed' in tools):
         logging.warning('Ignoring GPU-BRKGA for TSP')
 
@@ -219,7 +219,7 @@ def experiment(
             instance_path = str(get_instance_path(problem, instance))
             for seed in range(1, test_count + 1):
                 for tool in tools:
-                    if problem == 'tsp' and (tool == 'gpu-brkga' 
+                    if problem == 'tsp' and (tool == 'gpu-brkga'
                                              or tool == 'gpu-brkga-fixed'):
                         continue
 
