@@ -31,6 +31,7 @@ int main(int argc, char** argv) {
   std::string problem;
   std::string instanceFileName;
   unsigned logStep = 0;
+  bool printOptimalDecode = false;
 
   BrkgaConfiguration::Builder configBuilder;
 
@@ -149,9 +150,6 @@ int main(int argc, char** argv) {
   cudaEventRecord(stop);
   cudaEventSynchronize(stop);
 
-  float timeElapsedMs;
-  cudaEventElapsedTime(&timeElapsedMs, start, stop);
-
   auto fitness = brkga->getBestFitness();
 
   logger::info("Validating the chromosome");
@@ -176,11 +174,23 @@ int main(int argc, char** argv) {
     }
   }
 
+  float optimalDecoderFitness = -1;
+  if (isFastDecode) {
+    isFastDecode = false;
+    instance->hostDecode(1, bestChromosome, &optimalDecoderFitness);
+    isFastDecode = true;
+  }
+
+  float timeElapsedMs = -1;
+  cudaEventElapsedTime(&timeElapsedMs, start, stop);
   logger::info("Optimization finished after", timeElapsedMs / 1000,
                "seconds with solution", fitness);
-  std::cout << std::fixed << std::setprecision(3) << "ans=" << fitness
+
+  std::cout << std::fixed << std::setprecision(6) << "ans=" << fitness
             << " elapsed=" << timeElapsedMs / 1000
-            << " convergence=" << str(convergence, ",") << '\n';
+            << " convergence=" << str(convergence, ",");
+  if (isFastDecode) std::cout << " opt-decoder-ans=" << optimalDecoderFitness;
+  std::cout << '\n';
 
   logger::info("Exiting gracefully");
   return 0;

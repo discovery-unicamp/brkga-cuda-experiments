@@ -142,11 +142,13 @@ def __get_system_info() -> Dict[str, str]:
         'host-memory':
             __shell('grep MemTotal /proc/meminfo | awk \'{print $2 / 1024}\'')
             + 'MiB',
-        'gpu': __shell('lspci | grep " VGA " | cut -d" " -f 5-')
-                .split('\n')[DEVICE],
+        'gpu': (__shell('lspci | grep " VGA " | cut -d" " -f 5-')
+                .split('\n')[DEVICE]
+                .strip()),
         'gpu-memory':
-            __shell('lshw -C display | grep product | cut -d":" -f2-')
-                .split('\n')[DEVICE],
+            (__shell('lshw -C display | grep product | cut -d":" -f2-')
+             .split('\n')[DEVICE]
+             .strip()),
         'nvcc': __shell('nvcc --version | grep "release" | grep -o "V.*"'),
         'g++': __shell('g++ --version | grep "g++"'),
     }
@@ -192,6 +194,7 @@ def __run_test(
         **parsed_params,
         'ans': result['ans'],
         'elapsed': result['elapsed'],
+        'opt_decoder_ans': result.get('opt-decoder-ans', 'nan'),
         'convergence': result.get('convergence', '?'),
     }
 
@@ -210,7 +213,7 @@ def experiment(
         is_fast_decode: bool,
         test_count: int = TEST_COUNT,
 ) -> Iterable[Dict[str, str]]:
-    if 'tsp' in problems and ('gpu-brkga' in tools 
+    if 'tsp' in problems and ('gpu-brkga' in tools
                               or 'gpu-brkga-fixed' in tools):
         logging.warning('Ignoring GPU-BRKGA for TSP')
 
@@ -219,7 +222,7 @@ def experiment(
             instance_path = str(get_instance_path(problem, instance))
             for seed in range(1, test_count + 1):
                 for tool in tools:
-                    if problem == 'tsp' and (tool == 'gpu-brkga' 
+                    if problem == 'tsp' and (tool == 'gpu-brkga'
                                              or tool == 'gpu-brkga-fixed'):
                         continue
 
@@ -280,15 +283,15 @@ def main():
     executable = compile_optimizer()
 
     # Test
-    # save_results(info, experiment(
-    #     executable,
-    #     problems=['cvrp'],
-    #     tools=['brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
-    #     decoder='host',
-    #     is_fast_decode=False,
-    #     test_count=1,
-    # ))
-    # exit()
+    save_results(info, experiment(
+        executable,
+        problems=['cvrp'],
+        tools=['brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
+        decoder='host',
+        is_fast_decode=True,
+        test_count=1,
+    ))
+    exit()
 
     save_results(info, experiment(
         executable,
