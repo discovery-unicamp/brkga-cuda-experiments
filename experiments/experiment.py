@@ -283,20 +283,20 @@ def main():
     executable = compile_optimizer()
 
     # Test
-    save_results(info, experiment(
-        executable,
-        problems=['cvrp'],
-        tools=['brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
-        decoder='host',
-        is_fast_decode=True,
-        test_count=10,
-    ))
-    exit()
+    # save_results(info, experiment(
+    #     executable,
+    #     problems=['cvrp'],
+    #     tools=['old-brkga-cuda'],
+    #     decoder='device',
+    #     is_fast_decode=True,
+    #     test_count=1,
+    # ))
+    # exit()
 
     save_results(info, experiment(
         executable,
         problems=['cvrp'],
-        tools=['brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed'],
+        tools=['brkga-cuda', 'old-brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed'],
         decoder='device',
         is_fast_decode=True,
     ))
@@ -310,7 +310,7 @@ def main():
     save_results(info, experiment(
         executable,
         problems=['cvrp'],
-        tools=['brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
+        tools=['brkga-cuda', 'old-brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
         decoder='host',
         is_fast_decode=True,
     ))
@@ -325,7 +325,7 @@ def main():
     save_results(info, experiment(
         executable,
         problems=['scp', 'cvrp', 'tsp'],
-        tools=['brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed'],
+        tools=['brkga-cuda', 'old-brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed'],
         decoder='device',
         is_fast_decode=False,
     ))
@@ -346,7 +346,7 @@ def main():
     save_results(info, experiment(
         executable,
         problems=['scp', 'cvrp', 'tsp'],
-        tools=['brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
+        tools=['brkga-cuda', 'old-brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
         decoder='host',
         is_fast_decode=False,
     ))

@@ -5,19 +5,19 @@
 #include <string>
 
 enum DecodeType {
-  /// used to represent an empty variable
+  /// Used to represent an empty variable
   NONE = 0,
 
-  /// decoding is done on CPU (host)
+  /// Decode on CPU
   HOST,
 
-  /// sorts the chromosomes by gene and their index are used to decode on CPU (host)
+  /// Decode on CPU the indices sorted using the genes as keys
   HOST_SORTED,
 
-  /// decoding is done no GPU (device)
+  /// Decode on GPU
   DEVICE,
 
-  /// sorts the chromosomes by gene and their index are used to decode on GPU (device)
+  /// Decode on GPU the indices sorted using the genes as keys
   DEVICE_SORTED
 };
 
@@ -50,7 +50,8 @@ enum DecodeType {
     case DEVICE_SORTED:
       return "device-sorted";
   }
-  throw std::logic_error("Decode type " + std::to_string(dt) + " wasn't converted to string");
+  throw std::logic_error("Decode type " + std::to_string(dt)
+                         + " wasn't converted to string");
 }
 
 #endif  // BRKGA_CUDA_API_DECODE_TYPE_HPP

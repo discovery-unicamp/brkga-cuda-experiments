@@ -1,13 +1,5 @@
-/*
- *
- *  Created on: 2019
- *      Author: Eduardo Xavier
- *
- *
- */
-
-#ifndef BRKGA_H
-#define BRKGA_H
+#ifndef BRKGACUDA_BRKGA_HPP
+#define BRKGACUDA_BRKGA_HPP
 
 #include "BrkgaConfiguration.hpp"
 #include "CudaUtils.hpp"
@@ -19,17 +11,17 @@
 enum DecodeType;
 class Decoder;
 
-class BRKGA {
+class Brkga {
 public:
   /**
-   * Construct a new BRKGA object.
+   * Construct a new Brkga object.
    *
    * @param config The configuration to run the algorithm.
    */
-  BRKGA(const BrkgaConfiguration& config);
+  Brkga(const BrkgaConfiguration& config);
 
   /// Releases memory
-  ~BRKGA();
+  ~Brkga();
 
   /**
    * Evolve the population to the next generation.
@@ -134,4 +126,4 @@ private:
   unsigned threadsPerBlock;  /// Number of device threads to use
 };
 
-#endif
+#endif  // BRKGACUDA_BRKGA_HPP

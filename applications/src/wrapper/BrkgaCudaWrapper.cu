@@ -1,10 +1,10 @@
 #include "BrkgaCudaWrapper.hpp"
-#include <brkga_cuda_api/BRKGA.hpp>
+#include <brkga_cuda_api/Brkga.hpp>
 
 struct BrkgaCudaWrapper::BrkgaWrapper {
   BrkgaWrapper(const BrkgaConfiguration& config) : algorithm(config) {}
 
-  BRKGA algorithm;
+  Brkga algorithm;
 };
 
 BrkgaCudaWrapper::BrkgaCudaWrapper(const BrkgaConfiguration& config)

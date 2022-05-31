@@ -5,6 +5,7 @@
 #include "wrapper/BrkgaApiWrapper.hpp"
 #include "wrapper/BrkgaCudaWrapper.hpp"
 #include "wrapper/GpuBrkgaWrapper.hpp"
+#include "wrapper/OldBrkgaCudaWrapper.hpp"
 #include <brkga_cuda_api/Logger.hpp>
 
 #include <fstream>
@@ -114,6 +115,8 @@ int main(int argc, char** argv) {
   std::unique_ptr<BaseWrapper> brkga;
   if (tool == "brkga-cuda") {
     brkga.reset(new BrkgaCudaWrapper(config));
+  } else if (tool == "old-brkga-cuda") {
+    brkga.reset(new OldBrkgaCudaWrapper(config));
   } else if (tool == "gpu-brkga") {
     brkga.reset(new GpuBrkgaWrapper(config, /* fixed? */ false));
   } else if (tool == "gpu-brkga-fixed") {

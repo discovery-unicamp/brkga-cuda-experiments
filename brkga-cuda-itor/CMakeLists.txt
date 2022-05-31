@@ -10,8 +10,8 @@ enable_language(CUDA)
 include_directories(SYSTEM "${CUDA_INCLUDE_DIRS}")
 
 add_library(brkga-cuda
-  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BRKGA.cu
-  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BRKGA.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/Brkga.cu
+  ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/Brkga.hpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BrkgaConfiguration.cpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/BrkgaConfiguration.hpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga_cuda_api/CudaError.cuh

@@ -1,11 +1,5 @@
-/*
- *
- *  Created on: 2019
- *      Author: Eduardo Xavier
- */
-
-#ifndef CONFIGFILE_H
-#define CONFIGFILE_H
+#ifndef BRKGACUDA_BRKGACONFIGURATION_HPP
+#define BRKGACUDA_BRKGACONFIGURATION_HPP
 
 #include "DecodeType.hpp"
 
@@ -82,4 +76,4 @@ private:
   BrkgaConfiguration() {}
 };
 
-#endif
+#endif  // BRKGACUDA_BRKGACONFIGURATION_HPP

@@ -23,10 +23,8 @@
 #include "ConfigFile.h"
 #include <omp.h>
 
-#define THREADS_PER_BLOCK 256
-#define PSEUDO_SEED 1234U //Change seed!
-
-#define NUM_THREADS 4 //if host_decod is used openmp can be used to decode
+extern unsigned THREADS_PER_BLOCK;
+extern unsigned PSEUDO_SEED;
 
 class BRKGA{
 public:
