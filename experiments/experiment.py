@@ -29,6 +29,7 @@ DEVICE = int(os.environ['DEVICE'])
 TEST_COUNT = 10
 BUILD_TYPE = 'release'
 BUILD_TARGET = 'brkga-optimizer'
+TWEAKS_FILE_PATH = Path('applications', 'src', 'Tweaks.hpp')
 SOURCE_PATH = Path('applications')
 OUTPUT_PATH = Path('experiments', 'results')
 
@@ -112,11 +113,9 @@ INSTANCES = {
 }
 
 
-def compile_optimizer():
-    return __cmake(str(SOURCE_PATH.absolute()),
-                   build=BUILD_TYPE,
-                   target=BUILD_TARGET,
-                   )
+def compile_optimizer(target: str, problem: str):
+    return __cmake(str(SOURCE_PATH.absolute()), BUILD_TYPE, target,
+                   tweaks=[problem.upper()])
 
 
 def __cmake(
@@ -124,7 +123,13 @@ def __cmake(
         build: str,
         target: str,
         threads: int = 6,
+        tweaks: List[str] = [],
 ):
+    with open(TWEAKS_FILE_PATH, 'w') as tweak_file:
+        tweak_file.write('#pragma once\n')
+        for tweak in tweaks:
+            tweak_file.write(f'#define {tweak}\n')
+
     folder = f'build-{build}'
     __shell(f'cmake -DCMAKE_BUILD_TYPE={build} -B{folder} {src}', get=False)
     __shell(f'cmake --build {folder} --target {target} -j{threads}', get=False)
@@ -280,9 +285,9 @@ def save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]]):
 def main():
     # Execute here to avoid changes by the user.
     info = __get_system_info()
-    executable = compile_optimizer()
+    executable = compile_optimizer('brkga-cuda-2.0', 'cvrp_greedy')
 
-    # Test
+    # # Test
     # save_results(info, experiment(
     #     executable,
     #     problems=['cvrp'],
@@ -291,7 +296,7 @@ def main():
     #     is_fast_decode=True,
     #     test_count=1,
     # ))
-    # exit()
+    exit()
 
     save_results(info, experiment(
         executable,
@@ -310,7 +315,8 @@ def main():
     save_results(info, experiment(
         executable,
         problems=['cvrp'],
-        tools=['brkga-cuda', 'old-brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
+        tools=['brkga-cuda', 'old-brkga-cuda',
+               'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
         decoder='host',
         is_fast_decode=True,
     ))
@@ -346,7 +352,8 @@ def main():
     save_results(info, experiment(
         executable,
         problems=['scp', 'cvrp', 'tsp'],
-        tools=['brkga-cuda', 'old-brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
+        tools=['brkga-cuda', 'old-brkga-cuda',
+               'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
         decoder='host',
         is_fast_decode=False,
     ))

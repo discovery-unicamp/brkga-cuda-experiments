@@ -6,7 +6,7 @@
 #include "wrapper/BrkgaCudaWrapper.hpp"
 #include "wrapper/GpuBrkgaWrapper.hpp"
 #include "wrapper/OldBrkgaCudaWrapper.hpp"
-#include <brkga_cuda_api/Logger.hpp>
+#include <brkga-cuda/Logger.hpp>
 
 #include <fstream>
 #include <functional>
@@ -23,7 +23,7 @@ bool isFastDecode = false;
 
 #define mabort(...)             \
   do {                          \
-    logger::error(__VA_ARGS__); \
+    box::logger::error(__VA_ARGS__); \
     abort();                    \
   } while (false)
 
@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
 
   BrkgaConfiguration::Builder configBuilder;
 
-  logger::info("Reading parameters");
+  box::logger::info("Reading parameters");
   for (int i = 1; i < argc; i += 2) {
     std::string arg = argv[i];
     if (arg.substr(0, 2) != "--")
@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
   if (problem.empty()) mabort("Missing the problem name");
   if (logStep == 0) mabort("Missing the log-step (should be > 0)");
 
-  logger::info("Reading instance from", instanceFileName);
+  box::logger::info("Reading instance from", instanceFileName);
   std::unique_ptr<Instance> instance;
   if (problem == "cvrp") {
     instance.reset(new CvrpInstance(CvrpInstance::fromFile(instanceFileName)));
@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
   cudaEventCreate(&stop);
   cudaEventRecord(start);
 
-  logger::info("Building the algorithm");
+  box::logger::info("Building the algorithm");
   std::unique_ptr<BaseWrapper> brkga;
   if (tool == "brkga-cuda") {
     brkga.reset(new BrkgaCudaWrapper(config));
@@ -130,18 +130,18 @@ int main(int argc, char** argv) {
   std::vector<float> convergence;
   convergence.push_back(brkga->getBestFitness());
 
-  logger::info("Evolving the population for", config.generations,
+  box::logger::info("Evolving the population for", config.generations,
                "generations");
   for (unsigned k = 1; k <= config.generations; ++k) {
-    logger::debug("Calling `evolve` to build the generation", k);
+    box::logger::debug("Calling `evolve` to build the generation", k);
     brkga->evolve();
     if (k % config.exchangeBestInterval == 0 && k != config.generations) {
-      logger::debug("Calling `exchangeElite` to exchange",
+      box::logger::debug("Calling `exchangeElite` to exchange",
                     config.exchangeBestCount, "chromosomes");
       brkga->exchangeElite(config.exchangeBestCount);
     }
     if (k % logStep == 0 || k == config.generations) {
-      logger::debug("Calling `getBestFitness`");
+      box::logger::debug("Calling `getBestFitness`");
       float best = brkga->getBestFitness();
       std::clog << "Generation " << k << "; best: " << best << "        \r";
       convergence.push_back(best);
@@ -154,7 +154,7 @@ int main(int argc, char** argv) {
 
   auto fitness = brkga->getBestFitness();
 
-  logger::info("Validating the chromosome");
+  box::logger::info("Validating the chromosome");
   auto bestChromosome = brkga->getBestChromosome();
   for (unsigned i = 0; i < config.chromosomeLength; ++i)
     if (bestChromosome[i] < 0 || bestChromosome[i] > 1)
@@ -164,10 +164,10 @@ int main(int argc, char** argv) {
       || config.decodeType == DecodeType::DEVICE) {
     instance->validateChromosome(bestChromosome.data(), fitness);
   } else {
-    auto bestSorted = brkga->getBestIndices();
+    auto bestSorted = brkga->getBestPermutation();
     instance->validateSortedChromosome(bestSorted.data(), fitness);
 
-    logger::info("Validating if the indices were sorted correctly");
+    box::logger::info("Validating if the indices were sorted correctly");
     for (unsigned i = 1; i < config.chromosomeLength; ++i) {
       const auto a = bestSorted[i - 1];
       const auto b = bestSorted[i];
@@ -185,7 +185,7 @@ int main(int argc, char** argv) {
 
   float timeElapsedMs = -1;
   cudaEventElapsedTime(&timeElapsedMs, start, stop);
-  logger::info("Optimization finished after", timeElapsedMs / 1000,
+  box::logger::info("Optimization finished after", timeElapsedMs / 1000,
                "seconds with solution", fitness);
 
   std::cout << std::fixed << std::setprecision(6) << "ans=" << fitness;
@@ -193,6 +193,6 @@ int main(int argc, char** argv) {
   std::cout << " elapsed=" << timeElapsedMs / 1000
             << " convergence=" << str(convergence, ",") << '\n';
 
-  logger::info("Exiting gracefully");
+  box::logger::info("Exiting gracefully");
   return 0;
 }

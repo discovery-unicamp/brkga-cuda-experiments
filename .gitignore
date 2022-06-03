@@ -9,4 +9,5 @@ __pycache__
 build*
 core
 prof.txt
+Tweaks.hpp
 *.qdrep
