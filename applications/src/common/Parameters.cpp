@@ -27,13 +27,13 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
       params.numberOfPopulations = std::stoi(value);
     } else if (arg == "--pop-size") {
       params.populationSize = std::stoi(value);
-    } else if (arg == "--elite") {
+    } else if (arg == "--nelite") {
       params.eliteSize = std::stoi(value);
-    } else if (arg == "--pelite") {
+    } else if (arg == "--elite") {
       params.eliteProportion = std::stof(value);
-    } else if (arg == "--pmutant") {
-      params.mutantProportion = std::stof(value);
     } else if (arg == "--mutant") {
+      params.mutantProportion = std::stof(value);
+    } else if (arg == "--nmutant") {
       params.mutantSize = std::stoi(value);
     } else if (arg == "--rhoe") {
       params.rhoe = std::stof(value);
@@ -43,6 +43,8 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
       params.decoder = value;
     } else if (arg == "--threads") {
       params.threadsPerBlock = std::stoi(value);
+    } else if (arg == "--omp-threads") {
+      params.ompThreads = std::stoi(value);
     } else if (arg == "--log-step") {
       params.logStep = std::stoi(value);
     } else {

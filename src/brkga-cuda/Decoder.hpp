@@ -16,28 +16,8 @@ public:
 
   virtual ~Decoder() = default;
 
-  inline const float* getChromosome(unsigned index,
-                                    const float* chromosomes) const {
-    return box::Decoder::getChromosome(index, chromosomes,
-                                       config->chromosomeLength);
-  }
-
-  __host__ __device__ static inline const float*
-  getChromosome(unsigned index, const float* chromosomes, unsigned length) {
-    return chromosomes + index * length;
-  }
-
-  inline const unsigned* getPermutation(unsigned index,
-                                        const unsigned* permutations) const {
-    return box::Decoder::getPermutation(index, permutations,
-                                        config->chromosomeLength);
-  }
-
-  __host__ __device__ static inline const unsigned* getPermutation(
-      unsigned index,
-      const unsigned* permutations,
-      unsigned length) {
-    return permutations + index * length;
+  inline void setConfiguration(const BrkgaConfiguration* newConfig) {
+    config = newConfig;
   }
 
   virtual float decode(const float* chromosome) const;
@@ -63,7 +43,7 @@ public:
                       float* dFitness) const;
 
 protected:
-  box::BrkgaConfiguration* config;
+  const box::BrkgaConfiguration* config;
 };
 }  // namespace box
 

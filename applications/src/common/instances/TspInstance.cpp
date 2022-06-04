@@ -3,8 +3,11 @@
 #include "../Checker.hpp"
 #include "../utils/StringUtils.hpp"
 
+#include <algorithm>
 #include <fstream>
 #include <istream>
+#include <numeric>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -88,7 +91,10 @@ void TspInstance::validate(const std::vector<unsigned>& tour,
         numberOfClients);
 
   float expectedFitness =
-      getFitness(tour.data(), chromosomeLength(), distances.data());
+      distances[tour[numberOfClients - 1] * numberOfClients + tour[0]];
+  for (unsigned i = 1; i < numberOfClients; ++i)
+    expectedFitness += distances[tour[i - 1] * numberOfClients + tour[i]];
+
   check(std::abs(expectedFitness - fitness) < 1e-6f,
         "Wrong fitness evaluation: expected %f, but found %f", expectedFitness,
         fitness);

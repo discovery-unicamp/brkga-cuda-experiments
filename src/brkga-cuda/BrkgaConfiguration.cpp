@@ -117,8 +117,6 @@ box::BrkgaConfiguration::Builder& box::BrkgaConfiguration::Builder::seed(
 
 box::BrkgaConfiguration::Builder& box::BrkgaConfiguration::Builder::decodeType(
     DecodeType dt) {
-  if (dt == DecodeType::NONE)
-    throw std::invalid_argument("Decode type cannot be NONE");
   _decodeType = dt;
   return *this;
 }
@@ -137,8 +135,6 @@ box::BrkgaConfiguration box::BrkgaConfiguration::Builder::build() const {
   if (_mutantsCount == 0)
     throw std::invalid_argument("Mutants count wasn't set");
   if (std::abs(_rhoe) < 1e-6f) throw std::invalid_argument("Rhoe wasn't set");
-  if (_decodeType == DecodeType::NONE)
-    throw std::invalid_argument("Decode type wasn't set");
 
   if (_generations == 0) box::logger::warning("Number of generations is zero");
 

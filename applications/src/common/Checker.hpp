@@ -11,7 +11,8 @@ inline void _check_fail(const std::string& condition,
                         const std::string& func,
                         const std::string& message) {
   std::string log = "Validation `" + condition + "` failed\n";
-  log += file + ":" + std::to_string(line) + ": on " + func + ": " + message;
+  log += "  > " + file + ":" + std::to_string(line) + ": on " + func + ": "
+         + message;
   throw std::logic_error(log);
 }
 

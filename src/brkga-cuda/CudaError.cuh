@@ -3,8 +3,6 @@
 
 #include <cuda_runtime.h>
 
-#include <cstdio>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 

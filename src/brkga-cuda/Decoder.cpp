@@ -20,7 +20,7 @@ void box::Decoder::decode(unsigned numberOfChromosomes,
     num_threads(config->ompThreads)
 #endif
     for (unsigned i = 0; i < numberOfChromosomes; ++i)
-      fitness[i] = decode(getChromosome(i, chromosomes));
+      fitness[i] = decode(chromosomes + i * config->chromosomeLength);
   } catch (NotImplemented&) {
     std::throw_with_nested(NotImplemented(__PRETTY_FUNCTION__));
   }
@@ -35,7 +35,7 @@ void box::Decoder::decode(unsigned numberOfPermutations,
     num_threads(config->ompThreads)
 #endif
     for (unsigned i = 0; i < numberOfPermutations; ++i)
-      fitness[i] = decode(getPermutation(i, permutations));
+      fitness[i] = decode(permutations + i * config->chromosomeLength);
   } catch (NotImplemented&) {
     std::throw_with_nested(NotImplemented(__PRETTY_FUNCTION__));
   }

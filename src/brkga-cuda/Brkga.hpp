@@ -9,7 +9,7 @@
 #include <vector>
 
 namespace box {
-enum DecodeType;
+class DecodeType;
 class Decoder;
 
 class Brkga {
@@ -99,14 +99,14 @@ private:
   Decoder* decoder;  /// The decoder of the problem
 
   cuda::Matrix<float> dPopulation;  /// All the chromosomes
-  std::vector<std::vector<float>> population;
+  std::vector<float> population;  /// All chromosomes, but on CPU
   cuda::Matrix<float> dPopulationTemp;  /// Temp memory for chromosomes
 
   cuda::Matrix<float> dFitness;  /// The (sorted) fitness of each chromosome
-  std::vector<std::vector<float>> fitness;
+  std::vector<float> fitness;  /// All fitness, but on CPU
   cuda::Matrix<unsigned> dFitnessIdx;
   cuda::Matrix<unsigned> dPermutations;  /// Indices of the genes when sorted
-  std::vector<std::vector<unsigned>> permutations;
+  std::vector<unsigned> permutations;  /// All permutations, but on CPU
 
   cuda::Matrix<float> dRandomEliteParent;  /// The elite parent
   cuda::Matrix<float> dRandomParent;  /// The non-elite parent

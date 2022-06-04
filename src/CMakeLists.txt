@@ -14,6 +14,7 @@ add_library(brkga-cuda
   ${CMAKE_CURRENT_LIST_DIR}/brkga-cuda/BrkgaConfiguration.cpp
   ${CMAKE_CURRENT_LIST_DIR}/brkga-cuda/CudaUtils.cu
   ${CMAKE_CURRENT_LIST_DIR}/brkga-cuda/Decoder.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/brkga-cuda/DecodeType.cpp
 )
 
 set_target_properties(brkga-cuda PROPERTIES POSITION_INDEPENDENT_CODE ON)

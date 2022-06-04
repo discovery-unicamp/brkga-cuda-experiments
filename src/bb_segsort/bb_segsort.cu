@@ -1,13 +1,22 @@
 #include "bb_segsort.h"
 
 #include <cuda_runtime.h>
-#include <thrust/device_vector.h>
 
 #include <cctype>
+#include <iostream>
 #include <limits>
 #include <stdexcept>
-#include <string>
 #include <vector>
+
+#define cuCheck(status)                                                     \
+  if (status != cudaSuccess) {                                              \
+    std::cerr << "bbSegSort error: " << cudaGetErrorString(status) << '\n'; \
+    abort();                                                                \
+  }
+
+static std::vector<int> seg;
+static int* dSeg = nullptr;
+static std::size_t dSegLength = 0;
 
 template <class Key, class Value>
 void bbSegSort(Key* keys,
@@ -20,30 +29,31 @@ void bbSegSort(Key* keys,
     throw std::invalid_argument("Total size is too big! (>= 2^31)");
 
   // Cache the segments to avoid re-creating/re-calculating them
-  static std::vector<int> seg;
   seg.reserve(segCount);
-  if (seg.empty()) {
-    seg.push_back(0);
-  } else if (seg.size() >= 2 && seg[1] != (int)segSize) {
+  if (seg.size() >= 2 && seg[1] != (int)segSize) {
     seg.resize(1);
+  } else if (seg.empty()) {
+    seg.push_back(0);
   }
 
-  static thrust::device_vector<int> dSeg;
-  if (seg.size() < segCount) {
-    for (auto i = seg.size(); i < segCount; ++i)
+  // Check if the segments were updated or is in the first call
+  if (seg.size() < segCount || dSegLength == 0) {
+    std::size_t start = seg.size();
+    seg.resize(segCount);
+    for (std::size_t i = start; i < segCount; ++i)
       seg[i] = seg[i - 1] + (int)segSize;
-    dSeg = seg;
-  } else if (dSeg.size() < seg.size()) {
-    dSeg = seg;
+
+    // Copy to device only if updated or in the first call
+    if (dSegLength < seg.size()) {
+      cuCheck(cudaFree(dSeg));
+      cuCheck(cudaMalloc(&dSeg, seg.size() * sizeof(int)));
+      dSegLength = seg.size();
+    }
+    cuCheck(cudaMemcpy(dSeg, seg.data(), seg.size() * sizeof(int),
+                       cudaMemcpyHostToDevice));
   }
 
-  // int* dSeg = nullptr;
-  // cudaMalloc(&dSeg, segCount * sizeof(int));
-  // cudaMemcpy(dSeg, seg.data(), segCount * sizeof(int),
-  // cudaMemcpyHostToDevice);
-
-  int* dSegPtr = thrust::raw_pointer_cast(dSeg.data());
-  bb_segsort(keys, values, (int)(segCount * segSize), dSegPtr, (int)segCount);
+  bb_segsort(keys, values, (int)(segCount * segSize), dSeg, (int)segCount);
 }
 
 // Define the required interfaces for brkga-cuda

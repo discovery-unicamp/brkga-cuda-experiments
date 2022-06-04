@@ -181,7 +181,7 @@ def __run_test(
         executable: Path,
         params: Dict[str, Union[str, float, int]],
 ) -> Dict[str, str]:
-    logging.info(f'Test instance {params["instance"]} of {params["problem"]}')
+    logging.info(f'Test instance {params["instance"]}')
     logging.debug(f'Executable: {str(executable)}')
     logging.debug(f'Test with params {params}')
 
@@ -199,7 +199,6 @@ def __run_test(
         **parsed_params,
         'ans': result['ans'],
         'elapsed': result['elapsed'],
-        'opt_decoder_ans': result.get('opt-decoder-ans', 'nan'),
         'convergence': result.get('convergence', '?'),
     }
 
@@ -211,18 +210,21 @@ def __parse_param(value: Union[int, float, str]) -> str:
 
 
 def experiment(
-        executable: Path,
-        problems: List[str],
-        tools: List[str],
-        decoder: str,
-        is_fast_decode: bool,
-        test_count: int = TEST_COUNT,
+    problems: List[str],
+    tools: List[str],
+    decoder: str,
+    test_count: int = TEST_COUNT,
 ) -> Iterable[Dict[str, str]]:
     if 'tsp' in problems and ('gpu-brkga' in tools
                               or 'gpu-brkga-fixed' in tools):
         logging.warning('Ignoring GPU-BRKGA for TSP')
 
     for problem in problems:
+        executables = {
+            tool: compile_optimizer(tool, problem)
+            for tool in tools
+        }
+
         for instance in INSTANCES[problem]:
             instance_path = str(get_instance_path(problem, instance))
             for seed in range(1, test_count + 1):
@@ -233,6 +235,7 @@ def experiment(
 
                     params = {
                         'threads': 256,
+                        'omp-threads': int(__shell('nproc')),
                         'generations': 1000,
                         'exchange-interval': 50,
                         'exchange-count': 2,
@@ -242,15 +245,12 @@ def experiment(
                         'mutant': .1,
                         'rhoe': .75,
                         'decode': decoder,
-                        'fast-decode': int(is_fast_decode),
-                        'tool': tool,
-                        'problem': problem,
                         'instance': instance_path,
                         'seed': seed,
                         'log-step': 25,
                     }
 
-                    result = __run_test(executable, params)
+                    result = __run_test(executables[tool], params)
                     result['instance'] = instance
                     yield result
 
@@ -285,17 +285,14 @@ def save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]]):
 def main():
     # Execute here to avoid changes by the user.
     info = __get_system_info()
-    executable = compile_optimizer('brkga-cuda-2.0', 'cvrp_greedy')
 
-    # # Test
-    # save_results(info, experiment(
-    #     executable,
-    #     problems=['cvrp'],
-    #     tools=['old-brkga-cuda'],
-    #     decoder='device',
-    #     is_fast_decode=True,
-    #     test_count=1,
-    # ))
+    # Test
+    save_results(info, experiment(
+        problems=['tsp'],
+        tools=['brkga-cuda-2.0'],
+        decoder='all-gpu-permutation',
+        test_count=1,
+    ))
     exit()
 
     save_results(info, experiment(

@@ -43,7 +43,7 @@ public:
     unsigned _mutantsCount = 0;
     float _rhoe = 0;
     unsigned _seed = 0;
-    DecodeType _decodeType = DecodeType::NONE;
+    DecodeType _decodeType;
   };
 
   virtual ~BrkgaConfiguration() = default;

@@ -1,28 +1,31 @@
-#include "../Tweaks.hpp"
+#include "../Tweaks.hpp"  // Must be generated
 #include "../common/Parameters.hpp"
 #include <brkga-cuda/Brkga.hpp>
 #include <brkga-cuda/BrkgaConfiguration.hpp>
+#include <brkga-cuda/CudaError.cuh>
+
+#include <cuda_runtime.h>
+
+#include <iomanip>
+#include <iostream>
+#include <vector>
 
 #if defined(TSP)
-#warning fail
 #include "decoders/TspDecoder.hpp"
 typedef TspInstance Instance;
 typedef TspDecoder DecoderImpl;
 #elif defined(SCP)
-#warning fail
 #include "instances/ScpInstance.hpp"
 typedef ScpInstance Instance;
 #elif defined(CVRP)
-#warning CVRP
 #include "instances/CvrpInstance.hpp"
 typedef CvrpInstance Instance;
 #elif defined(CVRP_GREEDY)
-#warning fail
 #include "instances/CvrpInstance.hpp"
 typedef CvrpInstance Instance;
 #else
-#error No instance defined
-#endif  // Instance
+#error No problem/instance/decoder defined
+#endif  // Problem/Instance
 
 int main(int argc, char** argv) {
   auto params = Parameters::parse(argc, argv);
@@ -33,6 +36,7 @@ int main(int argc, char** argv) {
                     .generations(params.generations)
                     .numberOfPopulations(params.numberOfPopulations)
                     .populationSize(params.populationSize)
+                    .chromosomeLength(instance.chromosomeLength())
                     .eliteCount(params.getNumberOfElites())
                     .mutantsCount(params.getNumberOfMutants())
                     .rhoe(params.rhoe)
@@ -40,6 +44,7 @@ int main(int argc, char** argv) {
                     .exchangeBestCount(params.exchangeBestCount)
                     .seed(params.seed)
                     .decoder(&decoder)
+                    .decodeType(box::DecodeType::fromString(params.decoder))
                     .threadsPerBlock(params.threadsPerBlock)
                     .ompThreads(params.ompThreads)
                     .build();
@@ -56,8 +61,8 @@ int main(int argc, char** argv) {
     brkga.evolve();
     if (gen % params.exchangeBestInterval == 0 && gen != params.generations)
       brkga.exchangeElite(params.exchangeBestCount);
-    if (gen % logStep == 0 || gen == params.generations) {
-      float best = brkga->getBestFitness();
+    if (gen % params.logStep == 0 || gen == params.generations) {
+      float best = brkga.getBestFitness();
       std::clog << "Generation " << gen << "; best: " << best << "        \r";
       convergence.push_back(best);
     }
@@ -72,10 +77,10 @@ int main(int argc, char** argv) {
   float timeElapsedMs = -1;
   cudaEventElapsedTime(&timeElapsedMs, start, stop);
 
-  instance.validade(bestChromosome, bestFitness);
+  instance.validate(bestChromosome.data(), bestFitness);
 
-  std::cout << std::fixed << std::setprecision(6) << "ans=" << fitness
+  std::cout << std::fixed << std::setprecision(6) << "ans=" << bestFitness
             << " elapsed=" << timeElapsedMs / 1000
-            << " convergence=" << str(convergence, ",") << '\n';
+            << " convergence=" << box::str(convergence, ",") << '\n';
   return 0;
 }

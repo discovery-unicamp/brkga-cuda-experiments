@@ -12,8 +12,8 @@ __global__ void deviceIota(unsigned* arr, unsigned n) {
 
 void box::cuda::iota(cudaStream_t stream, unsigned* arr, unsigned n) {
   constexpr auto threads = 256;
-  box::logger::debug("iota on", n, "elements to array", arr, "on stream", stream,
-                "using", threads, "threads");
+  box::logger::debug("iota on", n, "elements to array", arr, "on stream",
+                     stream, "using", threads, "threads");
   deviceIota<<<1, threads, 0, stream>>>(arr, n);
   CUDA_CHECK_LAST();
 }
@@ -28,7 +28,7 @@ void box::cuda::iotaMod(cudaStream_t stream,
                         unsigned k) {
   constexpr auto threads = 256;
   box::logger::debug("iotaMod on", n, "elements mod", k, "to array", arr,
-                "on stream", stream, "using", threads, "threads");
+                     "on stream", stream, "using", threads, "threads");
   deviceIotaMod<<<1, threads, 0, stream>>>(arr, n, k);
   CUDA_CHECK_LAST();
 }

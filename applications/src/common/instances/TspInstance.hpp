@@ -3,8 +3,6 @@
 
 #include "../Point.hpp"
 
-#include <cuda_runtime.h>
-
 #include <string>
 #include <vector>
 
@@ -17,6 +15,8 @@ public:
         distances(std::move(that.distances)) {}
 
   ~TspInstance() = default;
+
+  [[nodiscard]] unsigned chromosomeLength() const { return numberOfClients; }
 
   void validate(const float* chromosome, const float fitness) const;
 

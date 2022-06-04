@@ -42,18 +42,19 @@ void TspDecoder::decode(cudaStream_t stream,
                         const float* dChromosomes,
                         float* dFitness) const {
   const auto length = numberOfChromosomes * config->chromosomeLength;
-  auto* keys = box::cuda::alloc<float>(length);
-  auto* permutations = box::cuda::alloc<unsigned>(length);
+  auto* dKeys = box::cuda::alloc<float>(length);
+  auto* dPermutations = box::cuda::alloc<unsigned>(length);
 
-  box::cuda::copy(stream, keys, dChromosomes, length);
-  box::cuda::iotaMod(stream, permutations, length, config->chromosomeLength);
+  box::cuda::copy(stream, dKeys, dChromosomes, length);
+  box::cuda::iotaMod(stream, dPermutations, length, config->chromosomeLength);
   box::cuda::sync(stream);
-  box::cuda::segSort(keys, permutations, length, config->chromosomeLength);
+  box::cuda::segSort(dKeys, dPermutations, numberOfChromosomes,
+                     config->chromosomeLength);
 
-  decode(stream, numberOfChromosomes, permutations, dFitness);
+  decode(stream, numberOfChromosomes, dPermutations, dFitness);
 
-  box::cuda::free(keys);
-  box::cuda::free(permutations);
+  box::cuda::free(dKeys);
+  box::cuda::free(dPermutations);
 }
 
 __global__ void deviceDecode(const unsigned numberOfPermutations,
@@ -64,8 +65,7 @@ __global__ void deviceDecode(const unsigned numberOfPermutations,
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= numberOfPermutations) return;
 
-  const auto* tour =
-      box::Decoder::getPermutation(tid, dPermutations, chromosomeLength);
+  const auto* tour = dPermutations + tid * chromosomeLength;
   dFitness[tid] = getFitness(tour, chromosomeLength, dDistances);
 }
 
