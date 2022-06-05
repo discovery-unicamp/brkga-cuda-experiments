@@ -16,7 +16,9 @@ public:
 
   ~TspInstance() = default;
 
-  [[nodiscard]] unsigned chromosomeLength() const { return numberOfClients; }
+  [[nodiscard]] inline unsigned chromosomeLength() const {
+    return numberOfClients;
+  }
 
   void validate(const float* chromosome, const float fitness) const;
 

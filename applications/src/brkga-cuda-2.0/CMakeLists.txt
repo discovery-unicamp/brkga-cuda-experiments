@@ -13,6 +13,8 @@ add_executable(brkga-cuda-2.0
   ${COMMON_SRC}
   ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.cu
   ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.cu
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.hpp
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cu
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.hpp
   ${CMAKE_CURRENT_LIST_DIR}/main.cpp

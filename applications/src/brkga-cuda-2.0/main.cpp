@@ -16,8 +16,10 @@
 typedef TspInstance Instance;
 typedef TspDecoder DecoderImpl;
 #elif defined(SCP)
-#include "instances/ScpInstance.hpp"
+#include "../common/instances/ScpInstance.hpp"
+#include "decoders/ScpDecoder.hpp"
 typedef ScpInstance Instance;
+typedef ScpDecoder DecoderImpl;
 #elif defined(CVRP) || defined(CVRP_GREEDY)
 #include "../common/instances/CvrpInstance.hpp"
 #include "decoders/CvrpDecoder.hpp"

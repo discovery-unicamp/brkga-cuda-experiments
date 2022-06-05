@@ -18,6 +18,8 @@ SET(BRKGA_API_ROOT "${CMAKE_CURRENT_LIST_DIR}/../toso-brkga-api")
 SET(COMMON_SRC
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/CvrpInstance.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/CvrpInstance.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/ScpInstance.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/ScpInstance.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/TspInstance.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/TspInstance.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/utils/StringUtils.cpp
