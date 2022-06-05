@@ -33,31 +33,37 @@ TWEAKS_FILE_PATH = Path('applications', 'src', 'Tweaks.hpp')
 SOURCE_PATH = Path('applications')
 OUTPUT_PATH = Path('experiments', 'results')
 
+PROBLEMS = {
+    'cvrp': 'cvrp',
+    'cvrp_greedy': 'cvrp',
+    'scp': 'scp',
+    'tsp': 'tsp',
+}
 INSTANCES = {
     'cvrp': [
-        'X-n219-k73',
-        'X-n266-k58',
-        'X-n317-k53',
-        'X-n336-k84',
-        'X-n376-k94',
-        'X-n384-k52',
-        'X-n420-k130',
-        'X-n429-k61',
-        'X-n469-k138',
-        'X-n480-k70',
-        'X-n548-k50',
-        'X-n586-k159',
-        'X-n599-k92',
-        'X-n655-k131',
-        # The following doesn't work with the original GPU-BRKGA code
-        'X-n733-k159',
-        'X-n749-k98',
-        'X-n819-k171',
-        'X-n837-k142',
-        'X-n856-k95',
-        'X-n916-k207',
-        'X-n957-k87',
-        'X-n979-k58',
+        # 'X-n219-k73',
+        # 'X-n266-k58',
+        # 'X-n317-k53',
+        # 'X-n336-k84',
+        # 'X-n376-k94',
+        # 'X-n384-k52',
+        # 'X-n420-k130',
+        # 'X-n429-k61',
+        # 'X-n469-k138',
+        # 'X-n480-k70',
+        # 'X-n548-k50',
+        # 'X-n586-k159',
+        # 'X-n599-k92',
+        # 'X-n655-k131',
+        # # The following doesn't work with the original GPU-BRKGA code
+        # 'X-n733-k159',
+        # 'X-n749-k98',
+        # 'X-n819-k171',
+        # 'X-n837-k142',
+        # 'X-n856-k95',
+        # 'X-n916-k207',
+        # 'X-n957-k87',
+        # 'X-n979-k58',
         'X-n1001-k43',
     ],
     'scp': [
@@ -212,7 +218,7 @@ def __parse_param(value: Union[int, float, str]) -> str:
 def experiment(
     problems: List[str],
     tools: List[str],
-    decoder: str,
+    decoders: List[str],
     test_count: int = TEST_COUNT,
 ) -> Iterable[Dict[str, str]]:
     if 'tsp' in problems and ('gpu-brkga' in tools
@@ -225,34 +231,38 @@ def experiment(
             for tool in tools
         }
 
-        for instance in INSTANCES[problem]:
-            instance_path = str(get_instance_path(problem, instance))
-            for seed in range(1, test_count + 1):
-                for tool in tools:
-                    if problem == 'tsp' and (tool == 'gpu-brkga'
-                                             or tool == 'gpu-brkga-fixed'):
-                        continue
+        for decoder in decoders:
+            pname = PROBLEMS[problem]
+            for instance in INSTANCES[pname]:
+                instance_path = str(get_instance_path(pname, instance))
+                for seed in range(1, test_count + 1):
+                    for tool in tools:
+                        if pname == 'tsp' and (tool == 'gpu-brkga'
+                                               or tool == 'gpu-brkga-fixed'):
+                            continue
 
-                    params = {
-                        'threads': 256,
-                        'omp-threads': int(__shell('nproc')),
-                        'generations': 1000,
-                        'exchange-interval': 50,
-                        'exchange-count': 2,
-                        'pop-count': 3,
-                        'pop-size': 256,
-                        'elite': .1,
-                        'mutant': .1,
-                        'rhoe': .75,
-                        'decode': decoder,
-                        'instance': instance_path,
-                        'seed': seed,
-                        'log-step': 25,
-                    }
+                        params = {
+                            'threads': 256,
+                            'omp-threads': int(__shell('nproc')),
+                            'generations': 1000,
+                            'exchange-interval': 50,
+                            'exchange-count': 2,
+                            'pop-count': 3,
+                            'pop-size': 256,
+                            'elite': .1,
+                            'mutant': .1,
+                            'rhoe': .75,
+                            'decode': decoder,
+                            'instance': instance_path,
+                            'seed': seed,
+                            'log-step': 25,
+                        }
 
-                    result = __run_test(executables[tool], params)
-                    result['instance'] = instance
-                    yield result
+                        result = __run_test(executables[tool], params)
+                        result['tool'] = tool
+                        result['problem'] = problem
+                        result['instance'] = instance
+                        yield result
 
 
 def save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]]):
@@ -288,9 +298,10 @@ def main():
 
     # Test
     save_results(info, experiment(
-        problems=['tsp'],
+        problems=['cvrp', 'cvrp_greedy', 'tsp'],
         tools=['brkga-cuda-2.0'],
-        decoder='all-gpu-permutation',
+        decoders=['cpu', 'all-cpu', 'cpu-permutation', 'all-cpu-permutation',
+                  'gpu', 'all-gpu', 'gpu-permutation', 'all-gpu-permutation'],
         test_count=1,
     ))
     exit()

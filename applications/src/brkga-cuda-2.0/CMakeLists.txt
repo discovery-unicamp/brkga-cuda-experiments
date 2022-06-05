@@ -11,9 +11,11 @@ include_directories(SYSTEM "${CUDA_INCLUDE_DIRS}")
 message(${CMAKE_CURRENT_LIST_DIR})
 add_executable(brkga-cuda-2.0
   ${COMMON_SRC}
-  ${CMAKE_CURRENT_LIST_DIR}/main.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.cu
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.hpp
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cu
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/main.cpp
 )
 
 set_target_properties(brkga-cuda-2.0 PROPERTIES POSITION_INDEPENDENT_CODE ON)

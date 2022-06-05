@@ -37,10 +37,13 @@ void box::cuda::iotaMod(cudaStream_t stream,
 template <class Key, class Value>
 void bbSegSort(Key*, Value*, std::size_t, std::size_t);
 
-void box::cuda::segSort(float* dKeys,
+void box::cuda::segSort(cudaStream_t stream,
+                        float* dKeys,
                         unsigned* dValues,
                         std::size_t segCount,
                         std::size_t segSize) {
+  // FIXME We need to block the host
+  cuda::sync(stream);
   bbSegSort(dKeys, dValues, segCount, segSize);
   CUDA_CHECK_LAST();
 }

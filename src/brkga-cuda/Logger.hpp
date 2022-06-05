@@ -5,6 +5,7 @@
 #define LOG_LEVEL box::logger::_LogType::WARNING
 #endif  // LOG_LEVEL
 
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -14,6 +15,7 @@ namespace box {
 template <class T>
 std::string str(const std::vector<T>& v, const std::string& sep = ", ") {
   std::stringstream ss;
+  ss << std::fixed << std::setprecision(6);
   bool flag = false;
   ss << '[';
   for (auto& x : v) {

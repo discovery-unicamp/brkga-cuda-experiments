@@ -11,18 +11,18 @@
 #include <vector>
 
 #if defined(TSP)
+#include "../common/instances/TspInstance.hpp"
 #include "decoders/TspDecoder.hpp"
 typedef TspInstance Instance;
 typedef TspDecoder DecoderImpl;
 #elif defined(SCP)
 #include "instances/ScpInstance.hpp"
 typedef ScpInstance Instance;
-#elif defined(CVRP)
-#include "instances/CvrpInstance.hpp"
+#elif defined(CVRP) || defined(CVRP_GREEDY)
+#include "../common/instances/CvrpInstance.hpp"
+#include "decoders/CvrpDecoder.hpp"
 typedef CvrpInstance Instance;
-#elif defined(CVRP_GREEDY)
-#include "instances/CvrpInstance.hpp"
-typedef CvrpInstance Instance;
+typedef CvrpDecoder DecoderImpl;
 #else
 #error No problem/instance/decoder defined
 #endif  // Problem/Instance
@@ -30,7 +30,7 @@ typedef CvrpInstance Instance;
 int main(int argc, char** argv) {
   auto params = Parameters::parse(argc, argv);
   Instance instance = Instance::fromFile(params.instanceFileName);
-  DecoderImpl decoder(instance);
+  DecoderImpl decoder(&instance);
 
   auto config = box::BrkgaConfiguration::Builder()
                     .generations(params.generations)

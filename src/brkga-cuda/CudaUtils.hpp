@@ -36,10 +36,10 @@ inline void sync(cudaStream_t stream) {
  * @return The allocated memory.
  */
 template <class T>
-inline T* alloc(size_t n) {
+inline T* alloc(cudaStream_t stream, std::size_t n) {
   box::logger::debug("Allocating", n, "elements of", sizeof(T), "bytes");
   T* ptr = nullptr;
-  CUDA_CHECK(cudaMalloc(&ptr, n * sizeof(T)));
+  CUDA_CHECK(cudaMallocAsync(&ptr, n * sizeof(T), stream));
   return ptr;
 }
 
@@ -51,9 +51,9 @@ inline T* alloc(size_t n) {
  * @param ptr The pointer to the memory to free.
  */
 template <class T>
-inline void free(T* ptr) {
+inline void free(cudaStream_t stream, T* ptr) {
   box::logger::debug("Free", ptr);
-  CUDA_CHECK(cudaFree(ptr));
+  CUDA_CHECK(cudaFreeAsync(ptr, stream));
 }
 
 /// Creates a new stream.
@@ -96,7 +96,9 @@ inline void free(curandGenerator_t generator) {
  * @param n The number of elements to copy.
  */
 template <class T>
-inline void copy(cudaStream_t stream, T* dest, const T* src, size_t n) {
+inline void copy(cudaStream_t stream, T* dest, const T* src, std::size_t n) {
+  box::logger::debug("Copy", n, "elements from", src, "(device) to", dest,
+                     "(device) on stream", stream);
   CUDA_CHECK(cudaMemcpyAsync(dest, src, n * sizeof(T), cudaMemcpyDeviceToDevice,
                              stream));
 }
@@ -110,7 +112,12 @@ inline void copy(cudaStream_t stream, T* dest, const T* src, size_t n) {
  * @param n The number of elements to copy.
  */
 template <class T>
-inline void copy_htod(cudaStream_t stream, T* dest, const T* src, size_t n) {
+inline void copy_htod(cudaStream_t stream,
+                      T* dest,
+                      const T* src,
+                      std::size_t n) {
+  box::logger::debug("Copy", n, "elements from", src, "(host) to", dest,
+                     "(device) on stream", stream);
   CUDA_CHECK(cudaMemcpyAsync(dest, src, n * sizeof(T), cudaMemcpyHostToDevice,
                              stream));
 }
@@ -124,9 +131,12 @@ inline void copy_htod(cudaStream_t stream, T* dest, const T* src, size_t n) {
  * @param n The number of elements to copy.
  */
 template <class T>
-inline void copy_dtoh(cudaStream_t stream, T* dest, const T* src, size_t n) {
+inline void copy_dtoh(cudaStream_t stream,
+                      T* dest,
+                      const T* src,
+                      std::size_t n) {
   box::logger::debug("Copy", n, "elements from", src, "(device) to", dest,
-                "(host) on stream", stream);
+                     "(host) on stream", stream);
   CUDA_CHECK(cudaMemcpyAsync(dest, src, n * sizeof(T), cudaMemcpyDeviceToHost,
                              stream));
 }
@@ -143,9 +153,9 @@ inline void copy_dtoh(cudaStream_t stream, T* dest, const T* src, size_t n) {
 
 /**
  * Sets the sequence `0, 1, ..., n-1` to an array.
+ * @param stream The stream to process.
  * @param arr The array to store the sequence
  * @param n The size of the array.
- * @param stream The stream to process.
  */
 void iota(cudaStream_t stream, unsigned* arr, unsigned n);
 
@@ -182,10 +192,10 @@ inline void random(cudaStream_t stream,
  * Sorts the array of keys and values based on the keys.
  * @tparam Key The key type.
  * @tparam Value The value type.
+ * @param stream The stream to process.
  * @param keys The keys used to compare (and also sorted).
  * @param values The values to sort.
  * @param n The length of the arrays.
- * @param stream The stream to process.
  */
 template <class Key, class Value>
 inline void sortByKey(cudaStream_t stream,
@@ -206,6 +216,7 @@ inline void sortByKey(cudaStream_t stream,
  *
  * This method blocks the host until the kernel finishes.
  *
+ * @param stream The stream to process.
  * @param dKeys The (mutable) key to use on comparator.
  * @param dValues The values to sort.
  * @param size The size of the arrays.
@@ -213,7 +224,8 @@ inline void sortByKey(cudaStream_t stream,
  * @throw std::invalid_argument if @p size is not a multiple of @p step.
  * @throw std::invalid_argument if @p size doesn't fit 31 bit integer.
  */
-void segSort(float* dKeys,
+void segSort(cudaStream_t stream,
+             float* dKeys,
              unsigned* dValues,
              std::size_t size,
              std::size_t step);
@@ -222,7 +234,9 @@ template <class T>
 class Matrix {
 public:
   inline Matrix(std::size_t _nrows, std::size_t _ncols)
-      : nrows(_nrows), ncols(_ncols), matrix(alloc<T>(nrows * ncols)) {}
+      : nrows(_nrows),
+        ncols(_ncols),
+        matrix(alloc<T>(nullptr, nrows * ncols)) {}
 
   Matrix(const Matrix&) = delete;
 
@@ -231,7 +245,7 @@ public:
     that.matrix = nullptr;
   }
 
-  ~Matrix() { free(matrix); }
+  ~Matrix() { free(nullptr, matrix); }
 
   inline T* get() { return matrix; }
 

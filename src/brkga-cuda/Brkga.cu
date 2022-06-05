@@ -261,6 +261,8 @@ void box::Brkga::updateFitness() {
                       populationSize);
     }
   }
+
+  logger::debug("Decoding step has finished");
 }
 
 void box::Brkga::sortChromosomesGenes() {
@@ -279,8 +281,9 @@ void box::Brkga::sortChromosomesGenes() {
   // FIXME We should sort each chromosome on its own thread to avoid
   //  synchonization.
   syncStreams();
-  cuda::segSort(dPopulationTemp.get(), dPermutations.get(), numberOfChromosomes,
-                chromosomeSize);
+  cuda::segSort(streams[0], dPopulationTemp.get(), dPermutations.get(),
+                numberOfChromosomes, chromosomeSize);
+  cuda::sync(streams[0]);
 }
 
 void box::Brkga::decodePopulation(unsigned p) {

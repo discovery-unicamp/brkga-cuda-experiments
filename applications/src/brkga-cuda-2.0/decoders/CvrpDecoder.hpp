@@ -1,17 +1,17 @@
-#ifndef DECODERS_TSPDECODER_HPP
-#define DECODERS_TSPDECODER_HPP
+#ifndef DECODERS_CVRPDECODER_HPP
+#define DECODERS_CVRPDECODER_HPPDECODERS_CVRPDECODER_HPP
 
 #include <brkga-cuda/Decoder.hpp>
 
-class TspInstance;
+class CvrpInstance;
 
-class TspDecoder : public box::Decoder {
+class CvrpDecoder : public box::Decoder {
 public:
   using box::Decoder::decode;
 
-  TspDecoder(TspInstance* instance);
+  CvrpDecoder(CvrpInstance* instance);
 
-  ~TspDecoder();
+  ~CvrpDecoder();
 
   float decode(const float* chromosome) const override;
 
@@ -28,8 +28,9 @@ public:
               float* dFitness) const override;
 
 private:
-  TspInstance* instance;
+  CvrpInstance* instance;
+  unsigned* dDemands;
   float* dDistances;
 };
 
-#endif  // DECODERS_TSPDECODER_HPP
+#endif  // DECODERS_CVRPDECODER_HPP

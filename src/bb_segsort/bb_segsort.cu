@@ -6,12 +6,13 @@
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
-#define cuCheck(status)                                                     \
-  if (status != cudaSuccess) {                                              \
-    std::cerr << "bbSegSort error: " << cudaGetErrorString(status) << '\n'; \
-    abort();                                                                \
+#define cuCheck(status)                                     \
+  if (status != cudaSuccess) {                              \
+    throw std::runtime_error(std::string("bb-segsort: ")    \
+                             + cudaGetErrorString(status)); \
   }
 
 static std::vector<int> seg;
@@ -54,6 +55,7 @@ void bbSegSort(Key* keys,
   }
 
   bb_segsort(keys, values, (int)(segCount * segSize), dSeg, (int)segCount);
+  cuCheck(cudaPeekAtLastError());
 }
 
 // Define the required interfaces for brkga-cuda
