@@ -31,4 +31,8 @@ private:
   TspInstance() : numberOfClients(-1u) {}
 };
 
+float getFitness(const unsigned* tour,
+                 const unsigned n,
+                 const float* distances);
+
 #endif  // INSTANCES_TSPINSTANCE_HPP

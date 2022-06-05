@@ -8,9 +8,9 @@
 #include <numeric>
 #include <vector>
 
-__host__ __device__ float getFitness(const unsigned* tour,
-                                     const unsigned n,
-                                     const float* distances) {
+__device__ float deviceGetFitness(const unsigned* tour,
+                                  const unsigned n,
+                                  const float* distances) {
   float fitness = distances[tour[0] * n + tour[n - 1]];
   for (unsigned i = 1; i < n; ++i)
     fitness += distances[tour[i - 1] * n + tour[i]];
@@ -61,7 +61,7 @@ __global__ void deviceDecode(const unsigned numberOfChromosomes,
   thrust::device_ptr<unsigned> vals(tour);
   thrust::sort_by_key(thrust::device, keys, keys + chromosomeLength, vals);
 
-  dFitness[tid] = getFitness(tour, chromosomeLength, dDistances);
+  dFitness[tid] = deviceGetFitness(tour, chromosomeLength, dDistances);
 }
 
 void TspDecoder::decode(cudaStream_t stream,
@@ -94,7 +94,7 @@ __global__ void deviceDecode(const unsigned numberOfPermutations,
   if (tid >= numberOfPermutations) return;
 
   const auto* tour = dPermutations + tid * chromosomeLength;
-  dFitness[tid] = getFitness(tour, chromosomeLength, dDistances);
+  dFitness[tid] = deviceGetFitness(tour, chromosomeLength, dDistances);
 }
 
 void TspDecoder::decode(cudaStream_t stream,
