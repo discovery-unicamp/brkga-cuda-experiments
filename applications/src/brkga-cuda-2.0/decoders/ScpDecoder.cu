@@ -12,7 +12,8 @@
 ScpDecoder::ScpDecoder(ScpInstance* _instance)
     : instance(_instance),
       dCosts(box::cuda::alloc<float>(nullptr, instance->costs.size())),
-      dSets(nullptr) {
+      dSets(nullptr),
+      dSetEnd(nullptr) {
   box::cuda::copy_htod(nullptr, dCosts, instance->costs.data(),
                        instance->costs.size());
 

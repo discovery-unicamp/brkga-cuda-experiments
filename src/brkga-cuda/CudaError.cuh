@@ -9,10 +9,10 @@
 namespace box {
 class CudaError : public std::runtime_error {
 public:
-  static inline void check(const cudaError_t status,
-                           const char* file,
-                           const int line,
-                           const char* func) {
+  static inline void _check(const cudaError_t status,
+                            const char* file,
+                            const int line,
+                            const char* func) {
     if (status != cudaSuccess) throw CudaError(status, file, line, func);
   }
 
@@ -28,7 +28,7 @@ private:
 }  // namespace box
 
 #define CUDA_CHECK(cmd) \
-  box::CudaError::check((cmd), __FILE__, __LINE__, __PRETTY_FUNCTION__)
+  box::CudaError::_check((cmd), __FILE__, __LINE__, __PRETTY_FUNCTION__)
 #define CUDA_CHECK_LAST() CUDA_CHECK(cudaPeekAtLastError())
 
 #endif  // BRKGA_CUDA_CUDAERROR_CUH
