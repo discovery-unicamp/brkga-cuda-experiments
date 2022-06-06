@@ -16,7 +16,7 @@ Maceió, Alagoas, Brasil.
 #ifndef GPUBRKGA_CUH
 #define GPUBRKGA_CUH
 
-#define max_t 1024
+#define max_t 1024  // Original value: 512
 
 #include "kernels.cuh"
 #include <curand_kernel.h>
@@ -48,7 +48,7 @@ public:
 	 - K: number of independent populations
 	 */
 	GPUBRKGA(	unsigned n, unsigned p, double pe, double pm, double rhoe, const Decoder& refDecoder, int seed, bool gpu_deco,
-			unsigned K = 1, bool isFixedVersion = false) throw(std::range_error);
+			unsigned K = 1) throw(std::range_error);
 
 	// destructor
 	~GPUBRKGA();
@@ -121,9 +121,6 @@ private:
 	curandState* d_crossStates;
 	curandState* d_mateStates;
 
-	// Fix bad results
-	bool isFixedVersion;
-
 	// Local operations:
 	virtual void evolution();
 	bool isRepeated(const std::vector< double >& chrA, const std::vector< double >& chrB) const;
@@ -148,9 +145,9 @@ void GPUBRKGA< Decoder >::cpyHost()
 
 template< class Decoder >
 GPUBRKGA< Decoder >::GPUBRKGA(unsigned _n, unsigned _p, double _pe, double _pm, double _rhoe, const Decoder& _refDecoder, int _seed, bool _gpu_deco,
-		unsigned _K, bool rf) throw(std::range_error) :
+		unsigned _K) throw(std::range_error) :
 		n(_n), p(_p), pe(unsigned(_pe * p)), pm(unsigned(_pm * p)), rhoe(_rhoe), refDecoder(_refDecoder), seed(_seed), gpu_deco(_gpu_deco),
-		K(_K), isFixedVersion(rf) {
+		K(_K) {
 	// Error check:
 	using std::range_error;
 	if(n == 0) { throw range_error("Chromosome size equals zero."); }
@@ -397,17 +394,29 @@ inline void GPUBRKGA< Decoder >::evolution() {
 		// sorting fitness next
 		if(d_temp_storage == NULL)
 		{
+#ifdef GPU_BRKGA_FIXED
 			cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
-				d_prevFitnessKeys + isFixedVersion * offf, d_currFitnessKeys + isFixedVersion * offf, 
-				d_prevFitnessValues + isFixedVersion * offf, d_currFitnessValues + isFixedVersion * offf, p);
+				d_prevFitnessKeys + offf, d_currFitnessKeys + offf,
+				d_prevFitnessValues + offf, d_currFitnessValues + offf, p);
+#else
+			cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
+				d_prevFitnessKeys, d_currFitnessKeys,
+				d_prevFitnessValues, d_currFitnessValues, p);
+#endif // GPU_BRKGA_FIXED
 			// Allocate temporary storage
 			cudaMalloc(&d_temp_storage, temp_storage_bytes);
 		}
 
 		// Run sorting operation
+#ifdef GPU_BRKGA_FIXED
 		cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
-			d_prevFitnessKeys + isFixedVersion * offf, d_currFitnessKeys + isFixedVersion * offf, 
-			d_prevFitnessValues + isFixedVersion * offf, d_currFitnessValues + isFixedVersion * offf, p);
+			d_prevFitnessKeys + offf, d_currFitnessKeys + offf,
+			d_prevFitnessValues + offf, d_currFitnessValues + offf, p);
+#else
+		cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
+			d_prevFitnessKeys, d_currFitnessKeys,
+			d_prevFitnessValues, d_currFitnessValues, p);
+#endif // GPU_BRKGA_FIXED
 	}
 }
 

@@ -23,10 +23,20 @@ struct Parameters {
   unsigned ompThreads = 0;
   unsigned logStep = 0;
 
+  [[nodiscard]] inline float getEliteProportion() const {
+    return (eliteSize != 0 ? (float)eliteSize / (float)populationSize
+                           : eliteProportion);
+  }
+
   [[nodiscard]] inline unsigned getNumberOfElites() const {
     return (eliteSize != 0
                 ? eliteSize
                 : (unsigned)(eliteProportion * (float)populationSize));
+  }
+
+  [[nodiscard]] inline float getMutantProportion() const {
+    return (mutantSize != 0 ? (float)mutantSize / (float)populationSize
+                            : mutantProportion);
   }
 
   [[nodiscard]] inline unsigned getNumberOfMutants() const {

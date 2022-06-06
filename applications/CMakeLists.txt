@@ -43,3 +43,4 @@ SET(CUDA_COMMON_SRC
 )
 
 include("${CMAKE_CURRENT_LIST_DIR}/src/brkga-cuda-2.0/CMakeLists.txt")
+include("${CMAKE_CURRENT_LIST_DIR}/src/gpu-brkga/CMakeLists.txt")
