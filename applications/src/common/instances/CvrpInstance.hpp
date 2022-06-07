@@ -23,6 +23,8 @@ public:
 
   void validate(const float* chromosome, const float fitness) const;
 
+  void validate(const double* chromosome, const double fitness) const;
+
   void validate(const std::vector<unsigned>& tour, const float fitness) const;
 
   unsigned capacity;

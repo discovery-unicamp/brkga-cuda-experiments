@@ -4,7 +4,6 @@
 
 #include <cmath>
 #include <fstream>
-#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -65,27 +64,8 @@ void ScpInstance::validate(const float* chromosome, const float fitness) const {
         fitness);
 }
 
-float getFitness(const float* selection,
-                 const unsigned n,
-                 const unsigned universeSize,
-                 const float threshold,
-                 const std::vector<float>& costs,
-                 const std::vector<std::vector<unsigned>> sets) {
-  float fitness = 0;
-  std::vector<bool> covered(universeSize);
-  unsigned numCovered = 0;
-  for (unsigned i = 0; i < n; ++i) {
-    if (selection[i] > threshold) {
-      fitness += costs[i];
-      for (auto element : sets[i]) {
-        if (!covered[element]) {
-          covered[element] = true;
-          ++numCovered;
-        }
-      }
-    }
-  }
-
-  if (numCovered != universeSize) return std::numeric_limits<float>::infinity();
-  return fitness;
+void ScpInstance::validate(const double* chromosome,
+                           const double fitness) const {
+  std::vector<float> chromosomef(chromosome, chromosome + chromosomeLength());
+  validate(chromosomef.data(), (float)fitness);
 }

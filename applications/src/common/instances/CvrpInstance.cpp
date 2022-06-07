@@ -78,6 +78,16 @@ void CvrpInstance::validate(const float* chromosome,
   validate(tour, fitness);
 }
 
+void CvrpInstance::validate(const double* chromosome,
+                            const double fitness) const {
+  std::vector<unsigned> tour(numberOfClients);
+  std::iota(tour.begin(), tour.end(), 0);
+  std::sort(tour.begin(), tour.end(), [&](unsigned a, unsigned b) {
+    return chromosome[a] < chromosome[b];
+  });
+  validate(tour, (float)fitness);
+}
+
 void CvrpInstance::validate(const std::vector<unsigned>& tour,
                             const float fitness) const {
   check(!tour.empty(), "Tour is empty");
