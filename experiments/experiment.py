@@ -41,7 +41,7 @@ PROBLEMS = {
 }
 INSTANCES = {
     'cvrp': [
-        # 'X-n219-k73',
+        'X-n219-k73',
         # 'X-n266-k58',
         # 'X-n317-k53',
         # 'X-n336-k84',
@@ -64,18 +64,18 @@ INSTANCES = {
         # 'X-n916-k207',
         # 'X-n957-k87',
         # 'X-n979-k58',
-        'X-n1001-k43',
+        # 'X-n1001-k43',
     ],
     'scp': [
         'scp41',
-        'scp42',
-        'scp43',
-        'scp44',
-        'scp45',
-        'scp46',
-        'scp47',
-        'scp48',
-        'scp49',
+        # 'scp42',
+        # 'scp43',
+        # 'scp44',
+        # 'scp45',
+        # 'scp46',
+        # 'scp47',
+        # 'scp48',
+        # 'scp49',
         # Missing instances:
         # 'scp51',
         # 'scp52',
@@ -94,27 +94,27 @@ INSTANCES = {
     ],
     'tsp': [
         'zi929',
-        'lu980',
-        'rw1621',
-        'mu1979',
-        'nu3496',
-        'ca4663',
-        'tz6117',
-        'eg7146',
-        'ym7663',
-        'pm8079',
-        'ei8246',
-        'ar9152',
-        'ja9847',
-        'gr9882',
-        'kz9976',
-        'fi10639',
-        'mo14185',
-        'ho14473',
-        'it16862',
-        'vm22775',
-        'sw24978',
-        'bm33708',
+        # 'lu980',
+        # 'rw1621',
+        # 'mu1979',
+        # 'nu3496',
+        # 'ca4663',
+        # 'tz6117',
+        # 'eg7146',
+        # 'ym7663',
+        # 'pm8079',
+        # 'ei8246',
+        # 'ar9152',
+        # 'ja9847',
+        # 'gr9882',
+        # 'kz9976',
+        # 'fi10639',
+        # 'mo14185',
+        # 'ho14473',
+        # 'it16862',
+        # 'vm22775',
+        # 'sw24978',
+        # 'bm33708',
     ]
 }
 
@@ -296,74 +296,29 @@ def main():
     # Execute here to avoid changes by the user.
     info = __get_system_info()
 
-    # Test
     save_results(info, experiment(
-        problems=['cvrp', 'cvrp_greedy', 'tsp'],
+        problems=['scp', 'cvrp', 'tsp'],
         tools=['brkga-cuda-2.0'],
-        decoders=['cpu', 'all-cpu', 'cpu-permutation', 'all-cpu-permutation',
-                  'gpu', 'all-gpu', 'gpu-permutation', 'all-gpu-permutation'],
-        test_count=1,
-    ))
-    exit()
-
-    save_results(info, experiment(
-        executable,
-        problems=['cvrp'],
-        tools=['brkga-cuda', 'old-brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed'],
-        decoder='device',
-        is_fast_decode=True,
+        decoders=['cpu', 'all-cpu', 'gpu', 'all-gpu'],
+        test_count=10,
     ))
     save_results(info, experiment(
-        executable,
-        problems=['cvrp'],
-        tools=['brkga-cuda'],
-        decoder='device-sorted',
-        is_fast_decode=True,
+        problems=['scp'],
+        tools=['brkga-cuda-2.0'],
+        decoders=['cpu', 'all-cpu', 'gpu', 'all-gpu'],
+        test_count=10,
     ))
     save_results(info, experiment(
-        executable,
-        problems=['cvrp'],
-        tools=['brkga-cuda', 'old-brkga-cuda',
-               'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
-        decoder='host',
-        is_fast_decode=True,
+        problems=['cvrp', 'scp'],
+        tools=['gpu-brkga'],
+        decoders=['cpu', 'gpu'],
+        test_count=10,
     ))
     save_results(info, experiment(
-        executable,
-        problems=['cvrp'],
-        tools=['brkga-cuda'],
-        decoder='host-sorted',
-        is_fast_decode=True,
-    ))
-
-    save_results(info, experiment(
-        executable,
-        problems=['scp', 'cvrp', 'tsp'],
-        tools=['brkga-cuda', 'old-brkga-cuda', 'gpu-brkga', 'gpu-brkga-fixed'],
-        decoder='device',
-        is_fast_decode=False,
-    ))
-    save_results(info, experiment(
-        executable,
-        problems=['cvrp', 'tsp'],
-        tools=['brkga-cuda'],
-        decoder='device-sorted',
-        is_fast_decode=False,
-    ))
-    save_results(info, experiment(
-        executable,
-        problems=['cvrp', 'tsp'],
-        tools=['brkga-cuda'],
-        decoder='host-sorted',
-        is_fast_decode=False,
-    ))
-    save_results(info, experiment(
-        executable,
-        problems=['scp', 'cvrp', 'tsp'],
-        tools=['brkga-cuda', 'old-brkga-cuda',
-               'gpu-brkga', 'gpu-brkga-fixed', 'brkga-api'],
-        decoder='host',
-        is_fast_decode=False,
+        problems=['cvrp', 'scp', 'tsp'],
+        tools=['brkga-api'],
+        decoders=['cpu'],
+        test_count=10,
     ))
 
 
