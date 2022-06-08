@@ -297,9 +297,10 @@ def main():
     info = __get_system_info()
 
     save_results(info, experiment(
-        problems=['scp', 'cvrp', 'tsp'],
+        problems=['cvrp', 'tsp'],
         tools=['brkga-cuda-2.0'],
-        decoders=['cpu', 'all-cpu', 'gpu', 'all-gpu'],
+        decoders=['cpu', 'all-cpu', 'cpu-permutation', 'all-cpu-permutation',
+                  'gpu', 'all-gpu', 'gpu-permutation', 'all-gpu-permutation'],
         test_count=10,
     ))
     save_results(info, experiment(
