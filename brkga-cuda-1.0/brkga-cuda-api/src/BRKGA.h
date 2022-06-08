@@ -14,6 +14,7 @@
 #include <exception>
 #include <vector>
 
+#include <cuda_runtime.h>
 #include <curand.h>
 #include <curand_kernel.h>
 #include <thrust/sort.h>
@@ -23,8 +24,11 @@
 #include "ConfigFile.h"
 #include <omp.h>
 
-extern unsigned THREADS_PER_BLOCK;
-extern unsigned PSEUDO_SEED;
+extern unsigned THREADS_PER_BLOCK;// 256
+// #define PSEUDO_SEED 1234U //Change seed!
+// extern unsigned PSEUDO_SEED;
+
+// #define NUM_THREADS 4 //if host_decod is used openmp can be used to decode
 
 class BRKGA{
 public:
@@ -37,6 +41,7 @@ public:
 	void setInstanceInfo(void *info, long unsigned num, long unsigned size);
   void saveBestChromosomes();
   std::vector<std::vector <float>> getkBestChromosomes2(unsigned k);
+
 
 private:
 	float *d_population=NULL; //device population

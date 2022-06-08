@@ -9,8 +9,7 @@
 
 #include "BRKGA.h"
 
-#include <curand.h>
-#include <curand_kernel.h>
+#include <cuda_runtime.h>
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 
@@ -78,7 +77,7 @@ BRKGA::BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K,
 	h_best_solutions = (float *)malloc(POOL_SIZE*(chromosome_size+1)*sizeof(float));
 	test_memory_malloc(cudaMalloc((void **)&d_best_solutions, POOL_SIZE*(chromosome_size+1)*sizeof(float)), 8, total_memory);
 
-	// printf("Total Memory Used In GPU %lu bytes(%lu Mbytes)\n", total_memory, total_memory/1000000);
+	printf("Total Memory Used In GPU %lu bytes(%lu Mbytes)\n", total_memory, total_memory/1000000);
 
 	this->dimBlock.x = THREADS_PER_BLOCK;
 	this->dimGrid.x = (population_size*number_populations)/THREADS_PER_BLOCK;
@@ -139,13 +138,13 @@ void BRKGA::test_memory_malloc(cudaError_t err, unsigned code, unsigned total_me
 	Notice we assume the type of the info elements to be float.
 ***/
 void BRKGA::setInstanceInfo(void *info, long unsigned num, long unsigned size){
-	// long unsigned total_memory = num*size;
-	// printf("Extra Memory Used In GPU due to Instance Info %lu bytes(%lu Mbytes)\n", total_memory, total_memory/1000000);
+	long unsigned total_memory = num*size;
+	printf("Extra Memory Used In GPU due to Instance Info %lu bytes(%lu Mbytes)\n", total_memory, total_memory/1000000);
 
-	// if(decode_type == DEVICE_DECODE || decode_type == DEVICE_DECODE_CHROMOSOME_SORTED){
-	// 	test_memory_malloc(cudaMalloc((void **)&d_instance_info, num*size),8,total_memory);
-	// 	cudaMemcpy(d_instance_info, info, num*size, cudaMemcpyHostToDevice);
-	// }
+	if(decode_type == DEVICE_DECODE || decode_type == DEVICE_DECODE_CHROMOSOME_SORTED){
+		test_memory_malloc(cudaMalloc((void **)&d_instance_info, num*size),8,total_memory);
+		cudaMemcpy(d_instance_info, info, num*size, cudaMemcpyHostToDevice);
+	}
 	h_instance_info = info;
 }
 
@@ -174,7 +173,6 @@ void BRKGA::evaluate_chromosomes_host(){
 			h_scores[tx] = host_decode(chromosome, chromosome_size, h_instance_info);
 		}
 	}
-	host_decode(h_scores, h_population, number_chromosomes, h_instance_info);
 	cudaMemcpy(d_scores, h_scores, number_chromosomes*sizeof(float),cudaMemcpyHostToDevice);
 }
 
@@ -185,11 +183,11 @@ void BRKGA::evaluate_chromosomes_host(){
 	provided in Decoder.cpp.
 	We use one thread per cromosome to process them.
 ***/
-// __global__
-// void decode(float *d_scores, float *d_population, int chromosome_size, void * d_instance_info){
-// 	unsigned global_tx = blockIdx.x*blockDim.x + threadIdx.x;
-// 	d_scores[global_tx] = device_decode(d_population + global_tx*chromosome_size, chromosome_size, d_instance_info);
-// }
+__global__
+void decode(float *d_scores, float *d_population, int chromosome_size, void * d_instance_info){
+	unsigned global_tx = blockIdx.x*blockDim.x + threadIdx.x;
+	d_scores[global_tx] = device_decode(d_population + global_tx*chromosome_size, chromosome_size, d_instance_info);
+}
 
 /***
 	If DEVICE_DECODE is used then this function decodes each cromosome with the kernel function
@@ -199,8 +197,7 @@ void BRKGA::evaluate_chromosomes_device(){
 	//Make a copy of chromossomes to d_population2 such that they can be messed up inside
 	//the decoder functions without afecting the real chromosomes on d_population.
 	cudaMemcpy(d_population2, d_population, number_chromosomes*chromosome_size*sizeof(float),cudaMemcpyDeviceToDevice);
-	// decode<<<dimGrid, dimBlock>>>(d_scores, d_population2, chromosome_size, d_instance_info);
-	device_decode(d_scores, d_population2, dimGrid.x * dimBlock.x, h_instance_info);
+	decode<<<dimGrid, dimBlock>>>(d_scores, d_population2, chromosome_size, d_instance_info);
 }
 
 
@@ -214,11 +211,11 @@ void BRKGA::evaluate_chromosomes_device(){
 	Notice that we use the struct ChromosomeGeneIdxPair since the cromosome is given already sorted to
 	the function, and so it has a field with the original index of each gene in the cromosome.
 ***/
-// __global__
-// void decode_chromosomes_sorted(float *d_scores, ChromosomeGeneIdxPair *d_chromosome_gene_idx, int chromosome_size, void *d_instance_info){
-// 	unsigned global_tx = blockIdx.x*blockDim.x + threadIdx.x;
-// 	d_scores[global_tx] = device_decode_chromosome_sorted(d_chromosome_gene_idx + global_tx*chromosome_size, chromosome_size, d_instance_info);
-// }
+__global__
+void decode_chromosomes_sorted(float *d_scores, ChromosomeGeneIdxPair *d_chromosome_gene_idx, int chromosome_size, void *d_instance_info){
+	unsigned global_tx = blockIdx.x*blockDim.x + threadIdx.x;
+	d_scores[global_tx] = device_decode_chromosome_sorted(d_chromosome_gene_idx + global_tx*chromosome_size, chromosome_size, d_instance_info);
+}
 
 /***
 	If DEVICE_DECODE_CHROMOSOME_SORTED is used then this function decodes each cromosome with the kernel function
@@ -227,8 +224,7 @@ void BRKGA::evaluate_chromosomes_device(){
 ***/
 void BRKGA::evaluate_chromosomes_sorted_device(){
 	sort_chromosomes_genes();
-	// decode_chromosomes_sorted<<<dimGrid, dimBlock>>>(d_scores, d_chromosome_gene_idx, chromosome_size, d_instance_info);
-	device_decode_chromosome_sorted(d_scores, d_chromosome_gene_idx, dimGrid.x * dimBlock.x, h_instance_info);
+	decode_chromosomes_sorted<<<dimGrid, dimBlock>>>(d_scores, d_chromosome_gene_idx, chromosome_size, d_instance_info);
 }
 
 /***

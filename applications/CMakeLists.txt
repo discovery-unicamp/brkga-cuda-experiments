@@ -42,6 +42,7 @@ SET(CUDA_COMMON_SRC
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/TspInstance.cuh
 )
 
-INCLUDE("${CMAKE_CURRENT_LIST_DIR}/src/brkga-cuda-2.0/CMakeLists.txt")
 INCLUDE("${CMAKE_CURRENT_LIST_DIR}/src/brkga-api/CMakeLists.txt")
+# INCLUDE("${CMAKE_CURRENT_LIST_DIR}/src/brkga-cuda-1.0/CMakeLists.txt")
+INCLUDE("${CMAKE_CURRENT_LIST_DIR}/src/brkga-cuda-2.0/CMakeLists.txt")
 INCLUDE("${CMAKE_CURRENT_LIST_DIR}/src/gpu-brkga/CMakeLists.txt")
