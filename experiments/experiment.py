@@ -297,10 +297,9 @@ def main():
     info = __get_system_info()
 
     save_results(info, experiment(
-        problems=['cvrp', 'tsp'],
-        tools=['brkga-cuda-2.0'],
-        decoders=['cpu', 'all-cpu', 'cpu-permutation', 'all-cpu-permutation',
-                  'gpu', 'all-gpu', 'gpu-permutation', 'all-gpu-permutation'],
+        problems=['cvrp', 'scp', 'tsp'],
+        tools=['brkga-api'],
+        decoders=['cpu'],
         test_count=10,
     ))
     save_results(info, experiment(
@@ -310,15 +309,16 @@ def main():
         test_count=10,
     ))
     save_results(info, experiment(
-        problems=['cvrp', 'scp'],
-        tools=['gpu-brkga'],
-        decoders=['cpu', 'gpu'],
+        problems=['cvrp', 'tsp'],
+        tools=['brkga-cuda-2.0'],
+        decoders=['cpu', 'all-cpu', 'cpu-permutation', 'all-cpu-permutation',
+                  'gpu', 'all-gpu', 'gpu-permutation', 'all-gpu-permutation'],
         test_count=10,
     ))
     save_results(info, experiment(
-        problems=['cvrp', 'scp', 'tsp'],
-        tools=['brkga-api'],
-        decoders=['cpu'],
+        problems=['cvrp', 'scp'],
+        tools=['gpu-brkga'],
+        decoders=['cpu', 'gpu'],
         test_count=10,
     ))
 
