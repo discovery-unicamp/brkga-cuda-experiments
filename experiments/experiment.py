@@ -42,40 +42,40 @@ PROBLEMS = {
 INSTANCES = {
     'cvrp': [
         'X-n219-k73',
-        # 'X-n266-k58',
-        # 'X-n317-k53',
-        # 'X-n336-k84',
-        # 'X-n376-k94',
-        # 'X-n384-k52',
-        # 'X-n420-k130',
-        # 'X-n429-k61',
-        # 'X-n469-k138',
-        # 'X-n480-k70',
-        # 'X-n548-k50',
-        # 'X-n586-k159',
-        # 'X-n599-k92',
-        # 'X-n655-k131',
-        # # The following doesn't work with the original GPU-BRKGA code
-        # 'X-n733-k159',
-        # 'X-n749-k98',
-        # 'X-n819-k171',
-        # 'X-n837-k142',
-        # 'X-n856-k95',
-        # 'X-n916-k207',
-        # 'X-n957-k87',
-        # 'X-n979-k58',
-        # 'X-n1001-k43',
+        'X-n266-k58',
+        'X-n317-k53',
+        'X-n336-k84',
+        'X-n376-k94',
+        'X-n384-k52',
+        'X-n420-k130',
+        'X-n429-k61',
+        'X-n469-k138',
+        'X-n480-k70',
+        'X-n548-k50',
+        'X-n586-k159',
+        'X-n599-k92',
+        'X-n655-k131',
+        # The following doesn't work with the original GPU-BRKGA code
+        'X-n733-k159',
+        'X-n749-k98',
+        'X-n819-k171',
+        'X-n837-k142',
+        'X-n856-k95',
+        'X-n916-k207',
+        'X-n957-k87',
+        'X-n979-k58',
+        'X-n1001-k43',
     ],
     'scp': [
         'scp41',
-        # 'scp42',
-        # 'scp43',
-        # 'scp44',
-        # 'scp45',
-        # 'scp46',
-        # 'scp47',
-        # 'scp48',
-        # 'scp49',
+        'scp42',
+        'scp43',
+        'scp44',
+        'scp45',
+        'scp46',
+        'scp47',
+        'scp48',
+        'scp49',
         # Missing instances:
         # 'scp51',
         # 'scp52',
@@ -296,11 +296,18 @@ def main():
     # Execute here to avoid changes by the user.
     info = __get_system_info()
 
+    experiment(
+        problems=['tsp'],
+        tools=['brkga-api'],
+        decoders=['cpu'],
+        test_count=1,
+    )
+    exit()
+
     save_results(info, experiment(
-        problems=['cvrp', 'tsp'],
-        tools=['brkga-cuda-2.0'],
-        decoders=['cpu', 'all-cpu', 'cpu-permutation', 'all-cpu-permutation',
-                  'gpu', 'all-gpu', 'gpu-permutation', 'all-gpu-permutation'],
+        problems=['cvrp', 'scp', 'tsp'],
+        tools=['brkga-api'],
+        decoders=['cpu'],
         test_count=10,
     ))
     save_results(info, experiment(
@@ -310,15 +317,16 @@ def main():
         test_count=10,
     ))
     save_results(info, experiment(
-        problems=['cvrp', 'scp'],
-        tools=['gpu-brkga'],
-        decoders=['cpu', 'gpu'],
+        problems=['cvrp', 'tsp'],
+        tools=['brkga-cuda-2.0'],
+        decoders=['cpu', 'all-cpu', 'cpu-permutation', 'all-cpu-permutation',
+                  'gpu', 'all-gpu', 'gpu-permutation', 'all-gpu-permutation'],
         test_count=10,
     ))
     save_results(info, experiment(
-        problems=['cvrp', 'scp', 'tsp'],
-        tools=['brkga-api'],
-        decoders=['cpu'],
+        problems=['cvrp', 'scp'],
+        tools=['gpu-brkga'],
+        decoders=['cpu', 'gpu'],
         test_count=10,
     ))
 

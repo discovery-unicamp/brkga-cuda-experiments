@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
+PROJECT(gpu-brkga-optimizer LANGUAGES CUDA CXX)
 
 # Dependencies
 find_package(CUDA REQUIRED)

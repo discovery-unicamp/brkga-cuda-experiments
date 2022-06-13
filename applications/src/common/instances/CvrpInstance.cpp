@@ -110,11 +110,11 @@ void CvrpInstance::validate(const std::vector<unsigned>& tour,
         "Wrong number of clients: %u != %u", (unsigned)alreadyVisited.size(),
         numberOfClients);
 
-  float expectedFitness = getFitness(tour.data(), numberOfClients, capacity,
-                                     demands.data(), distances.data());
-  check(std::abs(expectedFitness - fitness) < 1e-6f,
-        "Wrong fitness evaluation: expected %f, but found %f", expectedFitness,
-        fitness);
+  // float expectedFitness = getFitness(tour.data(), numberOfClients, capacity,
+  //                                    demands.data(), distances.data());
+  // check(std::abs(expectedFitness - fitness) < 1e-6f,
+  //       "Wrong fitness evaluation: expected %f, but found %f", expectedFitness,
+  //       fitness);
 }
 
 #ifdef CVRP_GREEDY
