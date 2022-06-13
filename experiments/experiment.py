@@ -94,27 +94,27 @@ INSTANCES = {
     ],
     'tsp': [
         'zi929',
-        'lu980',
-        'rw1621',
-        'mu1979',
-        'nu3496',
-        'ca4663',
-        'tz6117',
-        'eg7146',
-        'ym7663',
-        'pm8079',
-        'ei8246',
-        'ar9152',
-        'ja9847',
-        'gr9882',
-        'kz9976',
-        'fi10639',
-        'mo14185',
-        'ho14473',
-        'it16862',
-        'vm22775',
-        'sw24978',
-        'bm33708',
+        # 'lu980',
+        # 'rw1621',
+        # 'mu1979',
+        # 'nu3496',
+        # 'ca4663',
+        # 'tz6117',
+        # 'eg7146',
+        # 'ym7663',
+        # 'pm8079',
+        # 'ei8246',
+        # 'ar9152',
+        # 'ja9847',
+        # 'gr9882',
+        # 'kz9976',
+        # 'fi10639',
+        # 'mo14185',
+        # 'ho14473',
+        # 'it16862',
+        # 'vm22775',
+        # 'sw24978',
+        # 'bm33708',
     ]
 }
 
@@ -295,6 +295,14 @@ def save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]]):
 def main():
     # Execute here to avoid changes by the user.
     info = __get_system_info()
+
+    experiment(
+        problems=['tsp'],
+        tools=['brkga-api'],
+        decoders=['cpu'],
+        test_count=1,
+    )
+    exit()
 
     save_results(info, experiment(
         problems=['cvrp', 'scp', 'tsp'],

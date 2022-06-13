@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
+PROJECT(brkga-cuda-2.0-optimizer LANGUAGES CUDA CXX)
 
 # Dependencies
 find_package(OpenMP REQUIRED)
