@@ -10,7 +10,7 @@ double CvrpDecoder::decode(const std::vector<double>& chromosome) const {
   std::vector<unsigned> permutation(chromosome.size());
   std::iota(permutation.begin(), permutation.end(), 0);
   std::sort(permutation.begin(), permutation.end(),
-            [chromosome](unsigned a, unsigned b) {
+            [&chromosome](unsigned a, unsigned b) {
               return chromosome[a] < chromosome[b];
             });
 

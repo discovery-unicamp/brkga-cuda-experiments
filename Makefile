@@ -4,7 +4,7 @@ cuda_version := $(shell nvidia-smi | grep "CUDA Version" | cut -d: -f 3 | cut -d
 device := 0
 
 run: .setup
-	docker run --env DEVICE=$(device) -v $(project_path)/:/brkga/ --rm --gpus device=$(device) brkga
+	docker run --env DEVICE=$(device) -v $(project_path)/:/brkga/ -u "id -u $$USER" --rm --gpus device=$(device) brkga
 
 .setup: experiments/Dockerfile experiments/requirements.txt
 	docker build --no-cache --build-arg CUDA_VERSION=$(cuda_version) -t brkga -f experiments/Dockerfile .
