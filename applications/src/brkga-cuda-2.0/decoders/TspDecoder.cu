@@ -14,6 +14,10 @@ TspDecoder::TspDecoder(TspInstance* _instance)
       dDistances(box::cuda::alloc<float>(nullptr, instance->distances.size())) {
   box::cuda::copy_htod(nullptr, dDistances, instance->distances.data(),
                        instance->distances.size());
+
+  // Set CUDA heap limit to 1GB to avoid memory issues with the sort of thrust
+  CUDA_CHECK(cudaDeviceSetLimit(cudaLimitMallocHeapSize,
+                                (std::size_t)1024 * 1024 * 1024));
 }
 
 TspDecoder::~TspDecoder() {
