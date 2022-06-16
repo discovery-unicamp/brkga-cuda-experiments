@@ -3,6 +3,8 @@
 #include <brkga-cuda/CudaUtils.hpp>
 
 #include <cuda_runtime.h>
+#include <thrust/device_ptr.h>
+#include <thrust/sort.h>
 
 #include <algorithm>
 #include <numeric>
