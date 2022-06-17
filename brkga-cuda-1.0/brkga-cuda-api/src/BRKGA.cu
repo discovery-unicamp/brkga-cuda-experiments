@@ -77,7 +77,7 @@ BRKGA::BRKGA(unsigned n, unsigned p, float pe, float pm, float rhoe, unsigned K,
 	h_best_solutions = (float *)malloc(POOL_SIZE*(chromosome_size+1)*sizeof(float));
 	test_memory_malloc(cudaMalloc((void **)&d_best_solutions, POOL_SIZE*(chromosome_size+1)*sizeof(float)), 8, total_memory);
 
-	printf("Total Memory Used In GPU %lu bytes(%lu Mbytes)\n", total_memory, total_memory/1000000);
+	// printf("Total Memory Used In GPU %lu bytes(%lu Mbytes)\n", total_memory, total_memory/1000000);
 
 	this->dimBlock.x = THREADS_PER_BLOCK;
 	this->dimGrid.x = (population_size*number_populations)/THREADS_PER_BLOCK;
@@ -139,7 +139,7 @@ void BRKGA::test_memory_malloc(cudaError_t err, unsigned code, unsigned total_me
 ***/
 void BRKGA::setInstanceInfo(void *info, long unsigned num, long unsigned size){
 	long unsigned total_memory = num*size;
-	printf("Extra Memory Used In GPU due to Instance Info %lu bytes(%lu Mbytes)\n", total_memory, total_memory/1000000);
+	// printf("Extra Memory Used In GPU due to Instance Info %lu bytes(%lu Mbytes)\n", total_memory, total_memory/1000000);
 
 	if(decode_type == DEVICE_DECODE || decode_type == DEVICE_DECODE_CHROMOSOME_SORTED){
 		test_memory_malloc(cudaMalloc((void **)&d_instance_info, num*size),8,total_memory);
