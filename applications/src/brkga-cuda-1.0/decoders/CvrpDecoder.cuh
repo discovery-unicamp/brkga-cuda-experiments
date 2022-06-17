@@ -1,6 +1,7 @@
 #ifndef DECODERS_CVRPDECODER_HPP
 #define DECODERS_CVRPDECODER_HPP
 
+#include "../../Tweaks.hpp"
 #include "../../common/CudaCheck.cuh"
 #include "../../common/MinQueue.cuh"
 #include "../../common/Parameters.hpp"

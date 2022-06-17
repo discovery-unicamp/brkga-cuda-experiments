@@ -143,11 +143,11 @@ int main(int argc, char** argv) {
   float timeElapsedMs = -1;
   cudaEventElapsedTime(&timeElapsedMs, start, stop);
 
-  instance.validate(bestChromosome.data(), bestFitness);
-
   std::cout << std::fixed << std::setprecision(6) << "ans=" << bestFitness
             << " elapsed=" << timeElapsedMs / 1000
             << " convergence=" << box::str(convergence, ",") << '\n';
+
+  instance.validate(bestChromosome.data(), bestFitness);
 
   box::logger::info("Exit");
   return 0;

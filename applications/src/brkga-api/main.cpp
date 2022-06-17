@@ -89,8 +89,6 @@ int main(int argc, char** argv) {
   double finishTime = omp_get_wtime();
   double timeElapsedSeconds = finishTime - startTime;
 
-  instance.validate(bestChromosome.data(), bestFitness);
-
   std::cout << std::fixed << std::setprecision(6) << "ans=" << bestFitness
             << " elapsed=" << timeElapsedSeconds << " convergence=";
   bool flag = 0;
@@ -101,6 +99,8 @@ int main(int argc, char** argv) {
     std::cout << x;
   }
   std::cout << "]\n";
+
+  instance.validate(bestChromosome.data(), bestFitness);
 
   return 0;
 }

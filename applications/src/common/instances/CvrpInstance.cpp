@@ -1,5 +1,6 @@
 #include "CvrpInstance.hpp"
 
+#include "../../Tweaks.hpp"
 #include "../Checker.hpp"
 #include "../MinQueue.hpp"
 
