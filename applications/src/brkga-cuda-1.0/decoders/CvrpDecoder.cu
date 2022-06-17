@@ -1,6 +1,6 @@
+#include "../../common/CudaCheck.cuh"
 #include "../../common/MinQueue.cuh"
 #include "../../common/instances/CvrpInstance.cuh"
-#include "../CudaCheck.cuh"
 #include "CvrpDecoder.hpp"
 #include <brkga-cuda-api/src/CommonStructs.h>
 

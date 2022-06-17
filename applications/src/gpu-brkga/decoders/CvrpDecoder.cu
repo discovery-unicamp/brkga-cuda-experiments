@@ -1,5 +1,5 @@
 #include "../../common/instances/CvrpInstance.cuh"
-#include "../CudaCheck.cuh"
+#include "../../common/CudaCheck.cuh"
 #include "CvrpDecoder.hpp"
 
 #include <cuda_runtime.h>

@@ -1,5 +1,5 @@
+#include "../../common/CudaCheck.cuh"
 #include "../../common/instances/ScpInstance.cuh"
-#include "../CudaCheck.cuh"
 #include "ScpDecoder.hpp"
 
 #include <cuda_runtime.h>

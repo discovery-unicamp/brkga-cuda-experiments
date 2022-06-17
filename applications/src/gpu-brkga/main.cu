@@ -1,7 +1,7 @@
 #include "../Tweaks.hpp"  // Must be generated
 #include "../common/Checker.hpp"
+#include "../common/CudaCheck.cuh"
 #include "../common/Parameters.hpp"
-#include "CudaCheck.cuh"
 #include <GPU-BRKGA/GPUBRKGA.cuh>
 
 #include <cuda_runtime.h>
