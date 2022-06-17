@@ -123,13 +123,17 @@ int main(int argc, char** argv) {
   Instance instance = Instance::fromFile(params.instanceFileName);
   DecoderInfo decoderInfo(&instance, params);
 
-  const unsigned decodeId = params.decoder == "all-cpu"   ? HOST_DECODE
-                            : params.decoder == "all-gpu" ? DEVICE_DECODE
-                            : params.decoder == "all-gpu-permutation"
+  const unsigned decodeId = params.decoder == "single-cpu"   ? HOST_DECODE
+                            : params.decoder == "single-gpu" ? DEVICE_DECODE
+                            : params.decoder == "single-gpu-permutation"
                                 ? DEVICE_DECODE_CHROMOSOME_SORTED
                                 : (unsigned)-1;
   CHECK(decodeId != (unsigned)-1, "Unsupported decoder: %s",
         params.decoder.c_str());
+#ifdef SCP
+  CHECK(decodeId != DEVICE_DECODE_CHROMOSOME_SORTED,
+        "Unsupported decoder for SCP: %s", params.decoder.c_str());
+#endif  // SCP
 
   cudaEvent_t start, stop;
   CUDA_CHECK(cudaEventCreate(&start));
