@@ -5,6 +5,8 @@
 #include <brkga-cuda/CudaError.cuh>
 
 #include <cuda_runtime.h>
+#include <thrust/device_ptr.h>
+#include <thrust/sort.h>
 
 #include <algorithm>
 #include <iomanip>
@@ -37,36 +39,63 @@ inline bool contains(const std::string& str, const std::string& pattern) {
   return str.find(pattern) != std::string::npos;
 }
 
+__global__ void callSort(float* dChromosome,
+                         unsigned* dPermutation,
+                         unsigned chromosomeLength) {
+  thrust::device_ptr<float> keys(dChromosome);
+  thrust::device_ptr<unsigned> vals(dPermutation);
+  thrust::sort_by_key(thrust::device, keys, keys + chromosomeLength, vals);
+}
+
 void sortChromosomeToValidate(const float* chromosome,
                               unsigned* permutation,
                               unsigned size) {
   std::iota(permutation, permutation + size, 0);
+  box::logger::debug("Sorting the chromosome to validate according to decoder",
+                     decodeType);
 
-  if (contains(decodeType, "permutation")) {
-    float* dChromosome = box::cuda::alloc<float>(nullptr, size);
-    unsigned* dPermutation = box::cuda::alloc<unsigned>(nullptr, size);
+  if (contains(decodeType, "permutation") || contains(decodeType, "gpu")) {
+    auto* dChromosome = box::cuda::alloc<float>(nullptr, size);
+    auto* dPermutation = box::cuda::alloc<unsigned>(nullptr, size);
 
     box::cuda::copy2d(nullptr, dChromosome, chromosome, size);
     box::cuda::copy2d(nullptr, dPermutation, permutation, size);
-    box::cuda::segSort(nullptr, dChromosome, dPermutation, 1, size);
+
+    if (contains(decodeType, "permutation")) {
+      // Uses BBSegSort
+      box::cuda::segSort(nullptr, dChromosome, dPermutation, 1, size);
+    } else {
+      // Uses thrust::sort
+      callSort<<<1, 1>>>(dChromosome, dPermutation, size);
+    }
+    box::cuda::sync();
 
     box::cuda::copy2h(nullptr, permutation, dPermutation, size);
 
     box::cuda::free(nullptr, dChromosome);
     box::cuda::free(nullptr, dPermutation);
   } else if (contains(decodeType, "cpu")) {
+    // Uses std::sort
     std::sort(permutation, permutation + size, [&](unsigned a, unsigned b) {
       return chromosome[a] < chromosome[b];
     });
-    // } else if () {
   } else {
     // check(false, "Invalid decoder: %s", decodeType.c_str());
+    std::cerr << __PRETTY_FUNCTION__ << ": unknown decoder `" << decodeType
+              << "`\n";
     abort();
   }
 }
 
+void sortChromosomeToValidate(const double*, unsigned*, unsigned) {
+  std::cerr << __PRETTY_FUNCTION__ << " should not be called\n";
+  throw std::runtime_error("not call");
+}
+
 int main(int argc, char** argv) {
   auto params = Parameters::parse(argc, argv);
+  decodeType = params.decoder;
+
   Instance instance = Instance::fromFile(params.instanceFileName);
   DecoderImpl decoder(&instance);
 
@@ -120,5 +149,7 @@ int main(int argc, char** argv) {
   std::cout << std::fixed << std::setprecision(6) << "ans=" << bestFitness
             << " elapsed=" << timeElapsedMs / 1000
             << " convergence=" << box::str(convergence, ",") << '\n';
+
+  box::logger::info("Exit");
   return 0;
 }

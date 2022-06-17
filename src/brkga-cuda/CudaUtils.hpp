@@ -24,7 +24,7 @@ inline void sync() {
 
 /// Synchronize the host with the specified stream.
 inline void sync(cudaStream_t stream) {
-  box::logger::debug("Sync with stream", stream);
+  box::logger::debug("Sync with stream", (void*)stream);
   CUDA_CHECK(cudaStreamSynchronize(stream));
 }
 
@@ -54,7 +54,7 @@ inline T* alloc(cudaStream_t stream, std::size_t n) {
  */
 template <class T>
 inline void free(cudaStream_t stream, T* ptr) {
-  box::logger::debug("Free", ptr);
+  box::logger::debug("Free", (void*)ptr);
   CUDA_CHECK(cudaFreeAsync(ptr, stream));
 }
 
@@ -67,7 +67,7 @@ inline cudaStream_t allocStream() {
 
 /// Releases an allocated stream.
 inline void free(cudaStream_t stream) {
-  box::logger::debug("Free stream", stream);
+  box::logger::debug("Free stream", (void*)stream);
   CUDA_CHECK(cudaStreamDestroy(stream));
 }
 
@@ -84,7 +84,7 @@ inline curandGenerator_t allocRandomGenerator(
 
 /// Releases an allocated random generator.
 inline void free(curandGenerator_t generator) {
-  box::logger::debug("Free generator", generator);
+  box::logger::debug("Free generator", (void*)generator);
   curandDestroyGenerator(generator);
   CUDA_CHECK_LAST();
 }
@@ -99,8 +99,8 @@ inline void free(curandGenerator_t generator) {
  */
 template <class T>
 inline void copy(cudaStream_t stream, T* dest, const T* src, std::size_t n) {
-  box::logger::debug("Copy", n, "elements from", src, "(device) to", dest,
-                     "(device) on stream", stream);
+  box::logger::debug("Copy", n, "elements from", (void*)src, "(device) to",
+                     (void*)dest, "(device) on stream", (void*)stream);
   CUDA_CHECK(cudaMemcpyAsync(dest, src, n * sizeof(T), cudaMemcpyDeviceToDevice,
                              stream));
 }
@@ -115,8 +115,8 @@ inline void copy(cudaStream_t stream, T* dest, const T* src, std::size_t n) {
  */
 template <class T>
 inline void copy2d(cudaStream_t stream, T* dest, const T* src, std::size_t n) {
-  box::logger::debug("Copy", n, "elements from", src, "(host) to", dest,
-                     "(device) on stream", stream);
+  box::logger::debug("Copy", n, "elements from", (void*)src, "(host) to",
+                     (void*)dest, "(device) on stream", (void*)stream);
   CUDA_CHECK(cudaMemcpyAsync(dest, src, n * sizeof(T), cudaMemcpyHostToDevice,
                              stream));
 }
@@ -131,8 +131,8 @@ inline void copy2d(cudaStream_t stream, T* dest, const T* src, std::size_t n) {
  */
 template <class T>
 inline void copy2h(cudaStream_t stream, T* dest, const T* src, std::size_t n) {
-  box::logger::debug("Copy", n, "elements from", src, "(device) to", dest,
-                     "(host) on stream", stream);
+  box::logger::debug("Copy", n, "elements from", (void*)src, "(device) to",
+                     (void*)dest, "(host) on stream", (void*)stream);
   CUDA_CHECK(cudaMemcpyAsync(dest, src, n * sizeof(T), cudaMemcpyDeviceToHost,
                              stream));
 }
@@ -199,25 +199,29 @@ public:
   CachedAllocator& operator=(const CachedAllocator&) = delete;
   CachedAllocator& operator=(CachedAllocator&&) = delete;
 
-  /// Doesn't free up memory because it is in the global scope (may lead to
-  ///  "driver shutting down" error)
-  ~CachedAllocator() = default;
-
-  byte* allocate(std::size_t nbytes);
-
-  void deallocate(byte* ptr, std::size_t);
-
-  inline void free() {
-    for (auto pair : freeMem) free(nullptr, pair.second);
-    freeMem.clear();
+  ~CachedAllocator() {
+    try {
+      free();
+    } catch (box::CudaError& e) {
+      // "driver shutting down" error
+    }
   }
 
+  /// Allocates or reuse a memory of at least @p nbytes bytes.
+  byte* allocate(std::size_t nbytes);
+
+  /// Saves @p ptr to `freeMem`.
+  void deallocate(byte* ptr, std::size_t);
+
+  /// Releases memory in `freeMem`.
+  void free();
+
 private:
-  std::multimap<std::size_t, byte*> freeMem;
-  std::map<byte*, std::size_t> allocMem;
+  std::multimap<std::size_t, byte*> freeMem;  /// Allocated but unused memory
+  std::map<byte*, std::size_t> allocMem;  /// Allocated and used memory
 };
 
-extern CachedAllocator cachedAllocator;
+extern CachedAllocator cachedAllocator;  // FIXME will this lead to seg-fault?
 }  // namespace _detail
 
 /**

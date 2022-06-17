@@ -226,21 +226,17 @@ def experiment(
         logging.warning('Ignoring GPU-BRKGA for TSP')
 
     for problem in problems:
-        executables = {
-            tool: compile_optimizer(tool, problem)
-            for tool in tools
-        }
+        pname = PROBLEMS[problem]
+        for tool in tools:
+            if pname == 'tsp' and (tool == 'gpu-brkga'
+                                    or tool == 'gpu-brkga-fixed'):
+                continue
 
-        for decoder in decoders:
-            pname = PROBLEMS[problem]
-            for instance in INSTANCES[pname]:
-                instance_path = str(get_instance_path(pname, instance))
-                for seed in range(1, test_count + 1):
-                    for tool in tools:
-                        if pname == 'tsp' and (tool == 'gpu-brkga'
-                                               or tool == 'gpu-brkga-fixed'):
-                            continue
-
+            executable = compile_optimizer(tool, problem)
+            for decoder in decoders:
+                for instance in INSTANCES[pname]:
+                    instance_path = str(get_instance_path(pname, instance))
+                    for seed in range(1, test_count + 1):
                         params = {
                             'threads': 256,
                             'omp-threads': int(__shell('nproc')),
@@ -258,7 +254,7 @@ def experiment(
                             'log-step': 25,
                         }
 
-                        result = __run_test(executables[tool], params)
+                        result = __run_test(executable, params)
                         result['tool'] = tool
                         result['problem'] = problem
                         result['instance'] = instance
@@ -297,10 +293,16 @@ def main():
     info = __get_system_info()
 
     # save_results(info, experiment(
-    #     problems=['tsp'],
-    #     tools=['brkga-api'],
-    #     decoders=['cpu'],
-    #     test_count=1,
+    #     problems=['tsp', 'cvrp'],
+    #     tools=['brkga-cuda-2.0'],
+    #     decoders=['gpu-permutation'],
+    #     test_count=3,
+    # ))
+    # save_results(info, experiment(
+    #     problems=['scp'],
+    #     tools=['brkga-cuda-2.0'],
+    #     decoders=['gpu'],
+    #     test_count=3,
     # ))
     # exit()
 

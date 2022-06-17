@@ -17,7 +17,7 @@ add_executable(brkga-cuda-2.0
   ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.hpp
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cu
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.hpp
-  ${CMAKE_CURRENT_LIST_DIR}/main.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/main.cu
 )
 
 set_target_properties(brkga-cuda-2.0 PROPERTIES POSITION_INDEPENDENT_CODE ON)

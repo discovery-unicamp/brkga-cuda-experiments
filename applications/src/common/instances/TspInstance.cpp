@@ -64,9 +64,7 @@ TspInstance TspInstance::fromFile(const std::string& filename) {
 void TspInstance::validate(const float* chromosome, const float fitness) const {
   std::vector<unsigned> tour(numberOfClients);
   std::iota(tour.begin(), tour.end(), 0);
-  std::sort(tour.begin(), tour.end(), [&](unsigned a, unsigned b) {
-    return chromosome[a] < chromosome[b];
-  });
+  sortChromosomeToValidate(chromosome, tour.data(), (unsigned)tour.size());
   validate(tour, fitness);
 }
 
@@ -74,9 +72,7 @@ void TspInstance::validate(const double* chromosome,
                            const double fitness) const {
   std::vector<unsigned> tour(numberOfClients);
   std::iota(tour.begin(), tour.end(), 0);
-  std::sort(tour.begin(), tour.end(), [&](unsigned a, unsigned b) {
-    return chromosome[a] < chromosome[b];
-  });
+  sortChromosomeToValidate(chromosome, tour.data(), (unsigned)tour.size());
   validate(tour, (float)fitness);
 }
 

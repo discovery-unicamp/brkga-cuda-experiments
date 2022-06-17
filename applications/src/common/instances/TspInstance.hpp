@@ -37,4 +37,12 @@ float getFitness(const unsigned* tour,
                  const unsigned n,
                  const float* distances);
 
+void sortChromosomeToValidate(const float* chromosome,
+                              unsigned* permutation,
+                              unsigned size);
+
+void sortChromosomeToValidate(const double* chromosome,
+                              unsigned* permutation,
+                              unsigned size);
+
 #endif  // INSTANCES_TSPINSTANCE_HPP
