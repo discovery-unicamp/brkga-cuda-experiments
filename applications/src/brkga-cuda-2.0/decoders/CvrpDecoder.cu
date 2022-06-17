@@ -14,10 +14,10 @@ CvrpDecoder::CvrpDecoder(CvrpInstance* _instance)
     : instance(_instance),
       dDemands(box::cuda::alloc<unsigned>(nullptr, instance->demands.size())),
       dDistances(box::cuda::alloc<float>(nullptr, instance->distances.size())) {
-  box::cuda::copy_htod(nullptr, dDemands, instance->demands.data(),
-                       instance->demands.size());
-  box::cuda::copy_htod(nullptr, dDistances, instance->distances.data(),
-                       instance->distances.size());
+  box::cuda::copy2d(nullptr, dDemands, instance->demands.data(),
+                    instance->demands.size());
+  box::cuda::copy2d(nullptr, dDistances, instance->distances.data(),
+                    instance->distances.size());
 }
 
 CvrpDecoder::~CvrpDecoder() {

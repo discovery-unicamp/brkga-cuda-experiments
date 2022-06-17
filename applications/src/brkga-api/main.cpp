@@ -7,8 +7,10 @@
 
 #include <omp.h>
 
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <numeric>
 #include <vector>
 
 #if defined(TSP)
@@ -29,6 +31,15 @@ typedef CvrpDecoder DecoderImpl;
 #else
 #error No problem/instance/decoder defined
 #endif  // Problem/Instance
+
+void sortChromosomeToValidate(const float* chromosome,
+                              unsigned* permutation,
+                              unsigned size) {
+  std::iota(permutation, permutation + size, 0);
+  std::sort(permutation, permutation + size, [&](unsigned a, unsigned b) {
+    return chromosome[a] < chromosome[b];
+  });
+}
 
 int main(int argc, char** argv) {
   auto params = Parameters::parse(argc, argv);

@@ -14,8 +14,8 @@ ScpDecoder::ScpDecoder(ScpInstance* _instance)
       dCosts(box::cuda::alloc<float>(nullptr, instance->costs.size())),
       dSets(nullptr),
       dSetEnd(nullptr) {
-  box::cuda::copy_htod(nullptr, dCosts, instance->costs.data(),
-                       instance->costs.size());
+  box::cuda::copy2d(nullptr, dCosts, instance->costs.data(),
+                    instance->costs.size());
 
   std::vector<unsigned> tempSets;
   std::vector<unsigned> tempSetEnd;
@@ -28,10 +28,10 @@ ScpDecoder::ScpDecoder(ScpInstance* _instance)
   }
 
   dSets = box::cuda::alloc<unsigned>(nullptr, tempSets.size());
-  box::cuda::copy_htod(nullptr, dSets, tempSets.data(), tempSets.size());
+  box::cuda::copy2d(nullptr, dSets, tempSets.data(), tempSets.size());
 
   dSetEnd = box::cuda::alloc<unsigned>(nullptr, tempSetEnd.size());
-  box::cuda::copy_htod(nullptr, dSetEnd, tempSetEnd.data(), tempSetEnd.size());
+  box::cuda::copy2d(nullptr, dSetEnd, tempSetEnd.data(), tempSetEnd.size());
 }
 
 ScpDecoder::~ScpDecoder() {

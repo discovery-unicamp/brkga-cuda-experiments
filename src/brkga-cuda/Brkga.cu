@@ -175,18 +175,17 @@ void box::Brkga::updateFitness() {
     if (decodeType.chromosome()) {
       population.resize(numberOfPopulations * populationSize * chromosomeSize);
       for (unsigned p = 0; p < numberOfPopulations; ++p) {
-        cuda::copy_dtoh(streams[p],
-                        population.data() + p * populationSize * chromosomeSize,
-                        dPopulation.row(p), populationSize * chromosomeSize);
+        cuda::copy2h(streams[p],
+                     population.data() + p * populationSize * chromosomeSize,
+                     dPopulation.row(p), populationSize * chromosomeSize);
       }
     } else {
       permutations.resize(numberOfPopulations * populationSize
                           * chromosomeSize);
       for (unsigned p = 0; p < numberOfPopulations; ++p) {
-        cuda::copy_dtoh(
-            streams[p],
-            permutations.data() + p * populationSize * chromosomeSize,
-            dPermutations.row(p), populationSize * chromosomeSize);
+        cuda::copy2h(streams[p],
+                     permutations.data() + p * populationSize * chromosomeSize,
+                     dPermutations.row(p), populationSize * chromosomeSize);
       }
     }
 
@@ -207,8 +206,8 @@ void box::Brkga::updateFitness() {
       }
 
       for (unsigned p = 0; p < numberOfPopulations; ++p)
-        cuda::copy_htod(streams[p], dFitness.row(p),
-                        fitness.data() + p * populationSize, populationSize);
+        cuda::copy2d(streams[p], dFitness.row(p),
+                     fitness.data() + p * populationSize, populationSize);
     } else {
       if (decodeType.chromosome()) {
         decoder->decode(streams[0], totalChromosomes, dPopulation.get(),
@@ -243,8 +242,8 @@ void box::Brkga::updateFitness() {
               fitness.data() + p * populationSize);
         }
 
-        cuda::copy_htod(streams[p], dFitness.row(p),
-                        fitness.data() + p * populationSize, populationSize);
+        cuda::copy2d(streams[p], dFitness.row(p),
+                     fitness.data() + p * populationSize, populationSize);
       } else {
         if (decodeType.chromosome()) {
           decoder->decode(streams[p], populationSize, dPopulation.row(p),
@@ -384,7 +383,7 @@ std::vector<float> box::Brkga::getBestChromosome() {
   auto bestChromosome = bestIdx.second;
 
   std::vector<float> best(chromosomeSize);
-  cuda::copy_dtoh(
+  cuda::copy2h(
       nullptr, best.data(),
       dPopulation.row(bestPopulation) + bestChromosome * chromosomeSize,
       chromosomeSize);
@@ -402,7 +401,7 @@ std::vector<unsigned> box::Brkga::getBestPermutation() {
 
   // Copy the best chromosome
   std::vector<unsigned> best(chromosomeSize);
-  cuda::copy_dtoh(
+  cuda::copy2h(
       streams[0], best.data(),
       dPermutations.row(bestPopulation) + bestChromosome * chromosomeSize,
       chromosomeSize);
@@ -414,7 +413,7 @@ std::vector<unsigned> box::Brkga::getBestPermutation() {
 float box::Brkga::getBestFitness() {
   auto bestPopulation = getBest().first;
   float bestFitness = -1;
-  cuda::copy_dtoh(streams[0], &bestFitness, dFitness.row(bestPopulation), 1);
+  cuda::copy2h(streams[0], &bestFitness, dFitness.row(bestPopulation), 1);
   cuda::sync(streams[0]);
   return bestFitness;
 }
@@ -425,8 +424,8 @@ std::pair<unsigned, unsigned> box::Brkga::getBest() {
   const unsigned chromosomesToCopy = 1;
   std::vector<float> bestFitness(numberOfPopulations, -1);
   for (unsigned p = 0; p < numberOfPopulations; ++p)
-    cuda::copy_dtoh(streams[p], &bestFitness[p], dFitness.row(p),
-                    chromosomesToCopy);
+    cuda::copy2h(streams[p], &bestFitness[p], dFitness.row(p),
+                 chromosomesToCopy);
 
   // Find the best population
   unsigned bestPopulation = 0;
@@ -437,8 +436,8 @@ std::pair<unsigned, unsigned> box::Brkga::getBest() {
 
   // Get the index of the best chromosome
   unsigned bestChromosome = (unsigned)-1;
-  cuda::copy_dtoh(streams[0], &bestChromosome, dFitnessIdx.row(bestPopulation),
-                  chromosomesToCopy);
+  cuda::copy2h(streams[0], &bestChromosome, dFitnessIdx.row(bestPopulation),
+               chromosomesToCopy);
   cuda::sync(streams[0]);
 
   logger::debug("Best fitness:", bestFitness[bestPopulation], "on population",

@@ -46,11 +46,11 @@ void sortChromosomeToValidate(const float* chromosome,
     float* dChromosome = box::cuda::alloc<float>(nullptr, size);
     unsigned* dPermutation = box::cuda::alloc<unsigned>(nullptr, size);
 
-    box::cuda::copy_htod(nullptr, dChromosome, chromosome, size);
-    box::cuda::copy_htod(nullptr, dPermutation, permutation, size);
+    box::cuda::copy2d(nullptr, dChromosome, chromosome, size);
+    box::cuda::copy2d(nullptr, dPermutation, permutation, size);
     box::cuda::segSort(nullptr, dChromosome, dPermutation, 1, size);
 
-    box::cuda::copy_dtoh(nullptr, permutation, dPermutation, size);
+    box::cuda::copy2h(nullptr, permutation, dPermutation, size);
 
     box::cuda::free(nullptr, dChromosome);
     box::cuda::free(nullptr, dPermutation);

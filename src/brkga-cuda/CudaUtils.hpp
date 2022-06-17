@@ -114,10 +114,7 @@ inline void copy(cudaStream_t stream, T* dest, const T* src, std::size_t n) {
  * @param n The number of elements to copy.
  */
 template <class T>
-inline void copy_htod(cudaStream_t stream,
-                      T* dest,
-                      const T* src,
-                      std::size_t n) {
+inline void copy2d(cudaStream_t stream, T* dest, const T* src, std::size_t n) {
   box::logger::debug("Copy", n, "elements from", src, "(host) to", dest,
                      "(device) on stream", stream);
   CUDA_CHECK(cudaMemcpyAsync(dest, src, n * sizeof(T), cudaMemcpyHostToDevice,
@@ -133,10 +130,7 @@ inline void copy_htod(cudaStream_t stream,
  * @param n The number of elements to copy.
  */
 template <class T>
-inline void copy_dtoh(cudaStream_t stream,
-                      T* dest,
-                      const T* src,
-                      std::size_t n) {
+inline void copy2h(cudaStream_t stream, T* dest, const T* src, std::size_t n) {
   box::logger::debug("Copy", n, "elements from", src, "(device) to", dest,
                      "(host) on stream", stream);
   CUDA_CHECK(cudaMemcpyAsync(dest, src, n * sizeof(T), cudaMemcpyDeviceToHost,
@@ -242,7 +236,7 @@ inline void sortByKey(cudaStream_t stream,
                       std::size_t n) {
   thrust::device_ptr<Key> keysPtr(keys);
   thrust::device_ptr<Value> valuesPtr(values);
-  thrust::sort_by_key(thrust::cuda::par(detail::cachedAllocator).on(stream),
+  thrust::sort_by_key(thrust::cuda::par(_detail::cachedAllocator).on(stream),
                       keysPtr, keysPtr + n, valuesPtr);
   CUDA_CHECK_LAST();
 }
