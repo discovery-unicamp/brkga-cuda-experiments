@@ -32,7 +32,12 @@ typedef CvrpDecoder DecoderImpl;
 #error No problem/instance/decoder defined
 #endif  // Problem/Instance
 
-void sortChromosomeToValidate(const float* chromosome,
+void sortChromosomeToValidate(const float*, unsigned*, unsigned) {
+  std::cerr << __PRETTY_FUNCTION__ << " should not be called\n";
+  abort();
+}
+
+void sortChromosomeToValidate(const double* chromosome,
                               unsigned* permutation,
                               unsigned size) {
   std::iota(permutation, permutation + size, 0);

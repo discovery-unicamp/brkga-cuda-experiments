@@ -80,7 +80,6 @@ void sortChromosomeToValidate(const float* chromosome,
       return chromosome[a] < chromosome[b];
     });
   } else {
-    // check(false, "Invalid decoder: %s", decodeType.c_str());
     std::cerr << __PRETTY_FUNCTION__ << ": unknown decoder `" << decodeType
               << "`\n";
     abort();
@@ -89,7 +88,7 @@ void sortChromosomeToValidate(const float* chromosome,
 
 void sortChromosomeToValidate(const double*, unsigned*, unsigned) {
   std::cerr << __PRETTY_FUNCTION__ << " should not be called\n";
-  throw std::runtime_error("not call");
+  abort();
 }
 
 int main(int argc, char** argv) {
