@@ -6,12 +6,12 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
   Parameters params;
   for (unsigned i = 1; i < argc; i += 2) {
     std::string arg = argv[i];
-    check(arg.substr(0, 2) == "--",
+    CHECK(arg.substr(0, 2) == "--",
           "All arguments should start with --; found %s", arg.c_str());
-    check(i + 1 < argc, "Missing value for %s", arg.c_str());
+    CHECK(i + 1 < argc, "Missing value for %s", arg.c_str());
 
     std::string value = argv[i + 1];
-    check(value.substr(0, 2) != "--",
+    CHECK(value.substr(0, 2) != "--",
           "Argument value for %s starts with --: %s", arg.c_str(),
           value.c_str());
 
@@ -48,7 +48,7 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
     } else if (arg == "--log-step") {
       params.logStep = std::stoi(value);
     } else {
-      check(false, "Unknown argument: %s", arg.c_str());
+      CHECK(false, "Unknown argument: %s", arg.c_str());
     }
   }
 

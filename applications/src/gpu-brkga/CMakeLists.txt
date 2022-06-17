@@ -18,9 +18,8 @@ add_executable(gpu-brkga
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cpp
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cu
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.hpp
-  ${CMAKE_CURRENT_LIST_DIR}/main.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/main.cu
 )
-set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/main.cpp PROPERTIES LANGUAGE CUDA)
 
 set_target_properties(gpu-brkga PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(gpu-brkga PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

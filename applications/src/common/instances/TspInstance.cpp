@@ -78,21 +78,21 @@ void TspInstance::validate(const double* chromosome,
 
 void TspInstance::validate(const std::vector<unsigned>& tour,
                            const float fitness) const {
-  check(!tour.empty(), "Tour is empty");
-  check(tour.size() == numberOfClients,
+  CHECK(!tour.empty(), "Tour is empty");
+  CHECK(tour.size() == numberOfClients,
         "The tour should visit all the clients");
 
-  check(*std::min_element(tour.begin(), tour.end()) == 0,
+  CHECK(*std::min_element(tour.begin(), tour.end()) == 0,
         "Invalid range of clients");
-  check(*std::max_element(tour.begin(), tour.end()) == numberOfClients - 1,
+  CHECK(*std::max_element(tour.begin(), tour.end()) == numberOfClients - 1,
         "Invalid range of clients");
 
   std::set<unsigned> alreadyVisited;
   for (unsigned v : tour) {
-    check(alreadyVisited.count(v) == 0, "Client %u was visited twice", v);
+    CHECK(alreadyVisited.count(v) == 0, "Client %u was visited twice", v);
     alreadyVisited.insert(v);
   }
-  check(alreadyVisited.size() == numberOfClients,
+  CHECK(alreadyVisited.size() == numberOfClients,
         "Wrong number of clients: %u != %u", (unsigned)alreadyVisited.size(),
         numberOfClients);
 
@@ -101,7 +101,7 @@ void TspInstance::validate(const std::vector<unsigned>& tour,
   for (unsigned i = 1; i < numberOfClients; ++i)
     expectedFitness += distances[tour[i - 1] * numberOfClients + tour[i]];
 
-  check(std::abs(expectedFitness - fitness) < 1e-6f,
+  CHECK(std::abs(expectedFitness - fitness) < 1e-6f,
         "Wrong fitness evaluation: expected %f, but found %f", expectedFitness,
         fitness);
 }

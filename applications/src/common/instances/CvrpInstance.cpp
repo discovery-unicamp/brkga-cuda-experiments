@@ -4,7 +4,7 @@
 #include "../MinQueue.hpp"
 
 #include <algorithm>
-#include <cassert>  // FIXME use `check`
+#include <cassert>  // FIXME use `CHECK`
 #include <fstream>
 #include <numeric>
 #include <set>
@@ -86,29 +86,29 @@ void CvrpInstance::validate(const double* chromosome,
 
 void CvrpInstance::validate(const std::vector<unsigned>& tour,
                             const float fitness) const {
-  check(!tour.empty(), "Tour is empty");
-  check(tour.size() == numberOfClients,
+  CHECK(!tour.empty(), "Tour is empty");
+  CHECK(tour.size() == numberOfClients,
         "The tour should visit all the clients");
 
-  check(*std::min_element(tour.begin(), tour.end()) == 0,
+  CHECK(*std::min_element(tour.begin(), tour.end()) == 0,
         "Invalid first client: %u != %u",
         *std::min_element(tour.begin(), tour.end()), 0);
-  check(*std::max_element(tour.begin(), tour.end()) == numberOfClients - 1,
+  CHECK(*std::max_element(tour.begin(), tour.end()) == numberOfClients - 1,
         "Invalid last client: %u != %u",
         *std::max_element(tour.begin(), tour.end()), numberOfClients - 1);
 
   std::set<unsigned> alreadyVisited;
   for (unsigned v : tour) {
-    check(alreadyVisited.count(v) == 0, "Client %u was visited twice", v);
+    CHECK(alreadyVisited.count(v) == 0, "Client %u was visited twice", v);
     alreadyVisited.insert(v);
   }
-  check(alreadyVisited.size() == numberOfClients,
+  CHECK(alreadyVisited.size() == numberOfClients,
         "Wrong number of clients: %u != %u", (unsigned)alreadyVisited.size(),
         numberOfClients);
 
   float expectedFitness = getFitness(tour.data(), numberOfClients, capacity,
                                      demands.data(), distances.data());
-  check(std::abs(expectedFitness - fitness) < 1e-6f,
+  CHECK(std::abs(expectedFitness - fitness) < 1e-6f,
         "Wrong fitness evaluation: expected %f, but found %f", expectedFitness,
         fitness);
 }

@@ -16,7 +16,7 @@ inline void _check_fail(const std::string& condition,
   throw std::logic_error(log);
 }
 
-#define check(cond, ...)                                         \
+#define CHECK(cond, ...)                                         \
   do {                                                           \
     if (!static_cast<bool>(cond)) {                              \
       std::string buf(2048, '.');                                \

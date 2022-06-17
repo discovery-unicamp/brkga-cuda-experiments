@@ -10,35 +10,35 @@
 
 ScpInstance ScpInstance::fromFile(const std::string& fileName) {
   std::ifstream file(fileName);
-  check(file.is_open(), "Failed to open file %s", fileName.c_str());
+  CHECK(file.is_open(), "Failed to open file %s", fileName.c_str());
 
   ScpInstance instance;
   unsigned numberOfSets = 0;
   file >> instance.universeSize >> numberOfSets;
 
-  check(instance.universeSize > 0, "Universe is empty");
-  check(numberOfSets > 0, "No sets provided");
+  CHECK(instance.universeSize > 0, "Universe is empty");
+  CHECK(numberOfSets > 0, "No sets provided");
 
   instance.costs.resize(numberOfSets);
   for (unsigned i = 0; i < numberOfSets; ++i) {
     file >> instance.costs[i];
-    check(instance.costs[i] > 0, "Invalid cost: %f", instance.costs[i]);
+    CHECK(instance.costs[i] > 0, "Invalid cost: %f", instance.costs[i]);
   }
 
   instance.sets.resize(numberOfSets);
   for (unsigned element = 0; element < instance.universeSize; ++element) {
     unsigned setsCoveringCount;
     file >> setsCoveringCount;
-    check(setsCoveringCount > 0, "Missing set covering for element");
+    CHECK(setsCoveringCount > 0, "Missing set covering for element");
     for (unsigned i = 0; i < setsCoveringCount; ++i) {
       unsigned setId;
       file >> setId;
-      check(1 <= setId && setId <= numberOfSets, "Invalid set: %u", setId);
+      CHECK(1 <= setId && setId <= numberOfSets, "Invalid set: %u", setId);
       instance.sets[setId - 1].push_back(element);
     }
   }
 
-  check(file.good(), "Reading SCP instance failed");
+  CHECK(file.good(), "Reading SCP instance failed");
 
   for (unsigned i = 0; i < numberOfSets; ++i) {
     if (instance.sets[i].empty())
@@ -58,8 +58,8 @@ void ScpInstance::validate(const float* chromosome, const float fitness) const {
     }
   }
 
-  for (auto cover : covered) check(cover, "Element wasn't covered");
-  check(std::abs(expectedFitness - fitness) < 1e-6f,
+  for (auto cover : covered) CHECK(cover, "Element wasn't covered");
+  CHECK(std::abs(expectedFitness - fitness) < 1e-6f,
         "Wrong fitness evaluation: expected %f, but found %f", expectedFitness,
         fitness);
 }
