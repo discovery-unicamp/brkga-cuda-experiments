@@ -31,6 +31,10 @@ public:
     CUDA_CHECK(cudaMalloc(
         &dTempMemory, params.numberOfPopulations * params.populationSize
                           * instance->chromosomeLength() * sizeof(unsigned)));
+
+    // Set CUDA heap limit to 1GB to avoid memory issues with the sort of thrust
+    CUDA_CHECK(cudaDeviceSetLimit(cudaLimitMallocHeapSize,
+                                  (std::size_t)1024 * 1024 * 1024));
   }
 
   TspDecoderInfo(const TspDecoderInfo&) = delete;
