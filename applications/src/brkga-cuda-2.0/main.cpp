@@ -6,8 +6,10 @@
 
 #include <cuda_runtime.h>
 
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <numeric>
 #include <vector>
 
 #if defined(TSP)
@@ -28,6 +30,40 @@ typedef CvrpDecoder DecoderImpl;
 #else
 #error No problem/instance/decoder defined
 #endif  // Problem/Instance
+
+std::string decodeType;
+
+inline bool contains(const std::string& str, const std::string& pattern) {
+  return str.find(pattern) != std::string::npos;
+}
+
+void sortChromosomeToValidate(const float* chromosome,
+                              unsigned* permutation,
+                              unsigned size) {
+  std::iota(permutation, permutation + size, 0);
+
+  if (contains(decodeType, "permutation")) {
+    float* dChromosome = box::cuda::alloc<float>(nullptr, size);
+    unsigned* dPermutation = box::cuda::alloc<unsigned>(nullptr, size);
+
+    box::cuda::copy_htod(nullptr, dChromosome, chromosome, size);
+    box::cuda::copy_htod(nullptr, dPermutation, permutation, size);
+    box::cuda::segSort(nullptr, dChromosome, dPermutation, 1, size);
+
+    box::cuda::copy_dtoh(nullptr, permutation, dPermutation, size);
+
+    box::cuda::free(nullptr, dChromosome);
+    box::cuda::free(nullptr, dPermutation);
+  } else if (contains(decodeType, "cpu")) {
+    std::sort(permutation, permutation + size, [&](unsigned a, unsigned b) {
+      return chromosome[a] < chromosome[b];
+    });
+    // } else if () {
+  } else {
+    // check(false, "Invalid decoder: %s", decodeType.c_str());
+    abort();
+  }
+}
 
 int main(int argc, char** argv) {
   auto params = Parameters::parse(argc, argv);

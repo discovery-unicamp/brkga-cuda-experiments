@@ -4,6 +4,7 @@
 
 #include <cuda_runtime.h>
 
+#include <cassert>
 #include <cctype>
 
 __global__ void deviceIota(unsigned* arr, unsigned n) {
@@ -32,6 +33,35 @@ void box::cuda::iotaMod(cudaStream_t stream,
   deviceIotaMod<<<1, threads, 0, stream>>>(arr, n, k);
   CUDA_CHECK_LAST();
 }
+
+auto box::cuda::_detail::CachedAllocator::allocate(std::size_t nbytes)
+    -> byte* {
+  byte* ptr = nullptr;
+
+  auto iterFree = freeMem.find(nbytes);
+  if (iterFree == freeMem.end()) {
+    ptr = alloc<byte>(nullptr, nbytes);
+  } else {
+    assert(nbytes <= iterFree->first);
+    nbytes = iterFree->first;
+    ptr = iterFree->second;
+    freeMem.erase(iterFree);
+  }
+
+  allocMem.emplace(ptr, nbytes);
+  return ptr;
+}
+
+void box::cuda::_detail::CachedAllocator::deallocate(byte* ptr, std::size_t) {
+  auto iterAlloc = allocMem.find(ptr);
+  assert(iterAlloc != allocMem.end());
+
+  auto nbytes = iterAlloc->second;
+  freeMem.emplace(nbytes, ptr);
+  allocMem.erase(iterAlloc);
+}
+
+box::cuda::_detail::CachedAllocator box::cuda::_detail::cachedAllocator;
 
 // Defined by the bb_segsort implementation.
 template <class Key, class Value>

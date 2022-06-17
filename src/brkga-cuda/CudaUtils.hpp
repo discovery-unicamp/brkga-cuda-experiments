@@ -9,6 +9,8 @@
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 
+#include <cctype>
+#include <map>
 #include <stdexcept>
 
 namespace box {
@@ -188,6 +190,42 @@ inline void random(cudaStream_t stream,
   CUDA_CHECK_LAST();
 }
 
+namespace _detail {
+/**
+ * Source: https://stackoverflow.com/a/48671517/10111328
+ */
+class CachedAllocator {
+public:
+  typedef char byte;
+  typedef byte value_type;
+
+  CachedAllocator() = default;
+  CachedAllocator(const CachedAllocator&) = delete;
+  CachedAllocator(CachedAllocator&&) = delete;
+  CachedAllocator& operator=(const CachedAllocator&) = delete;
+  CachedAllocator& operator=(CachedAllocator&&) = delete;
+
+  /// Doesn't free up memory because it is in the global scope (may lead to
+  ///  "driver shutting down" error)
+  ~CachedAllocator() = default;
+
+  byte* allocate(std::size_t nbytes);
+
+  void deallocate(byte* ptr, std::size_t);
+
+  inline void free() {
+    for (auto pair : freeMem) free(nullptr, pair.second);
+    freeMem.clear();
+  }
+
+private:
+  std::multimap<std::size_t, byte*> freeMem;
+  std::map<byte*, std::size_t> allocMem;
+};
+
+extern CachedAllocator cachedAllocator;
+}  // namespace _detail
+
 /**
  * Sorts the array of keys and values based on the keys.
  * @tparam Key The key type.
@@ -204,8 +242,8 @@ inline void sortByKey(cudaStream_t stream,
                       std::size_t n) {
   thrust::device_ptr<Key> keysPtr(keys);
   thrust::device_ptr<Value> valuesPtr(values);
-  thrust::sort_by_key(thrust::cuda::par.on(stream), keysPtr, keysPtr + n,
-                      valuesPtr);
+  thrust::sort_by_key(thrust::cuda::par(detail::cachedAllocator).on(stream),
+                      keysPtr, keysPtr + n, valuesPtr);
   CUDA_CHECK_LAST();
 }
 
