@@ -123,12 +123,12 @@ int main(int argc, char** argv) {
   Instance instance = Instance::fromFile(params.instanceFileName);
   DecoderInfo decoderInfo(&instance, params);
 
-  const unsigned oldDecodeType = params.decoder == "cpu"   ? HOST_DECODE
-                                 : params.decoder == "gpu" ? DEVICE_DECODE
-                                 : params.decoder == "gpu-permutation"
-                                     ? DEVICE_DECODE_CHROMOSOME_SORTED
-                                     : (unsigned)-1;
-  CHECK(oldDecodeType != (unsigned)-1, "Unsupported decoder: %s",
+  const unsigned decodeId = params.decoder == "all-cpu"   ? HOST_DECODE
+                            : params.decoder == "all-gpu" ? DEVICE_DECODE
+                            : params.decoder == "all-gpu-permutation"
+                                ? DEVICE_DECODE_CHROMOSOME_SORTED
+                                : (unsigned)-1;
+  CHECK(decodeId != (unsigned)-1, "Unsupported decoder: %s",
         params.decoder.c_str());
 
   cudaEvent_t start, stop;
@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
 
   BRKGA brkga(instance.chromosomeLength(), params.populationSize,
               params.getEliteProportion(), params.getMutantProportion(),
-              params.rhoe, params.numberOfPopulations, oldDecodeType);
+              params.rhoe, params.numberOfPopulations, decodeId);
   brkga.setInstanceInfo(&decoderInfo, 1, sizeof(decoderInfo));
 
   std::vector<float> convergence;
