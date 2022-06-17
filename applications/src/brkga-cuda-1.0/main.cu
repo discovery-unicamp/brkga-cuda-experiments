@@ -18,15 +18,15 @@
 #include "../common/instances/TspInstance.hpp"
 #include "decoders/TspDecoder.cuh"
 typedef TspInstance Instance;
-typedef TspDecoder DecoderInfo;
+typedef TspDecoderInfo DecoderInfo;
 #elif defined(SCP)
 #include "../common/instances/ScpInstance.hpp"
 #include "decoders/ScpDecoder.cuh"
 typedef ScpInstance Instance;
-typedef ScpDecoder DecoderInfo;
+typedef ScpDecoderInfo DecoderInfo;
 #elif defined(CVRP) || defined(CVRP_GREEDY)
 #include "../common/instances/CvrpInstance.hpp"
-#include "decoders/CvrpDecoder.hpp"
+#include "decoders/CvrpDecoder.cuh"
 typedef CvrpInstance Instance;
 typedef CvrpDecoderInfo DecoderInfo;
 #else

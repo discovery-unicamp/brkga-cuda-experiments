@@ -10,8 +10,10 @@ include_directories(SYSTEM "${CUDA_INCLUDE_DIRS}")
 # The executable
 add_executable(brkga-cuda-1.0
   ${CUDA_COMMON_SRC}
-  ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.cu
-  ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.hpp
+  # ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.cu
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.cuh
+  # ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cu
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cuh
   ${CMAKE_CURRENT_LIST_DIR}/BrkgaCudaInclude.cu
   ${CMAKE_CURRENT_LIST_DIR}/main.cu
 )

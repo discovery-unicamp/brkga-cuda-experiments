@@ -1,8 +1,12 @@
+#ifndef DECODERS_CVRPDECODER_HPP
+#define DECODERS_CVRPDECODER_HPP
+
 #include "../../common/CudaCheck.cuh"
 #include "../../common/MinQueue.cuh"
+#include "../../common/Parameters.hpp"
 #include "../../common/instances/CvrpInstance.cuh"
-#include "CvrpDecoder.hpp"
 #include <brkga-cuda-api/src/CommonStructs.h>
+#include <brkga-cuda-api/src/Decoder.h>
 
 #include <cuda_runtime.h>
 #include <thrust/device_ptr.h>
@@ -12,56 +16,56 @@
 #include <numeric>
 #include <vector>
 
-CvrpDecoderInfo::CvrpDecoderInfo(CvrpInstance* instance,
-                                 const Parameters& params)
-    : chromosomeLength(instance->chromosomeLength()),
-      capacity(instance->capacity),
-      demands(instance->demands.data()),
-      distances(instance->distances.data()),
-      dDemands(nullptr),
-      dDistances(nullptr),
-      dTempMemory(nullptr) {
-  CUDA_CHECK(
-      cudaMalloc(&dDemands, instance->demands.size() * sizeof(unsigned)));
-  CUDA_CHECK(cudaMemcpy(dDemands, instance->demands.data(),
-                        instance->demands.size() * sizeof(unsigned),
-                        cudaMemcpyHostToDevice));
+class CvrpInstance;
 
-  CUDA_CHECK(
-      cudaMalloc(&dDistances, instance->distances.size() * sizeof(float)));
-  CUDA_CHECK(cudaMemcpy(dDistances, instance->distances.data(),
-                        instance->distances.size() * sizeof(float),
-                        cudaMemcpyHostToDevice));
+class CvrpDecoderInfo {
+public:
+  CvrpDecoderInfo(CvrpInstance* instance, const Parameters& params)
+      : chromosomeLength(instance->chromosomeLength()),
+        capacity(instance->capacity),
+        demands(instance->demands.data()),
+        distances(instance->distances.data()),
+        dDemands(nullptr),
+        dDistances(nullptr),
+        dTempMemory(nullptr) {
+    CUDA_CHECK(
+        cudaMalloc(&dDemands, instance->demands.size() * sizeof(unsigned)));
+    CUDA_CHECK(cudaMemcpy(dDemands, instance->demands.data(),
+                          instance->demands.size() * sizeof(unsigned),
+                          cudaMemcpyHostToDevice));
 
-  CUDA_CHECK(cudaMalloc(&dTempMemory,
-                        params.numberOfPopulations * params.populationSize
-                            * instance->chromosomeLength() * sizeof(unsigned)));
-}
+    CUDA_CHECK(
+        cudaMalloc(&dDistances, instance->distances.size() * sizeof(float)));
+    CUDA_CHECK(cudaMemcpy(dDistances, instance->distances.data(),
+                          instance->distances.size() * sizeof(float),
+                          cudaMemcpyHostToDevice));
 
-CvrpDecoderInfo::~CvrpDecoderInfo() {
-  CUDA_CHECK(cudaFree(dDemands));
-  CUDA_CHECK(cudaFree(dDistances));
-  CUDA_CHECK(cudaFree(dTempMemory));
-}
+    CUDA_CHECK(cudaMalloc(
+        &dTempMemory, params.numberOfPopulations * params.populationSize
+                          * instance->chromosomeLength() * sizeof(unsigned)));
+  }
 
-__device__ float device_decode(float* chromosome, int, void* d_instance_info) {
-  auto* info = (CvrpDecoderInfo*)d_instance_info;
+  CvrpDecoderInfo(const CvrpDecoderInfo&) = delete;
+  CvrpDecoderInfo(CvrpDecoderInfo&&) = delete;
+  CvrpDecoderInfo& operator=(const CvrpDecoderInfo&) = delete;
+  CvrpDecoderInfo& operator=(CvrpDecoderInfo&&) = delete;
 
-  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  unsigned* tour = info->dTempMemory + tid * info->chromosomeLength;
-  // new unsigned[info->chromosomeLength];
-  for (unsigned i = 0; i < info->chromosomeLength; ++i) tour[i] = i;
+  ~CvrpDecoderInfo() {
+    CUDA_CHECK(cudaFree(dDemands));
+    CUDA_CHECK(cudaFree(dDistances));
+    CUDA_CHECK(cudaFree(dTempMemory));
+  }
 
-  thrust::device_ptr<float> keys(chromosome);
-  thrust::device_ptr<unsigned> vals(tour);
-  thrust::sort_by_key(thrust::device, keys, keys + info->chromosomeLength,
-                      vals);
+  unsigned chromosomeLength;
+  unsigned capacity;
+  unsigned* demands;
+  float* distances;
+  unsigned* dDemands;
+  float* dDistances;
+  unsigned* dTempMemory;
+};
 
-  float fitness = deviceGetFitness(tour, info->chromosomeLength, info->capacity,
-                                   info->dDemands, info->dDistances);
-  // delete[] tour;
-  return fitness;
-}
+// Define the decoders here to avoid multiple definitions.
 
 float host_decode(float* chromosome, int, void* instance_info) {
   auto* info = (CvrpDecoderInfo*)instance_info;
@@ -75,6 +79,22 @@ float host_decode(float* chromosome, int, void* instance_info) {
 
   return getFitness(permutation.data(), info->chromosomeLength, info->capacity,
                     info->demands, info->distances);
+}
+
+__device__ float device_decode(float* chromosome, int, void* d_instance_info) {
+  auto* info = (CvrpDecoderInfo*)d_instance_info;
+
+  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  unsigned* permutation = info->dTempMemory + tid * info->chromosomeLength;
+  for (unsigned i = 0; i < info->chromosomeLength; ++i) permutation[i] = i;
+
+  thrust::device_ptr<float> keys(chromosome);
+  thrust::device_ptr<unsigned> vals(permutation);
+  thrust::sort_by_key(thrust::device, keys, keys + info->chromosomeLength,
+                      vals);
+
+  return deviceGetFitness(permutation, info->chromosomeLength, info->capacity,
+                          info->dDemands, info->dDistances);
 }
 
 #ifdef CVRP_GREEDY
@@ -160,3 +180,5 @@ __device__ float device_decode_chromosome_sorted(
   return deviceGetFitness(chromosome, info->chromosomeLength, info->capacity,
                           info->dDemands, info->dDistances);
 }
+
+#endif  // DECODERS_CVRPDECODER_HPP
