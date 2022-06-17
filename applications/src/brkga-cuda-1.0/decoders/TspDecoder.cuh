@@ -15,8 +15,6 @@
 #include <numeric>
 #include <vector>
 
-class TspInstance;
-
 class TspDecoderInfo {
 public:
   TspDecoderInfo(TspInstance* instance, const Parameters& params)

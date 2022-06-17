@@ -17,8 +17,6 @@
 #include <numeric>
 #include <vector>
 
-class CvrpInstance;
-
 class CvrpDecoderInfo {
 public:
   CvrpDecoderInfo(CvrpInstance* instance, const Parameters& params)
