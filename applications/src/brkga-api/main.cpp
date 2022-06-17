@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
   Instance instance = Instance::fromFile(params.instanceFileName);
   DecoderImpl decoder(&instance);
 
-  CHECK(params.decoder == "cpu", "Unsupported decoder: %s",
+  CHECK(params.decoder == "single-cpu", "Unsupported decoder: %s",
         params.decoder.c_str());
 
   double startTime = omp_get_wtime();
