@@ -5,19 +5,17 @@
 #include <cctype>
 #include <string>
 
-bool _endsWith(const std::string& str, const std::string& end) {
-  return str.length() >= end.length()
-         && str.compare(str.length() - end.length(), end.length(), end) == 0;
+bool contains(const std::string& str, const std::string& pattern) {
+  return str.find(pattern) != std::string::npos;
 }
 
 box::DecodeType box::DecodeType::fromString(const std::string& str) {
   box::logger::debug("Parsing decoder:", str);
 
-  bool all = str.substr(0, 3) == "all";
-  bool cpu = str.substr((all ? 4 : 0), 3) == "cpu";
-  bool chromosome = !_endsWith(str, "permutation");
-
-  auto dt = DecodeType(cpu, chromosome, all);
+  bool cpu = contains(str, "cpu");
+  bool chromosome = contains(str, "permutation");
+  bool allAtOnce = contains(str, "all");
+  auto dt = DecodeType(cpu, chromosome, allAtOnce);
   if (dt.str() != str)
     throw std::runtime_error("Invalid decoder: " + str + "; did you mean "
                              + dt.str() + "?");

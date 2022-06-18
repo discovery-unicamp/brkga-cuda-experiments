@@ -123,9 +123,9 @@ int main(int argc, char** argv) {
   Instance instance = Instance::fromFile(params.instanceFileName);
   DecoderInfo decoderInfo(&instance, params);
 
-  const unsigned decodeId = params.decoder == "single-cpu"   ? HOST_DECODE
-                            : params.decoder == "single-gpu" ? DEVICE_DECODE
-                            : params.decoder == "single-gpu-permutation"
+  const unsigned decodeId = params.decoder == "cpu"   ? HOST_DECODE
+                            : params.decoder == "gpu" ? DEVICE_DECODE
+                            : params.decoder == "gpu-permutation"
                                 ? DEVICE_DECODE_CHROMOSOME_SORTED
                                 : (unsigned)-1;
   CHECK(decodeId != (unsigned)-1, "Unsupported decoder: %s",
@@ -153,7 +153,6 @@ int main(int argc, char** argv) {
       brkga.exchangeElite(params.exchangeBestCount);
     if (gen % params.logStep == 0 || gen == params.generations) {
       float best = getBestFitness(brkga);
-      std::clog << "Generation " << gen << "; best: " << best << "        \r";
       convergence.push_back(best);
     }
   }

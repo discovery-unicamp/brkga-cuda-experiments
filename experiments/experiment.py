@@ -1,9 +1,11 @@
 import datetime
+import itertools
 import logging
 import os
 from pathlib import Path
 import subprocess
-from typing import Dict, Iterable, List, Union
+import traceback
+from typing import Dict, Iterable, List, Optional, Union
 import pandas as pd
 
 from instance import get_instance_path
@@ -119,6 +121,11 @@ INSTANCES = {
 }
 
 
+class ShellError(RuntimeError):
+    def __init__(self, stderr: str):
+        super().__init__(f'Shell exited with error:\n{stderr}')
+
+
 def compile_optimizer(target: str, problem: str):
     return __cmake(str(SOURCE_PATH.absolute()), BUILD_TYPE, target,
                    tweaks=[problem.upper()])
@@ -168,51 +175,25 @@ def __get_system_info() -> Dict[str, str]:
 def __shell(cmd: str, get: bool = True) -> str:
     logging.debug(f'Execute command `{cmd}`')
     output = ''
+    errors = ''
     try:
         stdout = subprocess.PIPE if get else None
+        stderr = subprocess.PIPE
         process = subprocess.run(
-            cmd, stdout=stdout, text=True, shell=True, check=True)
+            cmd, stdout=stdout, stderr=stderr, text=True, shell=True, check=True)
         output = process.stdout.strip() if get else ''
+        errors = process.stderr.strip()
     except subprocess.CalledProcessError as error:
         output = error.stdout.strip() if get else ''
-        raise
+        errors = error.stderr.strip()
+        raise ShellError(errors)
     finally:
         if output:
-            logging.info(f'Script output:\n{output}')
+            logging.debug(f'Script output:\n{output}')
+        if errors:
+            logging.error(f'Script stderr:\n{errors}')
 
     return output
-
-
-def __run_test(
-        executable: Path,
-        params: Dict[str, Union[str, float, int]],
-) -> Dict[str, str]:
-    logging.info(f'Test instance {params["instance"]}')
-    logging.debug(f'Executable: {str(executable)}')
-    logging.debug(f'Test with params {params}')
-
-    parsed_params = {key: __parse_param(value)
-                     for key, value in params.items()}
-
-    cmd = str(executable.absolute())
-    cmd += ''.join(f' --{arg} {value}' for arg, value in parsed_params.items())
-
-    result = dict(tuple(r.split('=')) for r in __shell(cmd).split())
-    if 'convergence' not in result or result['convergence'] == '[]':
-        result['convergence'] = '?'
-
-    return {
-        **parsed_params,
-        'ans': result['ans'],
-        'elapsed': result['elapsed'],
-        'convergence': result.get('convergence', '?'),
-    }
-
-
-def __parse_param(value: Union[int, float, str]) -> str:
-    if isinstance(value, float):
-        return str(round(value, 6))
-    return str(value)
 
 
 def experiment(
@@ -254,11 +235,55 @@ def experiment(
                             'log-step': 25,
                         }
 
+                        logging.info(f'Test instance {params["instance"]}')
+                        logging.debug(f'Problem: {pname} ({problem.upper()})')
+                        logging.debug(f'Executable: {str(executable)}')
+                        logging.debug(f'Test with params {params}')
                         result = __run_test(executable, params)
-                        result['tool'] = tool
-                        result['problem'] = problem
-                        result['instance'] = instance
-                        yield result
+
+                        if result is not None:
+                            result['tool'] = tool
+                            result['problem'] = problem
+                            result['instance'] = instance
+                            yield result
+
+
+def __run_test(
+        executable: Path,
+        params: Dict[str, Union[str, float, int]],
+) -> Optional[Dict[str, str]]:
+    parsed_params = {key: __parse_param(value)
+                     for key, value in params.items()}
+
+    cmd = str(executable.absolute())
+    cmd += ''.join(f' --{arg} {value}' for arg, value in parsed_params.items())
+
+    try:
+        result = dict(tuple(r.split('=')) for r in __shell(cmd).split())
+        if 'convergence' not in result or result['convergence'] == '[]':
+            result['convergence'] = '?'
+
+        return {
+            **parsed_params,
+            'ans': result['ans'],
+            'elapsed': result['elapsed'],
+            'convergence': result.get('convergence', '?'),
+        }
+    except Exception as e:
+        logging.warning('Test failed')
+        logging.exception(e)
+        with open('errors.txt', 'a') as errors:
+            errors.write(traceback.format_exc() + '\n')
+            errors.write(f'Command: {cmd}\n')
+            errors.write(f'=======\n\n')
+
+        return None
+
+
+def __parse_param(value: Union[int, float, str]) -> str:
+    if isinstance(value, float):
+        return str(round(value, 6))
+    return str(value)
 
 
 def save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]]):
@@ -291,46 +316,49 @@ def save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]]):
 def main():
     # Execute here to avoid changes by the user.
     info = __get_system_info()
+    results = itertools.chain(
+        experiment(
+            problems=['scp', 'tsp', 'cvrp_greedy', 'cvrp'],
+            tools=['brkga-api'],
+            decoders=['cpu'],
+            test_count=10,
+        ),
+        experiment(
+            problems=['scp', 'tsp', 'cvrp_greedy', 'cvrp'],
+            tools=['gpu-brkga'],
+            decoders=['cpu', 'gpu'],
+            test_count=10,
+        ),
+        experiment(
+            problems=['tsp', 'cvrp_greedy', 'cvrp'],
+            tools=['brkga-cuda-1.0'],
+            decoders=['cpu', 'gpu', 'gpu-permutation'],
+            test_count=10,
+        ),
+        experiment(
+            problems=['scp'],
+            tools=['brkga-cuda-1.0'],
+            decoders=['cpu', 'gpu'],
+            test_count=10,
+        ),
+        experiment(
+            problems=['tsp', 'cvrp_greedy', 'cvrp'],
+            tools=['brkga-cuda-2.0'],
+            decoders=[
+                'cpu', 'cpu-permutation', 'all-cpu', 'all-cpu-permutation',
+                'gpu', 'gpu-permutation', 'all-gpu', 'all-gpu-permutation',
+            ],
+            test_count=10,
+        ),
+        experiment(
+            problems=['scp'],
+            tools=['brkga-cuda-2.0'],
+            decoders=['cpu', 'all-cpu', 'gpu', 'all-gpu'],
+            test_count=10,
+        ),
+    )
 
-    # save_results(info, experiment(
-    #     problems=['tsp', 'cvrp'],
-    #     tools=['brkga-cuda-2.0'],
-    #     decoders=['gpu-permutation'],
-    #     test_count=3,
-    # ))
-    # save_results(info, experiment(
-    #     problems=['scp'],
-    #     tools=['brkga-cuda-2.0'],
-    #     decoders=['gpu'],
-    #     test_count=3,
-    # ))
-    # exit()
-
-    save_results(info, experiment(
-        problems=['cvrp', 'scp', 'tsp'],
-        tools=['brkga-api'],
-        decoders=['cpu'],
-        test_count=10,
-    ))
-    save_results(info, experiment(
-        problems=['scp'],
-        tools=['brkga-cuda-2.0'],
-        decoders=['cpu', 'all-cpu', 'gpu', 'all-gpu'],
-        test_count=10,
-    ))
-    save_results(info, experiment(
-        problems=['cvrp', 'tsp'],
-        tools=['brkga-cuda-2.0'],
-        decoders=['cpu', 'all-cpu', 'cpu-permutation', 'all-cpu-permutation',
-                  'gpu', 'all-gpu', 'gpu-permutation', 'all-gpu-permutation'],
-        test_count=10,
-    ))
-    save_results(info, experiment(
-        problems=['cvrp', 'scp'],
-        tools=['gpu-brkga'],
-        decoders=['cpu', 'gpu'],
-        test_count=10,
-    ))
+    save_results(info, results)
 
 
 if __name__ == '__main__':

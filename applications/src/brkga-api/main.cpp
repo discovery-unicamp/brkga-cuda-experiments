@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
   Instance instance = Instance::fromFile(params.instanceFileName);
   DecoderImpl decoder(&instance);
 
-  CHECK(params.decoder == "single-cpu", "Unsupported decoder: %s",
+  CHECK(params.decoder == "cpu", "Unsupported decoder: %s",
         params.decoder.c_str());
 
   double startTime = omp_get_wtime();
@@ -80,7 +80,6 @@ int main(int argc, char** argv) {
 
     if (gen % params.logStep == 0 || gen == params.generations) {
       double best = bestFitness;
-      std::clog << "Generation " << gen << "; best: " << best << "        \r";
       convergence.push_back(best);
     }
   }

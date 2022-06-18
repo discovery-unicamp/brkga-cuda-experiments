@@ -56,6 +56,7 @@ public:
     return (float)eliteCount / (float)populationSize;
   }
 
+  // TODO make private
   Decoder* decoder;
   DecodeType decodeType;  ///< @see DecodeType.hpp
   unsigned threadsPerBlock;  ///< number threads per block in CUDA

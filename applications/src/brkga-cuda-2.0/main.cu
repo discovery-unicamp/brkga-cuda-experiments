@@ -97,6 +97,7 @@ int main(int argc, char** argv) {
 
   Instance instance = Instance::fromFile(params.instanceFileName);
   DecoderImpl decoder(&instance);
+  abort();
 
   auto config = box::BrkgaConfiguration::Builder()
                     .generations(params.generations)
@@ -129,7 +130,6 @@ int main(int argc, char** argv) {
       brkga.exchangeElite(params.exchangeBestCount);
     if (gen % params.logStep == 0 || gen == params.generations) {
       float best = brkga.getBestFitness();
-      std::clog << "Generation " << gen << "; best: " << best << "        \r";
       convergence.push_back(best);
     }
   }

@@ -134,7 +134,6 @@ int main(int argc, char** argv) {
       brkga.exchangeElite(params.exchangeBestCount);
     if (gen % params.logStep == 0 || gen == params.generations) {
       float best = getBestFitness(brkga);
-      std::clog << "Generation " << gen << "; best: " << best << "        \r";
       convergence.push_back(best);
     }
   }
