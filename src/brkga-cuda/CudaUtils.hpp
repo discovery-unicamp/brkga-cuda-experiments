@@ -16,7 +16,7 @@
 namespace box {
 /// C++ wrapper for operations in the device.
 namespace cuda {
-/// Synchronize the host with the main thread in the device.
+/// Synchronize the host with the main stream in the device.
 inline void sync() {
   box::logger::debug("Sync with the main stream");
   CUDA_CHECK(cudaDeviceSynchronize());
@@ -26,6 +26,12 @@ inline void sync() {
 inline void sync(cudaStream_t stream) {
   box::logger::debug("Sync with stream", (void*)stream);
   CUDA_CHECK(cudaStreamSynchronize(stream));
+}
+
+/// Set the maximum memory allocated on the heap to @p maxBytes bytes.
+inline void setMaxHeapSize(std::size_t maxBytes) {
+  box::logger::debug("Increase heap limit to", maxBytes, "bytes");
+  CUDA_CHECK(cudaDeviceSetLimit(cudaLimitMallocHeapSize, maxBytes));
 }
 
 /**
@@ -115,8 +121,9 @@ inline void copy(cudaStream_t stream, T* dest, const T* src, std::size_t n) {
  */
 template <class T>
 inline void copy2d(cudaStream_t stream, T* dest, const T* src, std::size_t n) {
-  box::logger::debug("Copy", n, "elements from", (void*)src, "(host) to",
-                     (void*)dest, "(device) on stream", (void*)stream);
+  box::logger::debug("Copy", n, "elements of", sizeof(T), "bytes from",
+                     (void*)src, "(host) to", (void*)dest, "(device) on stream",
+                     (void*)stream);
   CUDA_CHECK(cudaMemcpyAsync(dest, src, n * sizeof(T), cudaMemcpyHostToDevice,
                              stream));
 }

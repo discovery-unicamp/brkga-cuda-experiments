@@ -92,13 +92,17 @@ void sortChromosomeToValidate(const double*, unsigned*, unsigned) {
 }
 
 int main(int argc, char** argv) {
+  box::logger::debug("Parse parameters");
   auto params = Parameters::parse(argc, argv);
   decodeType = params.decoder;
 
+  box::logger::debug("Read instance");
   Instance instance = Instance::fromFile(params.instanceFileName);
-  DecoderImpl decoder(&instance);
-  abort();
 
+  box::logger::debug("Build the decoder");
+  DecoderImpl decoder(&instance);
+
+  box::logger::debug("Build the configuration");
   auto config = box::BrkgaConfiguration::Builder()
                     .generations(params.generations)
                     .numberOfPopulations(params.numberOfPopulations)
@@ -121,7 +125,10 @@ int main(int argc, char** argv) {
   CUDA_CHECK(cudaEventCreate(&stop));
   CUDA_CHECK(cudaEventRecord(start));
 
+  box::logger::debug("Build the algorithm");
   box::Brkga brkga(config);
+
+  box::logger::debug("Optimization");
   std::vector<float> convergence;
   convergence.push_back(brkga.getBestFitness());
   for (unsigned gen = 1; gen <= params.generations; ++gen) {
