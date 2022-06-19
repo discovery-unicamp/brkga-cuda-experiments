@@ -13,7 +13,7 @@ box::DecodeType box::DecodeType::fromString(const std::string& str) {
   box::logger::debug("Parsing decoder:", str);
 
   bool cpu = contains(str, "cpu");
-  bool chromosome = contains(str, "permutation");
+  bool chromosome = !contains(str, "permutation");
   bool allAtOnce = contains(str, "all");
   auto dt = DecodeType(cpu, chromosome, allAtOnce);
   if (dt.str() != str)
