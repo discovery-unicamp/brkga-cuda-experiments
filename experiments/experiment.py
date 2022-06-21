@@ -27,6 +27,7 @@ logging.basicConfig(
     datefmt='%Y-%m-%dT%H:%M:%S',
 )
 
+CATCH_FAILURES = False
 DEVICE = int(os.environ['DEVICE'])
 TEST_COUNT = 10
 BUILD_TYPE = 'release'
@@ -123,7 +124,9 @@ INSTANCES = {
 
 class ShellError(RuntimeError):
     def __init__(self, stderr: str):
-        super().__init__(f'Shell exited with error:\n{stderr}')
+        stderr = stderr.strip()
+        stderr = f':\n{stderr}' if stderr else ''
+        super().__init__('Shell exited with error' + stderr)
 
 
 def compile_optimizer(target: str, problem: str):
@@ -178,20 +181,20 @@ def __shell(cmd: str, get: bool = True) -> str:
     errors = ''
     try:
         stdout = subprocess.PIPE if get else None
-        stderr = subprocess.PIPE
-        process = subprocess.run(
-            cmd, stdout=stdout, stderr=stderr, text=True, shell=True, check=True)
+        stderr = subprocess.PIPE if CATCH_FAILURES else None
+        process = subprocess.run(cmd, stdout=stdout, stderr=stderr, text=True,
+                                 shell=True, check=True)
         output = process.stdout.strip() if get else ''
-        errors = process.stderr.strip()
+        errors = process.stderr.strip() if CATCH_FAILURES else ''
+        if errors:
+            logging.warning(f'Script stderr:\n{errors}\n=======')
     except subprocess.CalledProcessError as error:
         output = error.stdout.strip() if get else ''
-        errors = error.stderr.strip()
+        errors = error.stderr.strip() if CATCH_FAILURES else ''
         raise ShellError(errors)
     finally:
         if output:
-            logging.debug(f'Script output:\n{output}')
-        if errors:
-            logging.error(f'Script stderr:\n{errors}')
+            logging.debug(f'Script output:\n{output}\n=======')
 
     return output
 
@@ -269,12 +272,13 @@ def __run_test(
             'elapsed': result['elapsed'],
             'convergence': result.get('convergence', '?'),
         }
-    except Exception as e:
+    except Exception:
+        if not CATCH_FAILURES:
+            raise
+
         logging.warning('Test failed')
-        logging.exception(e)
         with open('errors.txt', 'a') as errors:
             errors.write(traceback.format_exc() + '\n')
-            errors.write(f'Command: {cmd}\n')
             errors.write(f'=======\n\n')
 
         return None
