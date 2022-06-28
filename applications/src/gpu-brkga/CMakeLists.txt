@@ -69,3 +69,4 @@ set_target_properties(gpu-brkga PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(gpu-brkga PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 target_link_libraries(gpu-brkga LINK_PUBLIC gpu-brkga-lib)
+target_link_libraries(gpu-brkga-fix LINK_PUBLIC gpu-brkga-lib)

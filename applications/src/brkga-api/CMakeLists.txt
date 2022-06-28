@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-PROJECT(brkga-api-optimizer LANGUAGES CUDA CXX)
+PROJECT(brkga-api-optimizer LANGUAGES CXX)
 
 # Dependencies
 find_package(OpenMP REQUIRED)
@@ -16,6 +16,7 @@ add_executable(brkga-api
   ${CMAKE_CURRENT_LIST_DIR}/main.cpp
 )
 
+set_target_properties(brkga-api PROPERTIES CUDA_ARCHITECTURES OFF)
 target_link_libraries(brkga-api PUBLIC OpenMP::OpenMP_CXX PUBLIC -lcurand -fopenmp)
 
 # brkga-api
