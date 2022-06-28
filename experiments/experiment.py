@@ -200,55 +200,48 @@ def __shell(cmd: str, get: bool = True) -> str:
 
 
 def experiment(
+    tool: str,
     problems: List[str],
-    tools: List[str],
     decoders: List[str],
     test_count: int = TEST_COUNT,
 ) -> Iterable[Dict[str, str]]:
-    if 'tsp' in problems and ('gpu-brkga' in tools
-                              or 'gpu-brkga-fixed' in tools):
-        logging.warning('Ignoring GPU-BRKGA for TSP')
+    omp_threads = int(__shell('nproc'))
 
     for problem in problems:
         pname = PROBLEMS[problem]
-        for tool in tools:
-            if pname == 'tsp' and (tool == 'gpu-brkga'
-                                    or tool == 'gpu-brkga-fixed'):
-                continue
+        executable = compile_optimizer(tool, problem)
+        for decoder in decoders:
+            for instance in INSTANCES[pname]:
+                instance_path = str(get_instance_path(pname, instance))
+                for seed in range(1, test_count + 1):
+                    params = {
+                        'threads': 256,
+                        'omp-threads': omp_threads,
+                        'generations': 1000,
+                        'exchange-interval': 50,
+                        'exchange-count': 2,
+                        'pop-count': 3,
+                        'pop-size': 256,
+                        'elite': .1,
+                        'mutant': .1,
+                        'rhoe': .75,
+                        'decode': decoder,
+                        'instance': instance_path,
+                        'seed': seed,
+                        'log-step': 25,
+                    }
 
-            executable = compile_optimizer(tool, problem)
-            for decoder in decoders:
-                for instance in INSTANCES[pname]:
-                    instance_path = str(get_instance_path(pname, instance))
-                    for seed in range(1, test_count + 1):
-                        params = {
-                            'threads': 256,
-                            'omp-threads': int(__shell('nproc')),
-                            'generations': 1000,
-                            'exchange-interval': 50,
-                            'exchange-count': 2,
-                            'pop-count': 3,
-                            'pop-size': 256,
-                            'elite': .1,
-                            'mutant': .1,
-                            'rhoe': .75,
-                            'decode': decoder,
-                            'instance': instance_path,
-                            'seed': seed,
-                            'log-step': 25,
-                        }
+                    logging.info(f'Test instance {params["instance"]}')
+                    logging.debug(f'Problem: {pname} ({problem.upper()})')
+                    logging.debug(f'Executable: {str(executable)}')
+                    logging.debug(f'Test with params {params}')
+                    result = __run_test(executable, params)
 
-                        logging.info(f'Test instance {params["instance"]}')
-                        logging.debug(f'Problem: {pname} ({problem.upper()})')
-                        logging.debug(f'Executable: {str(executable)}')
-                        logging.debug(f'Test with params {params}')
-                        result = __run_test(executable, params)
-
-                        if result is not None:
-                            result['tool'] = tool
-                            result['problem'] = problem
-                            result['instance'] = instance
-                            yield result
+                    if result is not None:
+                        result['tool'] = tool
+                        result['problem'] = problem
+                        result['instance'] = instance
+                        yield result
 
 
 def __run_test(
@@ -322,32 +315,38 @@ def main():
     info = __get_system_info()
     results = itertools.chain(
         experiment(
+            tool='brkga-api',
             problems=['scp', 'tsp', 'cvrp_greedy', 'cvrp'],
-            tools=['brkga-api'],
             decoders=['cpu'],
             test_count=10,
         ),
         experiment(
-            problems=['scp', 'tsp', 'cvrp_greedy', 'cvrp'],
-            tools=['gpu-brkga'],
+            tool='gpu-brkga',
+            problems=['scp', 'cvrp_greedy', 'cvrp'],
             decoders=['cpu', 'gpu'],
             test_count=10,
         ),
         experiment(
+            tool='gpu-brkga-fix',
+            problems=['scp', 'cvrp_greedy', 'cvrp'],
+            decoders=['cpu', 'gpu'],
+            test_count=10,
+        ),
+        experiment(
+            tool='brkga-cuda-1.0',
             problems=['tsp', 'cvrp_greedy', 'cvrp'],
-            tools=['brkga-cuda-1.0'],
             decoders=['cpu', 'gpu', 'gpu-permutation'],
             test_count=10,
         ),
         experiment(
+            tool='brkga-cuda-1.0',
             problems=['scp'],
-            tools=['brkga-cuda-1.0'],
             decoders=['cpu', 'gpu'],
             test_count=10,
         ),
         experiment(
+            tool='brkga-cuda-2.0',
             problems=['tsp', 'cvrp_greedy', 'cvrp'],
-            tools=['brkga-cuda-2.0'],
             decoders=[
                 'cpu', 'cpu-permutation', 'all-cpu', 'all-cpu-permutation',
                 'gpu', 'gpu-permutation', 'all-gpu', 'all-gpu-permutation',
@@ -355,8 +354,8 @@ def main():
             test_count=10,
         ),
         experiment(
+            tool='brkga-cuda-2.0',
             problems=['scp'],
-            tools=['brkga-cuda-2.0'],
             decoders=['cpu', 'all-cpu', 'gpu', 'all-gpu'],
             test_count=10,
         ),
