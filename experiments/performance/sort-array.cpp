@@ -6,22 +6,16 @@ void oddEvenMergeSort(float* keys, uint* values, const uint n) {
   for (uint p = 1; p < n; p *= 2)
     for (uint q = p; q != 0; q /= 2)
       for (uint i = q % p; i < n - q; i += 2 * q) {
-        const auto limit = min(q,
-                               min(n - i - q,  // ensures b < n
-                                   i + 2*p - (i % (2*p)) - i - q  // ensures a / 2p == b / 2p
-                                   ));
-        for (uint j = 0; j < limit; ++j) {
+        const auto jMax =
+            min(q,
+                min(n - i - q,  // ensures b < n
+                    2 * p - (i % (2 * p)) - q  // ensures a / 2p == b / 2p
+                    ));
+
+        for (uint j = 0; j < jMax; ++j) {
           const auto a = i + j;
-          const auto b = i + j + q;
-          assert(a < n);
-          assert(b < n);
-          assert(a / (2 * p) == b / (2 * p));
-          const auto shouldSwap =
-              (a / (2 * p) == b / (2 * p)) && keys[a] > keys[b];
-          // cout << (a / (2 * p) == b / (2 * p)) << " == " << a << ' ' << b << ' '
-          //      << limit << ' ' << 2 * p << " -- " << i << " " << j << " " << p
-          //      << " " << q << '\n';
-          if (shouldSwap) {
+          const auto b = a + q;
+          if (keys[a] > keys[b]) {
             swap(keys[a], keys[b]);
             swap(values[a], values[b]);
           }
