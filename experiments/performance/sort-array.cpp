@@ -5,12 +5,11 @@ using namespace std::chrono;
 void oddEvenMergeSort(float* keys, uint* values, const uint n) {
   for (uint p = 1; p < n; p *= 2)
     for (uint q = p; q != 0; q /= 2)
-      for (uint i = q % p; i < n - q; i += 2 * q) {
+      for (uint i = q & (p - 1); i < n - q; i += 2 * q) {
         const auto jMax =
             min(q,
                 min(n - i - q,  // ensures b < n
-                    2 * p - (i % (2 * p)) - q  // ensures a / 2p == b / 2p
-                    ));
+                    2 * p - q - (i & (2 * p - 1))));  // ensures a / 2p == b / 2p
 
         for (uint j = 0; j < jMax; ++j) {
           const auto a = i + j;
