@@ -6,10 +6,10 @@ void oddEvenMergeSort(float* keys, uint* values, const uint n) {
   for (uint p = 1; p < n; p *= 2)
     for (uint q = p; q != 0; q /= 2)
       for (uint i = q & (p - 1); i < n - q; i += 2 * q) {
-        const auto jMax =
-            min(q,
-                min(n - i - q,  // ensures b < n
-                    2 * p - q - (i & (2 * p - 1))));  // ensures a / 2p == b / 2p
+        const auto jMax = min(
+            q,
+            min(n - i - q,  // ensures b < n
+                2 * p - q - (i & (2 * p - 1))));  // ensures a / 2p == b / 2p
 
         for (uint j = 0; j < jMax; ++j) {
           const auto a = i + j;
@@ -61,6 +61,18 @@ int main() {
       // for (const auto k : keys) cout << ' ' << k;
       // cout << '\n';
 
+      set<uint> valuesFound;
+      for (uint i = 0; i < n; ++i) {
+        if (values[i] >= n) {
+          cerr << algo << ": invalid value" << '\n';
+          abort();
+        }
+        if (valuesFound.count(values[i])) {
+          cerr << algo << ": duplicated value" << '\n';
+          abort();
+        }
+        valuesFound.insert(values[i]);
+      }
       for (uint i = 1; i < n; ++i) {
         if (keys[i] < keys[i - 1]) {
           cerr << algo << ": invalid order" << '\n';
