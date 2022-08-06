@@ -50,6 +50,15 @@ struct PermutationT : public Permutation {
   }
 };
 
+struct PermutationU : public Permutation {
+  __host__ __device__ PermutationU(uint* _p, uint _ncols, uint _k)
+      : Permutation(_p, _ncols, _k) {}
+
+  __host__ __device__ inline uint operator[](uint i) override {
+    return this->p[i * this->ncols + (this->k - 1)];
+  }
+};
+
 __global__ void decode(float* dResults,
                        const uint* dPermutation,
                        const uint n,
@@ -118,6 +127,27 @@ __global__ void decodeAccessWrapperT(float* dResults,
   if (k >= n) return;
 
   PermutationT p(dPermutation, n, k);
+
+  auto u = p[0];
+  auto v = p[len - 1];
+  auto fitness = dDistances[u * len + v];
+  for (uint i = 1; i < len; ++i) {
+    u = p[i - 1];
+    v = p[i];
+    fitness += dDistances[u * len + v];
+  }
+  dResults[k] = fitness;
+}
+
+__global__ void decodeAccessWrapperU(float* dResults,
+                                     uint* dPermutation,
+                                     const uint n,
+                                     const uint len,
+                                     const float* dDistances) {
+  const auto k = blockIdx.x * blockDim.x + threadIdx.x;
+  if (k >= n) return;
+
+  PermutationU p(dPermutation, n, k + 1);
 
   auto u = p[0];
   auto v = p[len - 1];
@@ -300,6 +330,9 @@ int main() {
     }
     // cout << results[i] << '\n';
   }
+
+  // Test if it works with many implementations
+  decodeAccessWrapperU<<<1, n>>>(dResults, dpT, n, len, dDistances);
 
   cout << "Done!" << endl;
 
