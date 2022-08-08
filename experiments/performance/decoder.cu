@@ -2,7 +2,8 @@
 
 #define SIMPLE 1
 #define TEMPLATE 2
-#define TYPE SIMPLE
+#define TEMPLATE_DYNAMIC 3
+#define TYPE TEMPLATE_DYNAMIC
 
 const uint TILE_DIM = 32;
 const uint BLOCK_ROWS = 8;
@@ -78,7 +79,7 @@ struct PermutationU : public Permutation {
 //   uint gl;
 //   uint gr;
 // };
-#elif TYPE == TEMPLATE
+#elif TYPE == TEMPLATE || TYPE == TEMPLATE_DYNAMIC
 template <class T>
 struct Permutation {
   __host__ __device__ Permutation(T* _p, uint _ncols, uint _k)
@@ -166,6 +167,9 @@ __global__ void decodeAccessWrapper(float* dResults,
   Permutation p(dPermutation, len, k);
 #elif TYPE == TEMPLATE
   Permutation<uint> p(dPermutation, len, k);
+#elif TYPE == TEMPLATE_DYNAMIC
+  Permutation<uint>* pPtr = new Permutation<uint>(dPermutation, len, k);
+  auto& p = *pPtr;
 #else
 #error Invalid TYPE
 #endif
@@ -179,6 +183,10 @@ __global__ void decodeAccessWrapper(float* dResults,
     fitness += dDistances[u * len + v];
   }
   dResults[k] = fitness;
+
+#if TYPE == TEMPLATE_DYNAMIC
+  delete pPtr;
+#endif
 }
 
 __global__ void decodeAccessWrapperT(float* dResults,
@@ -193,6 +201,9 @@ __global__ void decodeAccessWrapperT(float* dResults,
   PermutationT p(dPermutation, n, k);
 #elif TYPE == TEMPLATE
   PermutationT<uint> p(dPermutation, n, k);
+#elif TYPE == TEMPLATE_DYNAMIC
+  Permutation<uint>* pPtr = new PermutationT<uint>(dPermutation, n, k);
+  auto& p = *pPtr;
 #else
 #error Invalid TYPE
 #endif
@@ -206,6 +217,10 @@ __global__ void decodeAccessWrapperT(float* dResults,
     fitness += dDistances[u * len + v];
   }
   dResults[k] = fitness;
+
+#if TYPE == TEMPLATE_DYNAMIC
+  delete pPtr;
+#endif
 }
 
 __global__ void decodeAccessWrapperU(float* dResults,
@@ -220,6 +235,9 @@ __global__ void decodeAccessWrapperU(float* dResults,
   PermutationU p(dPermutation, n, k + 1);
 #elif TYPE == TEMPLATE
   PermutationU<uint> p(dPermutation, n, k + 1);
+#elif TYPE == TEMPLATE_DYNAMIC
+  Permutation<uint>* pPtr = new PermutationU<uint>(dPermutation, n, k + 1);
+  auto& p = *pPtr;
 #else
 #error Invalid TYPE
 #endif
@@ -233,6 +251,10 @@ __global__ void decodeAccessWrapperU(float* dResults,
     fitness += dDistances[u * len + v];
   }
   dResults[k] = fitness;
+
+#if TYPE == TEMPLATE_DYNAMIC
+  delete pPtr;
+#endif
 }
 
 int main() {
