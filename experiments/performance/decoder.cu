@@ -1,5 +1,9 @@
 #include "aaa.cuh"
 
+#define SIMPLE 1
+#define TEMPLATE 2
+#define TYPE SIMPLE
+
 const uint TILE_DIM = 32;
 const uint BLOCK_ROWS = 8;
 
@@ -28,6 +32,7 @@ void transpose(T* dst, T* src, uint n, uint m) {
   transposeKernel<<<grid, block>>>(dst, src, n, m);
 }
 
+#if TYPE == SIMPLE
 struct Permutation {
   __host__ __device__ Permutation(uint* _p, uint _ncols, uint _k)
       : p(_p), ncols(_ncols), k(_k) {}
@@ -58,6 +63,58 @@ struct PermutationU : public Permutation {
     return this->p[i * this->ncols + (this->k - 1)];
   }
 };
+
+// struct IprPermutation : public Permutation {
+//   __host__ __device__
+//   IprPermutation(uint* _p, uint _ncols, uint _k, uint _g, uint _gl, uint _gr)
+//       : Permutation(_p, _ncols, _k), g(_h), gl(_hl), gr(_hr) {}
+
+//   __host__ __device__ inline uint operator[](uint i) override {
+//     const auto id = gl <= i && i < gr ? g : k;
+//     return this->p[i * this->ncols + id];
+//   }
+
+//   uint g;
+//   uint gl;
+//   uint gr;
+// };
+#elif TYPE == TEMPLATE
+template <class T>
+struct Permutation {
+  __host__ __device__ Permutation(T* _p, uint _ncols, uint _k)
+      : p(_p), ncols(_ncols), k(_k) {}
+
+  virtual __host__ __device__ inline T operator[](uint i) {
+    return this->p[this->k * this->ncols + i];
+  }
+
+  T* p;
+  uint ncols;
+  uint k;
+};
+
+template <class T>
+struct PermutationT : public Permutation<T> {
+  __host__ __device__ PermutationT(T* _p, uint _ncols, uint _k)
+      : Permutation<T>(_p, _ncols, _k) {}
+
+  __host__ __device__ inline T operator[](uint i) override {
+    return this->p[i * this->ncols + this->k];
+  }
+};
+
+template <class T>
+struct PermutationU : public Permutation<T> {
+  __host__ __device__ PermutationU(T* _p, uint _ncols, uint _k)
+      : Permutation<T>(_p, _ncols, _k) {}
+
+  __host__ __device__ inline T operator[](uint i) override {
+    return this->p[i * this->ncols + (this->k - 1)];
+  }
+};
+#else
+#error Invalid TYPE
+#endif
 
 __global__ void decode(float* dResults,
                        const uint* dPermutation,
@@ -105,7 +162,13 @@ __global__ void decodeAccessWrapper(float* dResults,
   const auto k = blockIdx.x * blockDim.x + threadIdx.x;
   if (k >= n) return;
 
+#if TYPE == SIMPLE
   Permutation p(dPermutation, len, k);
+#elif TYPE == TEMPLATE
+  Permutation<uint> p(dPermutation, len, k);
+#else
+#error Invalid TYPE
+#endif
 
   auto u = p[0];
   auto v = p[len - 1];
@@ -126,7 +189,13 @@ __global__ void decodeAccessWrapperT(float* dResults,
   const auto k = blockIdx.x * blockDim.x + threadIdx.x;
   if (k >= n) return;
 
+#if TYPE == SIMPLE
   PermutationT p(dPermutation, n, k);
+#elif TYPE == TEMPLATE
+  PermutationT<uint> p(dPermutation, n, k);
+#else
+#error Invalid TYPE
+#endif
 
   auto u = p[0];
   auto v = p[len - 1];
@@ -147,7 +216,13 @@ __global__ void decodeAccessWrapperU(float* dResults,
   const auto k = blockIdx.x * blockDim.x + threadIdx.x;
   if (k >= n) return;
 
+#if TYPE == SIMPLE
   PermutationU p(dPermutation, n, k + 1);
+#elif TYPE == TEMPLATE
+  PermutationU<uint> p(dPermutation, n, k + 1);
+#else
+#error Invalid TYPE
+#endif
 
   auto u = p[0];
   auto v = p[len - 1];
