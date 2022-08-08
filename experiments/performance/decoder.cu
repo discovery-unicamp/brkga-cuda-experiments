@@ -179,15 +179,7 @@ __global__ void decodeAccessWrapper(float* dResults,
   Permutation<uint>* pPtr = new Permutation<uint>(dPermutation, len, k);
   auto& p = *pPtr;
 #elif TYPE == TEMPLATE_SINGLE_ALLOC
-  // printf(" >> %p %u %u\n", dPermutation, k, n);
-  assert(dPermutation != nullptr);
-  // printf(" ## %p %u %u\n", dPermutation[k].p, dPermutation[k].k,
-  //        dPermutation[k].ncols);
-  T* pPtr = dPermutation + k;
-  auto& p = *pPtr;
-  assert(p.p != nullptr);
-  assert(p.ncols == len);
-  assert(p.k == k);
+  auto& p = dPermutation[k];
 #else
 #error Invalid TYPE
 #endif
@@ -225,9 +217,6 @@ __global__ void decodeAccessWrapperT(float* dResults,
   auto& p = *pPtr;
 #elif TYPE == TEMPLATE_SINGLE_ALLOC
   auto& p = dPermutation[k];
-  assert(p.p != nullptr);
-  assert(p.ncols == n);
-  assert(p.k == k);
 #else
 #error Invalid TYPE
 #endif
@@ -252,9 +241,7 @@ template <class T>
 __global__ void initWrapper(T* w, uint* p, uint n, uint ncols) {
   const auto k = blockIdx.x * blockDim.x + threadIdx.x;
   if (k >= n) return;
-  w[k].p = p;
-  w[k].ncols = ncols;
-  w[k].k = k;
+  w[k] = T(p, ncols, k);
 }
 #endif
 
