@@ -135,6 +135,8 @@ struct PermutationT : public Permutation<T> {
       gr -= gl;
     }
     assert(g != this->k);
+
+    // ensures that x - gl >= gr if x < gl
     assert(gr < (1u << (8 * sizeof(uint) - 1)));
   }
 #else
@@ -146,7 +148,10 @@ struct PermutationT : public Permutation<T> {
 #if TYPE == TEMPLATE_SINGLE_ALLOC
     return this->p[i * this->ncols + this->k];
 #else
-    // i - gl will overflow if i < gl and then i - gl < gr will be false
+    // gl <= i && i < gr == i - gl < gr - gl:
+    // i - gl will overflow if i < gl and then i - gl < gr - gl will be false
+    // => this only works if gl <= gr < 2^(#bits(typeof(gr)) - 1)
+    // => also gr - gl was already performed in the constructor
     return this->p[i * this->ncols + (i - gl < gr ? g : this->k)];
 #endif
   }
