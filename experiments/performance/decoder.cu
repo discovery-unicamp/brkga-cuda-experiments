@@ -4,7 +4,8 @@
 #define TEMPLATE 2
 #define TEMPLATE_DYNAMIC 3
 #define TEMPLATE_SINGLE_ALLOC 4
-#define TYPE TEMPLATE_SINGLE_ALLOC
+#define TEMPLATE_SINGLE_AND_IPR 5
+#define TYPE TEMPLATE_SINGLE_AND_IPR
 
 const uint TILE_DIM = 32;
 const uint BLOCK_ROWS = 8;
@@ -95,10 +96,10 @@ struct PermutationT : public Permutation<T> {
     return this->p[i * this->ncols + this->k];
   }
 };
-#elif TYPE == TEMPLATE_SINGLE_ALLOC
+#elif TYPE == TEMPLATE_SINGLE_ALLOC || TYPE == TEMPLATE_SINGLE_AND_IPR
 template <class T>
 struct Permutation {
-  __host__ __device__ Permutation(T* _p, uint _ncols, uint _k)
+  __host__ __device__ inline Permutation(T* _p, uint _ncols, uint _k)
       : p(_p), ncols(_ncols), k(_k) {}
 
   // cannot be virtual
@@ -113,12 +114,48 @@ struct Permutation {
 
 template <class T>
 struct PermutationT : public Permutation<T> {
-  __host__ __device__ PermutationT(T* _p, uint _ncols, uint _k)
-      : Permutation<T>(_p, _ncols, _k) {}
-
-  __host__ __device__ inline T operator[](uint i) {
-    return this->p[i * this->ncols + this->k];
+  __host__ __device__ inline PermutationT(T* _p,
+                                          uint _ncols,
+                                          uint _k
+#if TYPE == TEMPLATE_SINGLE_AND_IPR
+                                          ,
+                                          uint _gl,
+                                          uint _gr
+#endif
+                                          )
+      : Permutation<T>(_p, _ncols, _k)
+#if TYPE == TEMPLATE_SINGLE_AND_IPR
+        ,
+        g(_k ^ 1),
+        gl(_gl),
+        gr(_gr) {
+    if (gl >= gr) {
+      gl = gr = 0;
+    } else {
+      gr -= gl;
+    }
+    assert(g != this->k);
+    assert(gr < (1u << (8 * sizeof(uint) - 1)));
   }
+#else
+  {
+  }
+#endif
+
+  __host__ __device__ __forceinline__ T operator[](uint i) {
+#if TYPE == TEMPLATE_SINGLE_ALLOC
+    return this->p[i * this->ncols + this->k];
+#else
+    // i - gl will overflow if i < gl and then i - gl < gr will be false
+    return this->p[i * this->ncols + (i - gl < gr ? g : this->k)];
+#endif
+  }
+
+#if TYPE == TEMPLATE_SINGLE_AND_IPR
+  uint g;
+  uint gl;
+  uint gr;
+#endif
 };
 #else
 #error Invalid TYPE
@@ -178,7 +215,7 @@ __global__ void decodeAccessWrapper(float* dResults,
 #elif TYPE == TEMPLATE_DYNAMIC
   Permutation<uint>* pPtr = new Permutation<uint>(dPermutation, len, k);
   auto& p = *pPtr;
-#elif TYPE == TEMPLATE_SINGLE_ALLOC
+#elif TYPE == TEMPLATE_SINGLE_ALLOC || TYPE == TEMPLATE_SINGLE_AND_IPR
   auto& p = dPermutation[k];
 #else
 #error Invalid TYPE
@@ -215,7 +252,7 @@ __global__ void decodeAccessWrapperT(float* dResults,
 #elif TYPE == TEMPLATE_DYNAMIC
   Permutation<uint>* pPtr = new PermutationT<uint>(dPermutation, n, k);
   auto& p = *pPtr;
-#elif TYPE == TEMPLATE_SINGLE_ALLOC
+#elif TYPE == TEMPLATE_SINGLE_ALLOC || TYPE == TEMPLATE_SINGLE_AND_IPR
   auto& p = dPermutation[k];
 #else
 #error Invalid TYPE
@@ -243,6 +280,21 @@ __global__ void initWrapper(T* w, uint* p, uint n, uint ncols) {
   if (k >= n) return;
   w[k] = T(p, ncols, k);
 }
+#elif TYPE == TEMPLATE_SINGLE_AND_IPR
+__global__ void initWrapper(Permutation<uint>* w, uint* p, uint n, uint ncols) {
+  const auto k = blockIdx.x * blockDim.x + threadIdx.x;
+  if (k >= n) return;
+  w[k] = Permutation<uint>(p, ncols, k);
+}
+
+__global__ void initWrapper(PermutationT<uint>* w,
+                            uint* p,
+                            uint n,
+                            uint ncols) {
+  const auto k = blockIdx.x * blockDim.x + threadIdx.x;
+  if (k >= n) return;
+  w[k] = PermutationT<uint>(p, ncols, k, n, k);
+}
 #endif
 
 int main() {
@@ -251,7 +303,7 @@ int main() {
   cerr << fixed << setprecision(9);
 
   const uint n = 256;
-  const uint len = 10000;
+  const uint len = 20000;
   const uint testCount = 10;
   alive;
 
@@ -366,16 +418,17 @@ int main() {
                    cudaMemcpyHostToDevice));
   alive;
 
-#if TYPE == TEMPLATE_SINGLE_ALLOC
-  assert(sizeof(Permutation<uint>) == sizeof(PermutationT<uint>));
-  Permutation<uint>* dw = nullptr;
-  check(cudaMalloc(&dw, n * sizeof(Permutation<uint>)));
+#if TYPE == TEMPLATE_SINGLE_ALLOC || TYPE == TEMPLATE_SINGLE_AND_IPR
+  assert(sizeof(Permutation<uint>) < sizeof(PermutationT<uint>));
+  void* dw = nullptr;
+  check(cudaMalloc(&dw, n * sizeof(PermutationT<uint>)));
   alive;
 
   initWrapper<<<1, n>>>((Permutation<uint>*)dw, dp, n, len);
   check(last());
   alive;
-  decodeAccessWrapper<<<1, n>>>(dResults, dw, n, len, dDistances);
+  decodeAccessWrapper<<<1, n>>>(dResults, (Permutation<uint>*)dw, n, len,
+                                dDistances);
 #else
   decodeAccessWrapper<<<1, n>>>(dResults, dp, n, len, dDistances);
 #endif
@@ -385,9 +438,10 @@ int main() {
   ms = -1;
   check(cudaEventRecord(evBegin, 0));
   for (uint i = 0; i < testCount; ++i) {
-#if TYPE == TEMPLATE_SINGLE_ALLOC
+#if TYPE == TEMPLATE_SINGLE_ALLOC || TYPE == TEMPLATE_SINGLE_AND_IPR
     initWrapper<<<1, n>>>((Permutation<uint>*)dw, dp, n, len);
-    decodeAccessWrapper<<<1, n>>>(dResults, dw, n, len, dDistances);
+    decodeAccessWrapper<<<1, n>>>(dResults, (Permutation<uint>*)dw, n, len,
+                                  dDistances);
 #else
     decodeAccessWrapper<<<1, n>>>(dResults, dp, n, len, dDistances);
 #endif
@@ -417,10 +471,11 @@ int main() {
 
   transpose(dpT, dp, n, len);
   check(last());
-#if TYPE == TEMPLATE_SINGLE_ALLOC
+#if TYPE == TEMPLATE_SINGLE_ALLOC || TYPE == TEMPLATE_SINGLE_AND_IPR
   initWrapper<<<1, n>>>((PermutationT<uint>*)dw, dpT, n, n);
   check(last());
-  decodeAccessWrapperT<<<1, n>>>(dResults, (PermutationT<uint>*)dw, n, len, dDistances);
+  decodeAccessWrapperT<<<1, n>>>(dResults, (PermutationT<uint>*)dw, n, len,
+                                 dDistances);
 #else
   decodeAccessWrapperT<<<1, n>>>(dResults, dpT, n, len, dDistances);
 #endif
@@ -431,9 +486,10 @@ int main() {
   check(cudaEventRecord(evBegin, 0));
   for (uint i = 0; i < testCount; ++i) {
     transpose(dpT, dp, n, len);
-#if TYPE == TEMPLATE_SINGLE_ALLOC
+#if TYPE == TEMPLATE_SINGLE_ALLOC || TYPE == TEMPLATE_SINGLE_AND_IPR
     initWrapper<<<1, n>>>((PermutationT<uint>*)dw, dpT, n, n);
-    decodeAccessWrapperT<<<1, n>>>(dResults, (PermutationT<uint>*)dw, n, len, dDistances);
+    decodeAccessWrapperT<<<1, n>>>(dResults, (PermutationT<uint>*)dw, n, len,
+                                   dDistances);
 #else
     decodeAccessWrapperT<<<1, n>>>(dResults, dpT, n, len, dDistances);
 #endif
@@ -461,7 +517,7 @@ int main() {
   check(cudaFree(dpT));
   check(cudaFree(dDistances));
   check(cudaFree(dResults));
-#if TYPE == TEMPLATE_SINGLE_ALLOC
+#if TYPE == TEMPLATE_SINGLE_ALLOC || TYPE == TEMPLATE_SINGLE_AND_IPR
   check(cudaFree(dw));
 #endif
   check(cudaEventDestroy(evBegin));
