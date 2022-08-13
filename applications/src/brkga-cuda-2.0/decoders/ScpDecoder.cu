@@ -40,16 +40,35 @@ ScpDecoder::~ScpDecoder() {
   box::cuda::free(nullptr, dSetEnd);
 }
 
-float ScpDecoder::decode(const float* chromosome) const {
-  return getFitness(chromosome, config->chromosomeLength,
-                    instance->universeSize, ScpInstance::ACCEPT_THRESHOLD,
-                    instance->costs, instance->sets);
+float ScpDecoder::decode(const box::Chromosome<float>& chromosome) const {
+  const auto n = config->chromosomeLength;
+  const auto& costs = instance->costs;
+  const auto& sets = instance->sets;
+
+  float fitness = 0;
+  std::vector<bool> covered(instance->universeSize);
+  unsigned numCovered = 0;
+  for (unsigned i = 0; i < n; ++i) {
+    if (chromosome[i] > ScpInstance::ACCEPT_THRESHOLD) {
+      fitness += costs[i];
+      for (auto element : sets[i]) {
+        if (!covered[element]) {
+          covered[element] = true;
+          ++numCovered;
+        }
+      }
+    }
+  }
+
+  if (numCovered != instance->universeSize)
+    return std::numeric_limits<float>::infinity();
+  return fitness;
 }
 
 __global__ void deviceDecode(float* results,
                              const unsigned numberOfChromosomes,
-                             const float* dChromosomes,
-                             const unsigned chromosomeLength,
+                             const box::Chromosome<float>* dChromosomes,
+                             const unsigned n,
                              const unsigned universeSize,
                              const float threshold,
                              const float* dCosts,
@@ -58,14 +77,32 @@ __global__ void deviceDecode(float* results,
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= numberOfChromosomes) return;
 
-  const float* dSelection = dChromosomes + tid * chromosomeLength;
-  results[tid] = deviceGetFitness(dSelection, chromosomeLength, universeSize,
-                                  threshold, dCosts, dSets, dSetEnd);
+  const auto& chromosome = dChromosomes[tid];
+
+  unsigned numCovered = 0;
+  bool* covered = new bool[universeSize];
+  for (unsigned i = 0; i < universeSize; ++i) covered[i] = false;
+
+  float fitness = 0;
+  for (unsigned i = 0; i < n; ++i) {
+    if (chromosome[i] > threshold) {
+      fitness += dCosts[i];
+      for (unsigned j = (i == 0 ? 0 : dSetEnd[i - 1]); j < dSetEnd[i]; ++j) {
+        if (!covered[dSets[j]]) {
+          covered[dSets[j]] = true;
+          ++numCovered;
+        }
+      }
+    }
+  }
+
+  delete[] covered;
+  results[tid] = numCovered != universeSize ? INFINITY : fitness;
 }
 
 void ScpDecoder::decode(cudaStream_t stream,
                         unsigned numberOfChromosomes,
-                        const float* dChromosomes,
+                        const box::Chromosome<float>* dChromosomes,
                         float* dResults) const {
   const auto threads = config->threadsPerBlock;
   const auto blocks = box::cuda::blocks(numberOfChromosomes, threads);

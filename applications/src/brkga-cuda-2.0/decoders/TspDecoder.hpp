@@ -13,18 +13,18 @@ public:
 
   ~TspDecoder();
 
-  float decode(const float* chromosome) const override;
+  float decode(const box::Chromosome<float>& chromosome) const override;
 
-  float decode(const unsigned* permutation) const override;
+  float decode(const box::Chromosome<unsigned>& permutation) const override;
 
   void decode(cudaStream_t stream,
               unsigned numberOfChromosomes,
-              const float* dChromosomes,
+              const box::Chromosome<float>* dChromosomes,
               float* dFitness) const override;
 
   void decode(cudaStream_t stream,
               unsigned numberOfPermutations,
-              const unsigned* dPermutations,
+              const box::Chromosome<unsigned>* dPermutations,
               float* dFitness) const override;
 
 private:

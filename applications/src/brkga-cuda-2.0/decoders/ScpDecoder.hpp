@@ -13,11 +13,11 @@ public:
 
   ~ScpDecoder();
 
-  float decode(const float* chromosome) const override;
+  float decode(const box::Chromosome<float>& chromosome) const override;
 
   void decode(cudaStream_t stream,
               unsigned numberOfChromosomes,
-              const float* dChromosomes,
+              const box::Chromosome<float>* dChromosomes,
               float* dFitness) const override;
 
 private:

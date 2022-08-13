@@ -31,7 +31,6 @@ CATCH_FAILURES = False
 DEVICE = int(os.environ['DEVICE'])
 TEST_COUNT = 10
 BUILD_TYPE = 'release'
-BUILD_TARGET = 'brkga-optimizer'
 TWEAKS_FILE_PATH = Path('applications', 'src', 'Tweaks.hpp')
 SOURCE_PATH = Path('applications')
 OUTPUT_PATH = Path('experiments', 'results')
@@ -141,10 +140,21 @@ def __cmake(
         threads: int = 6,
         tweaks: List[str] = [],
 ):
-    with open(TWEAKS_FILE_PATH, 'w') as tweak_file:
-        tweak_file.write('#pragma once\n')
-        for tweak in tweaks:
-            tweak_file.write(f'#define {tweak}\n')
+    tweaks_content = (
+        '#pragma once\n'
+        + ''.join(f'#define {tweak}\n' for tweak in tweaks)
+    )
+    try:
+        with open(TWEAKS_FILE_PATH, 'r') as tweak_file:
+            existing_tweaks_content = tweak_file.read()
+    except FileNotFoundError:
+        existing_tweaks_content = ''
+
+    if tweaks_content == existing_tweaks_content:
+        logging.info("Tweaks file hasn't changed")
+    else:
+        with open(TWEAKS_FILE_PATH, 'w') as tweak_file:
+            tweak_file.write(tweaks_content)
 
     folder = f'build-{build}'
     __shell(f'cmake -DCMAKE_BUILD_TYPE={build} -B{folder} {src}', get=False)
@@ -318,31 +328,31 @@ def main():
             tool='brkga-api',
             problems=['scp', 'tsp', 'cvrp_greedy', 'cvrp'],
             decoders=['cpu'],
-            test_count=10,
+            test_count=TEST_COUNT,
         ),
         experiment(
             tool='gpu-brkga',
             problems=['scp', 'cvrp_greedy', 'cvrp'],
             decoders=['cpu', 'gpu'],
-            test_count=10,
+            test_count=TEST_COUNT,
         ),
         experiment(
             tool='gpu-brkga-fix',
             problems=['scp', 'cvrp_greedy', 'cvrp'],
             decoders=['cpu', 'gpu'],
-            test_count=10,
+            test_count=TEST_COUNT,
         ),
         experiment(
             tool='brkga-cuda-1.0',
             problems=['tsp', 'cvrp_greedy', 'cvrp'],
             decoders=['cpu', 'gpu', 'gpu-permutation'],
-            test_count=10,
+            test_count=TEST_COUNT,
         ),
         experiment(
             tool='brkga-cuda-1.0',
             problems=['scp'],
             decoders=['cpu', 'gpu'],
-            test_count=10,
+            test_count=TEST_COUNT,
         ),
         experiment(
             tool='brkga-cuda-2.0',
@@ -351,13 +361,13 @@ def main():
                 'cpu', 'cpu-permutation', 'all-cpu', 'all-cpu-permutation',
                 'gpu', 'gpu-permutation', 'all-gpu', 'all-gpu-permutation',
             ],
-            test_count=10,
+            test_count=TEST_COUNT,
         ),
         experiment(
             tool='brkga-cuda-2.0',
             problems=['scp'],
             decoders=['cpu', 'all-cpu', 'gpu', 'all-gpu'],
-            test_count=10,
+            test_count=TEST_COUNT,
         ),
     )
 

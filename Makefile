@@ -4,7 +4,7 @@ cuda_version := $(shell nvidia-smi | grep "CUDA Version" | cut -d: -f 3 | cut -d
 device := 0
 
 run: .setup
-	docker run --env DEVICE=$(device) -v $(project_path)/:/brkga/ --rm --gpus device=$(device) brkga
+	docker run -it --env DEVICE=$(device) -v $(project_path)/:/brkga/ --rm --gpus device=$(device) brkga
 
 .setup: experiments/Dockerfile experiments/requirements.txt
 	docker build --no-cache --build-arg CUDA_VERSION=$(cuda_version) -t brkga -f experiments/Dockerfile .
@@ -12,7 +12,7 @@ run: .setup
 
 .PHONY: open-terminal
 open-terminal:
-	docker run -v $(project_path)/:/brkga/ --rm -it ubuntu
+	docker run -it -v $(project_path)/:/brkga/ --rm ubuntu
 
 .PHONY: fix-git
 fix-git: # Rule created due the errors on dl-1
@@ -21,5 +21,5 @@ fix-git: # Rule created due the errors on dl-1
 
 .PHONY: clean
 clean:
-	docker run -v $(project_path)/:/brkga/ --rm ubuntu /bin/bash -c 'cd brkga; rm -f .setup; rm -rf build-*'
+	docker run -it -v $(project_path)/:/brkga/ --rm ubuntu /bin/bash -c 'cd brkga; rm -f .setup; rm -rf build-*'
 	docker rmi $$(docker images 'brkga' -a -q) || exit 0
