@@ -39,9 +39,9 @@ inline bool contains(const std::string& str, const std::string& pattern) {
   return str.find(pattern) != std::string::npos;
 }
 
-__global__ void callSort(float* dChromosome,
-                         unsigned* dPermutation,
-                         unsigned chromosomeLength) {
+__global__ void callThrutSort(float* dChromosome,
+                              unsigned* dPermutation,
+                              unsigned chromosomeLength) {
   thrust::device_ptr<float> keys(dChromosome);
   thrust::device_ptr<unsigned> vals(dPermutation);
   thrust::sort_by_key(thrust::device, keys, keys + chromosomeLength, vals);
@@ -51,8 +51,8 @@ void sortChromosomeToValidate(const float* chromosome,
                               unsigned* permutation,
                               unsigned size) {
   std::iota(permutation, permutation + size, 0);
-  box::logger::debug("Sorting the chromosome to validate according to decoder",
-                     decodeType);
+  box::logger::info("Sorting the chromosome to validate according to",
+                    "decode type:", decodeType);
 
   if (contains(decodeType, "permutation") || contains(decodeType, "gpu")) {
     auto* dChromosome = box::cuda::alloc<float>(nullptr, size);
@@ -62,11 +62,11 @@ void sortChromosomeToValidate(const float* chromosome,
     box::cuda::copy2d(nullptr, dPermutation, permutation, size);
 
     if (contains(decodeType, "permutation")) {
-      // Uses BBSegSort
+      box::logger::debug("Using bb-segsort");
       box::cuda::segSort(nullptr, dChromosome, dPermutation, 1, size);
     } else {
-      // Uses thrust::sort
-      callSort<<<1, 1>>>(dChromosome, dPermutation, size);
+      box::logger::debug("Using thrust::sort");
+      callThrutSort<<<1, 1>>>(dChromosome, dPermutation, size);
     }
     box::cuda::sync();
 
@@ -75,34 +75,34 @@ void sortChromosomeToValidate(const float* chromosome,
     box::cuda::free(nullptr, dChromosome);
     box::cuda::free(nullptr, dPermutation);
   } else if (contains(decodeType, "cpu")) {
-    // Uses std::sort
+    box::logger::debug("Using std::sort");
     std::sort(permutation, permutation + size, [&](unsigned a, unsigned b) {
       return chromosome[a] < chromosome[b];
     });
   } else {
-    std::cerr << __PRETTY_FUNCTION__ << ": unknown decoder `" << decodeType
-              << "`\n";
+    box::logger::error("Unknown sort method for the decoder:", decodeType,
+                       "\n\t=> on", __PRETTY_FUNCTION__);
     abort();
   }
 }
 
 void sortChromosomeToValidate(const double*, unsigned*, unsigned) {
-  std::cerr << __PRETTY_FUNCTION__ << " should not be called\n";
+  box::logger::error(__PRETTY_FUNCTION__, "should not be called");
   abort();
 }
 
 int main(int argc, char** argv) {
-  box::logger::debug("Parse parameters");
+  box::logger::info("Parsing parameters");
   auto params = Parameters::parse(argc, argv);
   decodeType = params.decoder;
 
-  box::logger::debug("Read instance");
+  box::logger::info("Reading instance");
   Instance instance = Instance::fromFile(params.instanceFileName);
 
-  box::logger::debug("Build the decoder");
+  box::logger::info("Building the decoder");
   DecoderImpl decoder(&instance);
 
-  box::logger::debug("Build the configuration");
+  box::logger::info("Building the configuration");
   auto config = box::BrkgaConfiguration::Builder()
                     .generations(params.generations)
                     .numberOfPopulations(params.numberOfPopulations)
@@ -125,20 +125,18 @@ int main(int argc, char** argv) {
   CUDA_CHECK(cudaEventCreate(&stop));
   CUDA_CHECK(cudaEventRecord(start));
 
-  box::logger::debug("Build the algorithm");
+  box::logger::info("Building the algorithm");
   box::Brkga brkga(config);
 
-  box::logger::debug("Optimization");
+  box::logger::info("Optimizing");
   std::vector<float> convergence;
   convergence.push_back(brkga.getBestFitness());
   for (unsigned gen = 1; gen <= params.generations; ++gen) {
     brkga.evolve();
     if (gen % params.exchangeBestInterval == 0 && gen != params.generations)
       brkga.exchangeElite(params.exchangeBestCount);
-    if (gen % params.logStep == 0 || gen == params.generations) {
-      float best = brkga.getBestFitness();
-      convergence.push_back(best);
-    }
+    if (gen % params.logStep == 0 || gen == params.generations)
+      convergence.push_back(brkga.getBestFitness());
   }
 
   auto bestFitness = brkga.getBestFitness();
@@ -149,12 +147,17 @@ int main(int argc, char** argv) {
   float timeElapsedMs = -1;
   cudaEventElapsedTime(&timeElapsedMs, start, stop);
 
+  box::logger::info("Optimization has finished after", timeElapsedMs / 1000,
+                    "seconds with fitness:", bestFitness);
+
   std::cout << std::fixed << std::setprecision(6) << "ans=" << bestFitness
             << " elapsed=" << timeElapsedMs / 1000
             << " convergence=" << box::str(convergence, ",") << '\n';
 
+  box::logger::info("Validating the solution");
   instance.validate(bestChromosome.data(), bestFitness);
 
-  box::logger::info("Exit");
+  box::logger::info("Everything looks good!");
+  box::logger::info("Exiting");
   return 0;
 }
