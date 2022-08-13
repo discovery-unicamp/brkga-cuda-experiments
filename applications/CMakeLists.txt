@@ -1,4 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
+project(brkga-applications LANGUAGES CUDA CXX)
 
 # Configuration
 SET(CMAKE_CXX_STANDARD 11)
