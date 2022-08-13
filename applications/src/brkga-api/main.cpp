@@ -83,7 +83,6 @@ int main(int argc, char** argv) {
       convergence.push_back(best);
     }
   }
-  std::clog << '\n';
 
   double finishTime = omp_get_wtime();
   double timeElapsedSeconds = finishTime - startTime;

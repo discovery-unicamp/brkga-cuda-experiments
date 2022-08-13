@@ -140,7 +140,6 @@ int main(int argc, char** argv) {
       convergence.push_back(best);
     }
   }
-  std::clog << '\n';
 
   auto bestFitness = brkga.getBestFitness();
   auto bestChromosome = brkga.getBestChromosome();

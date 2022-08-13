@@ -156,7 +156,6 @@ int main(int argc, char** argv) {
       convergence.push_back(best);
     }
   }
-  std::clog << '\n';
 
   float bestFitness = -1;
   std::vector<float> bestChromosome;
