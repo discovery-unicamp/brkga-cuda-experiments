@@ -152,7 +152,8 @@ int main(int argc, char** argv) {
   convergence.push_back(
       {brkga.getBestFitness(), (unsigned)(timer.milliseconds() / 1000)});
 
-  for (unsigned gen = 1; gen <= params.generations; ++gen) {
+  const auto totalTestTime = 10 * 60 * 1000;  // 10 minutes of experiment
+  for (unsigned gen = 1; timer.milliseconds() < totalTestTime; ++gen) {
     brkga.evolve();
     if (gen % params.exchangeBestInterval == 0 && gen != params.generations)
       brkga.exchangeElite(params.exchangeBestCount);
