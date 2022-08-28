@@ -155,6 +155,8 @@ int main(int argc, char** argv) {
     brkga.evolve();
     if (gen % params.exchangeBestInterval == 0 && gen != params.generations)
       brkga.exchangeElite(params.exchangeBestCount);
+    if (gen % 10 == 0)
+      brkga.runPathRelinking(params.getNumberOfElites(), 0, 10);
     if (gen % params.logStep == 0)
       convergence.push_back({brkga.getBestFitness(), timer.seconds()});
   }
