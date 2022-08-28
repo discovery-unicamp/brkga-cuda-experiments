@@ -2,6 +2,11 @@
 
 #include "Checker.hpp"
 
+#include <iostream>
+
+static const char* RESET = "\033[0m";
+static const char* YELLOW = "\033[33m";
+
 Parameters Parameters::parse(unsigned argc, char** argv) {
   Parameters params;
   for (unsigned i = 1; i < argc; i += 2) {
@@ -39,7 +44,7 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
       params.rhoe = std::stof(value);
     } else if (arg == "--seed") {
       params.seed = std::stoi(value);
-    } else if (arg == "--decode") {
+    } else if (arg == "--decoder") {
       params.decoder = value;
     } else if (arg == "--threads") {
       params.threadsPerBlock = std::stoi(value);
@@ -48,7 +53,8 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
     } else if (arg == "--log-step") {
       params.logStep = std::stoi(value);
     } else {
-      CHECK(false, "Unknown argument: %s", arg.c_str());
+      std::cerr << YELLOW << "[WARNING] Unknown argument was ignored: " << arg
+                << ' ' << value << RESET << '\n';
     }
   }
 

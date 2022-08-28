@@ -148,33 +148,27 @@ int main(int argc, char** argv) {
   box::Brkga brkga(config);
 
   box::logger::info("Optimizing");
-  std::vector<std::pair<float, unsigned>> convergence;
-  convergence.push_back(
-      {brkga.getBestFitness(), (unsigned)(timer.milliseconds() / 1000)});
+  std::vector<std::pair<float, float>> convergence;
+  convergence.push_back({brkga.getBestFitness(), timer.seconds()});
 
-  const auto totalTestTime = 10 * 60 * 1000;  // 10 minutes of experiment
-  for (unsigned gen = 1; timer.milliseconds() < totalTestTime; ++gen) {
+  for (unsigned gen = 1; gen <= params.generations; ++gen) {
     brkga.evolve();
     if (gen % params.exchangeBestInterval == 0 && gen != params.generations)
       brkga.exchangeElite(params.exchangeBestCount);
-
-    float fitness = brkga.getBestFitness();
-    auto previousSecond = convergence.back().second;
-    auto currentSecond = (unsigned)(timer.milliseconds() / 1000);
-    if (currentSecond != previousSecond)
-      convergence.push_back({fitness, currentSecond});
+    if (gen % params.logStep == 0)
+      convergence.push_back({brkga.getBestFitness(), timer.seconds()});
   }
 
   auto bestFitness = brkga.getBestFitness();
   auto bestChromosome = brkga.getBestChromosome();
-  float elapsedMs = timer.milliseconds();
+  auto timeElapsed = timer.seconds();
 
-  box::logger::info("Optimization has finished after", elapsedMs / 1000,
+  box::logger::info("Optimization has finished after", timeElapsed,
                     "seconds with fitness:", bestFitness);
 
   std::cout << std::fixed << std::setprecision(6) << "ans=" << bestFitness
-            << " elapsed=" << elapsedMs / 1000
-            << " convergence=" << convergence << '\n';
+            << " elapsed=" << timeElapsed << " convergence=" << convergence
+            << '\n';
 
   box::logger::info("Validating the solution");
   instance.validate(bestChromosome.data(), bestFitness);

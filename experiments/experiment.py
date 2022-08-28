@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import traceback
-from typing import Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 import pandas as pd
 
 from instance import get_instance_path
@@ -35,7 +35,7 @@ TWEAKS_FILE_PATH = Path('applications', 'src', 'Tweaks.hpp')
 SOURCE_PATH = Path('applications')
 OUTPUT_PATH = Path('experiments', 'results')
 
-PROBLEMS = {
+PROBLEM_NAME = {
     'cvrp': 'cvrp',
     'cvrp_greedy': 'cvrp',
     'scp': 'scp',
@@ -43,80 +43,80 @@ PROBLEMS = {
 }
 INSTANCES = {
     'cvrp': [
-        # 'X-n219-k73',
-        # 'X-n266-k58',
-        # 'X-n317-k53',
-        # 'X-n336-k84',
-        # 'X-n376-k94',
-        # 'X-n384-k52',
-        # 'X-n420-k130',
-        # 'X-n429-k61',
-        # 'X-n469-k138',
-        # 'X-n480-k70',
-        # 'X-n548-k50',
-        # 'X-n586-k159',
-        # 'X-n599-k92',
-        # 'X-n655-k131',
-        # # The following doesn't work with the original GPU-BRKGA code
-        # 'X-n733-k159',
-        # 'X-n749-k98',
-        # 'X-n819-k171',
-        # 'X-n837-k142',
-        # 'X-n856-k95',
-        # 'X-n916-k207',
-        # 'X-n957-k87',
-        # 'X-n979-k58',
+        'X-n219-k73',
+        'X-n266-k58',
+        'X-n317-k53',
+        'X-n336-k84',
+        'X-n376-k94',
+        'X-n384-k52',
+        'X-n420-k130',
+        'X-n429-k61',
+        'X-n469-k138',
+        'X-n480-k70',
+        'X-n548-k50',
+        'X-n586-k159',
+        'X-n599-k92',
+        'X-n655-k131',
+        # The following doesn't work with the original GPU-BRKGA code
+        'X-n733-k159',
+        'X-n749-k98',
+        'X-n819-k171',
+        'X-n837-k142',
+        'X-n856-k95',
+        'X-n916-k207',
+        'X-n957-k87',
+        'X-n979-k58',
         'X-n1001-k43',
     ],
     'scp': [
         'scp41',
-        # 'scp42',
-        # 'scp43',
-        # 'scp44',
-        # 'scp45',
-        # 'scp46',
-        # 'scp47',
-        # 'scp48',
-        # 'scp49',
-        # Missing instances:
-        # 'scp51',
-        # 'scp52',
-        # 'scp53',
-        # 'scp54',
-        # 'scp55',
-        # 'scp56',
-        # 'scp57',
-        # 'scp58',
-        # 'scp59',
-        # 'scp61',
-        # 'scp62',
-        # 'scp63',
-        # 'scp64',
-        # 'scp65',
+        'scp42',
+        'scp43',
+        'scp44',
+        'scp45',
+        'scp46',
+        'scp47',
+        'scp48',
+        'scp49',
+        Missing instances:
+        'scp51',
+        'scp52',
+        'scp53',
+        'scp54',
+        'scp55',
+        'scp56',
+        'scp57',
+        'scp58',
+        'scp59',
+        'scp61',
+        'scp62',
+        'scp63',
+        'scp64',
+        'scp65',
     ],
     'tsp': [
-        # 'zi929',
-        # 'lu980',
-        # 'rw1621',
-        # 'mu1979',
+        'zi929',
+        'lu980',
+        'rw1621',
+        'mu1979',
         'nu3496',
-        # 'ca4663',
-        # 'tz6117',
-        # 'eg7146',
-        # 'ym7663',
-        # 'pm8079',
-        # 'ei8246',
-        # 'ar9152',
-        # 'ja9847',
-        # 'gr9882',
-        # 'kz9976',
-        # 'fi10639',
-        # 'mo14185',
-        # 'ho14473',
-        # 'it16862',
-        # 'vm22775',
-        # 'sw24978',
-        # 'bm33708',
+        'ca4663',
+        'tz6117',
+        'eg7146',
+        'ym7663',
+        'pm8079',
+        'ei8246',
+        'ar9152',
+        'ja9847',
+        'gr9882',
+        'kz9976',
+        'fi10639',
+        'mo14185',
+        'ho14473',
+        'it16862',
+        'vm22775',
+        'sw24978',
+        'bm33708',
     ]
 }
 
@@ -128,7 +128,7 @@ class ShellError(RuntimeError):
         super().__init__('Shell exited with error' + stderr)
 
 
-def compile_optimizer(target: str, problem: str):
+def compile_optimizer(target: str, problem: str) -> Path:
     return __cmake(str(SOURCE_PATH.absolute()), BUILD_TYPE, target,
                    tweaks=[problem.upper()])
 
@@ -139,7 +139,7 @@ def __cmake(
         target: str,
         threads: int = 6,
         tweaks: List[str] = [],
-):
+) -> Path:
     tweaks_content = (
         '#pragma once\n'
         + ''.join(f'#define {tweak}\n' for tweak in tweaks)
@@ -210,34 +210,19 @@ def __shell(cmd: str, get: bool = True) -> str:
 
 
 def experiment(
-    tool: str,
-    problems: List[str],
-    decoders: List[str],
-    parameters: List[Dict[str, Union[str, int, float]]],
-    test_count: int = TEST_COUNT,
+        parameters: Iterable[Dict[str, Any]],
 ) -> Iterable[Dict[str, str]]:
-    omp_threads = int(__shell('nproc'))
+    for params in parameters:
+        executable = compile_optimizer(params['tool'], params['problem'])
+        params['instance'] = get_instance_path(params['problem'],
+                                               params['instance-name'])
 
-    for problem in problems:
-        pname = PROBLEMS[problem]
-        executable = compile_optimizer(tool, problem)
-        for decoder in decoders:
-            for instance in INSTANCES[pname]:
-                instance_path = str(get_instance_path(pname, instance))
-                for seed in range(1, test_count + 1):
-                    for params in parameters:
-                        params['omp-threads'] = omp_threads
-                        params['decode'] = decoder
-                        params['instance'] = instance_path
-                        params['seed'] = seed
-
-                        result = __run_test(executable, params)
-                        if result is not None:
-                            result['tool'] = tool
-                            result['problem'] = problem
-                            result['instance'] = instance
-                            yield result
-                        break
+        result = __run_test(executable, params)
+        if result is not None:
+            result['tool'] = params['tool']
+            result['problem'] = params['problem']
+            result['instance'] = params['instance-name']
+            yield result
 
 
 def __run_test(
@@ -310,70 +295,97 @@ def main():
     # Execute here to avoid changes by the user.
     info = __get_system_info()
 
-    params = pd.DataFrame([{
-        'threads': 256,
-        'generations': 1000,
-        'exchange-interval': 50,
-        'exchange-count': 2,
-        'mutant': .10,
-        'log-step': 25,
-    }])
-    params = params.merge(pd.DataFrame({'pop-size': [128, 256, 512]}),
-                          how='cross')
-    params = params.merge(pd.DataFrame({'pop-count': [2, 3, 4]}), how='cross')
-    params = params.merge(pd.DataFrame({'elite': [.10, .20, .30]}), how='cross')
-    params = params.merge(pd.DataFrame({'rhoe': [.60, .75, .90]}), how='cross')
-
     results = itertools.chain(
-        # experiment(
+        # experiment(__build_params(
         #     tool='brkga-api',
         #     problems=['scp', 'tsp', 'cvrp_greedy', 'cvrp'],
         #     decoders=['cpu'],
         #     test_count=TEST_COUNT,
-        # ),
-        # experiment(
+        # )),
+        # experiment(__build_params(
         #     tool='gpu-brkga',
         #     problems=['scp', 'cvrp_greedy', 'cvrp'],
         #     decoders=['cpu', 'gpu'],
         #     test_count=TEST_COUNT,
-        # ),
-        # experiment(
+        # )),
+        # experiment(__build_params(
         #     tool='gpu-brkga-fix',
         #     problems=['scp', 'cvrp_greedy', 'cvrp'],
         #     decoders=['cpu', 'gpu'],
         #     test_count=TEST_COUNT,
-        # ),
-        # experiment(
+        # )),
+        # experiment(__build_params(
         #     tool='brkga-cuda-1.0',
         #     problems=['tsp', 'cvrp_greedy', 'cvrp'],
         #     decoders=['cpu', 'gpu', 'gpu-permutation'],
         #     test_count=TEST_COUNT,
-        # ),
-        # experiment(
+        # )),
+        # experiment(__build_params(
         #     tool='brkga-cuda-1.0',
         #     problems=['scp'],
         #     decoders=['cpu', 'gpu'],
         #     test_count=TEST_COUNT,
-        # ),
-        experiment(
+        # )),
+        experiment(__build_params(
             tool='brkga-cuda-2.0',
             problems=['scp'],
             decoders=['cpu'],
-            parameters=params.to_dict('records'),
-            test_count=1,
-        ),
-        experiment(
+            test_count=TEST_COUNT,
+        )),
+        experiment(__build_params(
             tool='brkga-cuda-2.0',
             problems=['tsp', 'cvrp', 'cvrp_greedy'],
             decoders=[
                 'cpu-permutation',
             ],
-            parameters=params.to_dict('records'),
-            test_count=1,
-        ),
+            test_count=TEST_COUNT,
+        )),
     )
 
     save_results(info, results)
+
+
+def __build_params(
+        tool: str,
+        problems: List[str],
+        decoders: List[str],
+        test_count: int,
+) -> Iterable[Dict[str, Union[str, int, float]]]:
+    param_combinations = {
+        'tool': tool,
+        'problem': problems,
+        'decoder': decoders,
+        'seed': range(1, test_count + 1),
+        'omp-threads': int(__shell('nproc')),
+        'threads': 256,
+        'generations': 1000,
+        'pop-count': 3,
+        'pop-size': 256,
+        'rhoe': .75,
+        'elite': .10,
+        'mutant': .10,
+        'exchange-interval': 50,
+        'exchange-count': 2,
+        'log-step': 25,
+    }
+    for params in __combinations(param_combinations):
+        params['problem-name'] = PROBLEM_NAME[params['problem']]
+        params['instance-name'] = INSTANCES[params['problem-name']]
+        yield from __combinations(params)
+
+
+def __combinations(of: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
+    def get(value):
+        if isinstance(value, str):
+            return [value]
+        try:  # Try to return an iterator
+            return (x for x in value)
+        except TypeError:  # Not iterable
+            return [value]
+
+    dict_of_lists: Dict[str, Any] = {k: get(v) for k, v in of.items()}
+    keys, values = zip(*dict_of_lists.items())
+    return (dict(zip(keys, v)) for v in itertools.product(*values))
 
 
 if __name__ == '__main__':
