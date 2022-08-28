@@ -43,41 +43,41 @@ PROBLEMS = {
 }
 INSTANCES = {
     'cvrp': [
-        'X-n219-k73',
-        'X-n266-k58',
-        'X-n317-k53',
-        'X-n336-k84',
-        'X-n376-k94',
-        'X-n384-k52',
-        'X-n420-k130',
-        'X-n429-k61',
-        'X-n469-k138',
-        'X-n480-k70',
-        'X-n548-k50',
-        'X-n586-k159',
-        'X-n599-k92',
-        'X-n655-k131',
-        # The following doesn't work with the original GPU-BRKGA code
-        'X-n733-k159',
-        'X-n749-k98',
-        'X-n819-k171',
-        'X-n837-k142',
-        'X-n856-k95',
-        'X-n916-k207',
-        'X-n957-k87',
-        'X-n979-k58',
+        # 'X-n219-k73',
+        # 'X-n266-k58',
+        # 'X-n317-k53',
+        # 'X-n336-k84',
+        # 'X-n376-k94',
+        # 'X-n384-k52',
+        # 'X-n420-k130',
+        # 'X-n429-k61',
+        # 'X-n469-k138',
+        # 'X-n480-k70',
+        # 'X-n548-k50',
+        # 'X-n586-k159',
+        # 'X-n599-k92',
+        # 'X-n655-k131',
+        # # The following doesn't work with the original GPU-BRKGA code
+        # 'X-n733-k159',
+        # 'X-n749-k98',
+        # 'X-n819-k171',
+        # 'X-n837-k142',
+        # 'X-n856-k95',
+        # 'X-n916-k207',
+        # 'X-n957-k87',
+        # 'X-n979-k58',
         'X-n1001-k43',
     ],
     'scp': [
         'scp41',
-        'scp42',
-        'scp43',
-        'scp44',
-        'scp45',
-        'scp46',
-        'scp47',
-        'scp48',
-        'scp49',
+        # 'scp42',
+        # 'scp43',
+        # 'scp44',
+        # 'scp45',
+        # 'scp46',
+        # 'scp47',
+        # 'scp48',
+        # 'scp49',
         # Missing instances:
         # 'scp51',
         # 'scp52',
@@ -95,28 +95,28 @@ INSTANCES = {
         # 'scp65',
     ],
     'tsp': [
-        'zi929',
-        'lu980',
-        'rw1621',
-        'mu1979',
+        # 'zi929',
+        # 'lu980',
+        # 'rw1621',
+        # 'mu1979',
         'nu3496',
-        'ca4663',
-        'tz6117',
-        'eg7146',
-        'ym7663',
-        'pm8079',
-        'ei8246',
-        'ar9152',
-        'ja9847',
-        'gr9882',
-        'kz9976',
-        'fi10639',
-        'mo14185',
-        'ho14473',
-        'it16862',
-        'vm22775',
-        'sw24978',
-        'bm33708',
+        # 'ca4663',
+        # 'tz6117',
+        # 'eg7146',
+        # 'ym7663',
+        # 'pm8079',
+        # 'ei8246',
+        # 'ar9152',
+        # 'ja9847',
+        # 'gr9882',
+        # 'kz9976',
+        # 'fi10639',
+        # 'mo14185',
+        # 'ho14473',
+        # 'it16862',
+        # 'vm22775',
+        # 'sw24978',
+        # 'bm33708',
     ]
 }
 
@@ -213,6 +213,7 @@ def experiment(
     tool: str,
     problems: List[str],
     decoders: List[str],
+    parameters: List[Dict[str, Union[str, int, float]]],
     test_count: int = TEST_COUNT,
 ) -> Iterable[Dict[str, str]]:
     omp_threads = int(__shell('nproc'))
@@ -224,34 +225,19 @@ def experiment(
             for instance in INSTANCES[pname]:
                 instance_path = str(get_instance_path(pname, instance))
                 for seed in range(1, test_count + 1):
-                    params = {
-                        'threads': 256,
-                        'omp-threads': omp_threads,
-                        'generations': 1000,
-                        'exchange-interval': 50,
-                        'exchange-count': 2,
-                        'pop-count': 3,
-                        'pop-size': 256,
-                        'elite': .1,
-                        'mutant': .1,
-                        'rhoe': .75,
-                        'decode': decoder,
-                        'instance': instance_path,
-                        'seed': seed,
-                        'log-step': 25,
-                    }
+                    for params in parameters:
+                        params['omp-threads'] = omp_threads
+                        params['decode'] = decoder
+                        params['instance'] = instance_path
+                        params['seed'] = seed
 
-                    logging.info(f'Test instance {params["instance"]}')
-                    logging.debug(f'Problem: {pname} ({problem.upper()})')
-                    logging.debug(f'Executable: {str(executable)}')
-                    logging.debug(f'Test with params {params}')
-                    result = __run_test(executable, params)
-
-                    if result is not None:
-                        result['tool'] = tool
-                        result['problem'] = problem
-                        result['instance'] = instance
-                        yield result
+                        result = __run_test(executable, params)
+                        if result is not None:
+                            result['tool'] = tool
+                            result['problem'] = problem
+                            result['instance'] = instance
+                            yield result
+                        break
 
 
 def __run_test(
@@ -323,51 +309,67 @@ def save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]]):
 def main():
     # Execute here to avoid changes by the user.
     info = __get_system_info()
+
+    params = pd.DataFrame([{
+        'threads': 256,
+        'generations': 1000,
+        'exchange-interval': 50,
+        'exchange-count': 2,
+        'mutant': .10,
+        'log-step': 25,
+    }])
+    params = params.merge(pd.DataFrame({'pop-size': [128, 256, 512]}),
+                          how='cross')
+    params = params.merge(pd.DataFrame({'pop-count': [2, 3, 4]}), how='cross')
+    params = params.merge(pd.DataFrame({'elite': [.10, .20, .30]}), how='cross')
+    params = params.merge(pd.DataFrame({'rhoe': [.60, .75, .90]}), how='cross')
+
     results = itertools.chain(
+        # experiment(
+        #     tool='brkga-api',
+        #     problems=['scp', 'tsp', 'cvrp_greedy', 'cvrp'],
+        #     decoders=['cpu'],
+        #     test_count=TEST_COUNT,
+        # ),
+        # experiment(
+        #     tool='gpu-brkga',
+        #     problems=['scp', 'cvrp_greedy', 'cvrp'],
+        #     decoders=['cpu', 'gpu'],
+        #     test_count=TEST_COUNT,
+        # ),
+        # experiment(
+        #     tool='gpu-brkga-fix',
+        #     problems=['scp', 'cvrp_greedy', 'cvrp'],
+        #     decoders=['cpu', 'gpu'],
+        #     test_count=TEST_COUNT,
+        # ),
+        # experiment(
+        #     tool='brkga-cuda-1.0',
+        #     problems=['tsp', 'cvrp_greedy', 'cvrp'],
+        #     decoders=['cpu', 'gpu', 'gpu-permutation'],
+        #     test_count=TEST_COUNT,
+        # ),
+        # experiment(
+        #     tool='brkga-cuda-1.0',
+        #     problems=['scp'],
+        #     decoders=['cpu', 'gpu'],
+        #     test_count=TEST_COUNT,
+        # ),
         experiment(
-            tool='brkga-api',
-            problems=['scp', 'tsp', 'cvrp_greedy', 'cvrp'],
+            tool='brkga-cuda-2.0',
+            problems=['scp'],
             decoders=['cpu'],
-            test_count=TEST_COUNT,
-        ),
-        experiment(
-            tool='gpu-brkga',
-            problems=['scp', 'cvrp_greedy', 'cvrp'],
-            decoders=['cpu', 'gpu'],
-            test_count=TEST_COUNT,
-        ),
-        experiment(
-            tool='gpu-brkga-fix',
-            problems=['scp', 'cvrp_greedy', 'cvrp'],
-            decoders=['cpu', 'gpu'],
-            test_count=TEST_COUNT,
-        ),
-        experiment(
-            tool='brkga-cuda-1.0',
-            problems=['tsp', 'cvrp_greedy', 'cvrp'],
-            decoders=['cpu', 'gpu', 'gpu-permutation'],
-            test_count=TEST_COUNT,
-        ),
-        experiment(
-            tool='brkga-cuda-1.0',
-            problems=['scp'],
-            decoders=['cpu', 'gpu'],
-            test_count=TEST_COUNT,
+            parameters=params.to_dict('records'),
+            test_count=1,
         ),
         experiment(
             tool='brkga-cuda-2.0',
-            problems=['tsp', 'cvrp_greedy', 'cvrp'],
+            problems=['tsp', 'cvrp', 'cvrp_greedy'],
             decoders=[
-                'cpu', 'cpu-permutation', 'all-cpu', 'all-cpu-permutation',
-                'gpu', 'gpu-permutation', 'all-gpu', 'all-gpu-permutation',
+                'cpu-permutation',
             ],
-            test_count=TEST_COUNT,
-        ),
-        experiment(
-            tool='brkga-cuda-2.0',
-            problems=['scp'],
-            decoders=['cpu', 'all-cpu', 'gpu', 'all-gpu'],
-            test_count=TEST_COUNT,
+            parameters=params.to_dict('records'),
+            test_count=1,
         ),
     )
 
