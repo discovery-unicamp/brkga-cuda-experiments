@@ -9,6 +9,8 @@ __pycache__
 build*
 core
 errors.txt
+logs.txt
+perf.*
 prof.txt
 Tweaks.hpp
 *.qdrep
