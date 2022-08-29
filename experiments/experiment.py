@@ -212,12 +212,17 @@ def __shell(cmd: str, get: bool = True) -> str:
 def experiment(
         parameters: Iterable[Dict[str, Any]],
 ) -> Iterable[Dict[str, str]]:
+    UNUSED_PARAMS = {'tool', 'problem', 'problem-name', 'instance-name'}
     for params in parameters:
         executable = compile_optimizer(params['tool'], params['problem'])
-        params['instance'] = get_instance_path(params['problem'],
+        params['instance'] = get_instance_path(params['problem-name'],
                                                params['instance-name'])
 
-        result = __run_test(executable, params)
+        test_params = {
+            name: param
+            for name, param in params.items() if name not in UNUSED_PARAMS
+        }
+        result = __run_test(executable, test_params)
         if result is not None:
             result['tool'] = params['tool']
             result['problem'] = params['problem']
@@ -227,10 +232,12 @@ def experiment(
 
 def __run_test(
         executable: Path,
-        params: Dict[str, Union[str, float, int]],
+        params: Dict[str, Any],
 ) -> Optional[Dict[str, str]]:
-    parsed_params = {key: __parse_param(value)
-                     for key, value in params.items()}
+    parsed_params = {
+        key: str(round(value, 6) if isinstance(value, float) else value)
+        for key, value in params.items()
+    }
 
     cmd = str(executable.absolute())
     cmd += ''.join(f' --{arg} {value}' for arg, value in parsed_params.items())
@@ -329,14 +336,15 @@ def main():
         experiment(__build_params(
             tool='brkga-cuda-2.0',
             problems=['scp'],
-            decoders=['cpu'],
+            decoders=['cpu', 'all-cpu', 'gpu', 'all-gpu'],
             test_count=TEST_COUNT,
         )),
         experiment(__build_params(
             tool='brkga-cuda-2.0',
             problems=['tsp', 'cvrp', 'cvrp_greedy'],
             decoders=[
-                'cpu-permutation',
+                'cpu', 'all-cpu', 'cpu-permutation', 'all-cpu-permutation',
+                'gpu', 'all-gpu', 'gpu-permutation', 'all-gpu-permutation',
             ],
             test_count=TEST_COUNT,
         )),
