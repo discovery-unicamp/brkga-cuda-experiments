@@ -124,44 +124,44 @@ def main():
     # Execute here to avoid changes by the user.
     info = __get_system_info()
 
-    results = itertools.chain(
-        # __experiment(__build_params(
+    results = __experiment(itertools.chain(
+        # __build_params(
         #     tool='brkga-api',
         #     problems=['scp', 'tsp', 'cvrp_greedy', 'cvrp'],
         #     decoders=['cpu'],
         #     test_count=TEST_COUNT,
-        # )),
-        # __experiment(__build_params(
+        # ),
+        # __build_params(
         #     tool='gpu-brkga',
         #     problems=['scp', 'cvrp_greedy', 'cvrp'],
         #     decoders=['cpu', 'gpu'],
         #     test_count=TEST_COUNT,
-        # )),
-        # __experiment(__build_params(
+        # ),
+        # __build_params(
         #     tool='gpu-brkga-fix',
         #     problems=['scp', 'cvrp_greedy', 'cvrp'],
         #     decoders=['cpu', 'gpu'],
         #     test_count=TEST_COUNT,
-        # )),
-        # __experiment(__build_params(
+        # ),
+        # __build_params(
         #     tool='brkga-cuda-1.0',
         #     problems=['tsp', 'cvrp_greedy', 'cvrp'],
         #     decoders=['cpu', 'gpu', 'gpu-permutation'],
         #     test_count=TEST_COUNT,
-        # )),
-        # __experiment(__build_params(
+        # ),
+        # __build_params(
         #     tool='brkga-cuda-1.0',
         #     problems=['scp'],
         #     decoders=['cpu', 'gpu'],
         #     test_count=TEST_COUNT,
-        # )),
-        __experiment(__build_params(
+        # ),
+        __build_params(
             tool='brkga-cuda-2.0',
             problems=['scp'],
             decoders=['cpu', 'all-cpu', 'gpu', 'all-gpu'],
             test_count=TEST_COUNT,
-        )),
-        __experiment(__build_params(
+        ),
+        __build_params(
             tool='brkga-cuda-2.0',
             problems=['tsp', 'cvrp', 'cvrp_greedy'],
             decoders=[
@@ -169,8 +169,8 @@ def main():
                 'gpu', 'all-gpu', 'gpu-permutation', 'all-gpu-permutation',
             ],
             test_count=TEST_COUNT,
-        )),
-    )
+        ),
+    ))
 
     __save_results(info, results)
 
@@ -182,7 +182,7 @@ def __get_system_info() -> Dict[str, str]:
         'commit': shell('git log --format="%H" -n 1'),
         'system': shell('uname -v'),
         'cpu': shell('cat /proc/cpuinfo | grep "model name"'
-                       ' | uniq | cut -d" " -f 3-'),
+                     ' | uniq | cut -d" " -f 3-'),
         'host-memory':
             shell('grep MemTotal /proc/meminfo | awk \'{print $2 / 1024}\'')
             + 'MiB',
@@ -254,6 +254,14 @@ def __experiment(
             name: param
             for name, param in params.items() if name not in UNUSED_PARAMS
         }
+
+        logging.info("Test %s on problem %s (%s) with instance %s",
+                     params['tool'], params['problem-name'].upper(),
+                     params['problem'], params['instance-name'])
+        logging.debug("Parameters:\n%s",
+                      '\n'.join(f"\t- {name} = {value}"
+                                for name, value in test_params))
+
         result = __run_test(executable, test_params)
         if result is not None:
             result['tool'] = params['tool']
@@ -275,8 +283,8 @@ def __cmake(
         tweaks: List[str] = [],
 ) -> Path:
     tweaks_content = (
-        '#pragma once\n'
-        + ''.join(f'#define {tweak}\n' for tweak in tweaks)
+        "#pragma once\n"
+        + ''.join(f"#define {tweak}\n" for tweak in tweaks)
     )
     try:
         with open(TWEAKS_FILE_PATH, 'r') as tweak_file:
@@ -323,7 +331,7 @@ def __run_test(
         if not CATCH_FAILURES:
             raise
 
-        logging.warning('Test failed')
+        logging.warning("Test failed")
         with open('errors.txt', 'a') as errors:
             errors.write(traceback.format_exc() + '\n')
             errors.write(f'=======\n\n')
@@ -341,7 +349,7 @@ def __save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]])
         results.to_csv(backup_file, index=False, sep='\t')
 
     if results.empty:
-        logging.warning('All tests failed')
+        logging.warning("All tests failed")
         return
 
     test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
