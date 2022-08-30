@@ -29,7 +29,8 @@ target_link_libraries(brkga-cuda-1.0 PUBLIC OpenMP::OpenMP_CXX PUBLIC -lcurand -
 # The library
 include_directories(SYSTEM ${BRKGA_CUDA_1_ROOT})
 
-add_library(brkga-cuda-1.0-lib INTERFACE
+add_library(brkga-cuda-1.0-lib INTERFACE)
+target_sources(brkga-cuda-1.0-lib INTERFACE
   ${BRKGA_CUDA_1_ROOT}/brkga-cuda-api/src/BRKGA.cu
   ${BRKGA_CUDA_1_ROOT}/brkga-cuda-api/src/BRKGA.h
   ${BRKGA_CUDA_1_ROOT}/brkga-cuda-api/src/CommonStructs.h

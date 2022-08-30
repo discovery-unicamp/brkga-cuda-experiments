@@ -56,7 +56,8 @@ target_link_libraries(gpu-brkga-fix PUBLIC OpenMP::OpenMP_CXX PUBLIC -lcurand -f
 # gpu-brkga
 include_directories(SYSTEM ${GPU_BRKGA_ROOT})
 
-add_library(gpu-brkga-lib INTERFACE
+add_library(gpu-brkga-lib INTERFACE)
+target_sources(gpu-brkga-lib INTERFACE
   ${GPU_BRKGA_ROOT}/GPU-BRKGA/cuda_errorchecking.h
   ${GPU_BRKGA_ROOT}/GPU-BRKGA/GPUBRKGA.cuh
   ${GPU_BRKGA_ROOT}/GPU-BRKGA/Individual.h
