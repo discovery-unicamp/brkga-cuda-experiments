@@ -155,8 +155,13 @@ int main(int argc, char** argv) {
     brkga.evolve();
     if (gen % params.exchangeBestInterval == 0 && gen != params.generations)
       brkga.exchangeElite(params.exchangeBestCount);
-    if (gen % 10 == 0)
-      brkga.runPathRelinking(params.getNumberOfElites(), 0, 10);
+    if (gen % 10 == 0) {
+      std::vector<std::pair<unsigned, unsigned>> pairs;
+      const auto nElites = params.getNumberOfElites();
+      for (unsigned k = 0; k < nElites; ++k)
+        pairs.emplace_back(k, nElites + (nElites - k - 1));
+      brkga.runPathRelinking(pairs, 2);
+    }
     if (gen % params.logStep == 0)
       convergence.push_back({brkga.getBestFitness(), timer.seconds()});
   }
