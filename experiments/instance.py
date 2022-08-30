@@ -19,7 +19,7 @@ def get_instance_path(problem: str, instance: str) -> Path:
         group = 'tsplib'
 
     if ext is None:
-        raise ValueError(f'Unknown problem `{instance}`')
+        raise ValueError(f'Unknown problem `{problem}`')
     if group is None:
         raise ValueError(f'Unknown instance set `{instance}`')
 

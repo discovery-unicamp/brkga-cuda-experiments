@@ -3,12 +3,12 @@ import itertools
 import logging
 import os
 from pathlib import Path
-import subprocess
 import traceback
 from typing import Any, Dict, Iterable, List, Optional, Union
 import pandas as pd
 
 from instance import get_instance_path
+from shell import CATCH_FAILURES, shell
 
 
 #             threads exchange-interval exchange-count pop-count pop-size elite   mutant  rhoe
@@ -27,7 +27,6 @@ logging.basicConfig(
     datefmt='%Y-%m-%dT%H:%M:%S',
 )
 
-CATCH_FAILURES = False
 DEVICE = int(os.environ['DEVICE'])
 TEST_COUNT = 10
 BUILD_TYPE = 'release'
@@ -121,228 +120,82 @@ INSTANCES = {
 }
 
 
-class ShellError(RuntimeError):
-    def __init__(self, stderr: str):
-        stderr = stderr.strip()
-        stderr = f':\n{stderr}' if stderr else ''
-        super().__init__('Shell exited with error' + stderr)
-
-
-def compile_optimizer(target: str, problem: str) -> Path:
-    return __cmake(str(SOURCE_PATH.absolute()), BUILD_TYPE, target,
-                   tweaks=[problem.upper()])
-
-
-def __cmake(
-        src: str,
-        build: str,
-        target: str,
-        threads: int = 6,
-        tweaks: List[str] = [],
-) -> Path:
-    tweaks_content = (
-        '#pragma once\n'
-        + ''.join(f'#define {tweak}\n' for tweak in tweaks)
-    )
-    try:
-        with open(TWEAKS_FILE_PATH, 'r') as tweak_file:
-            existing_tweaks_content = tweak_file.read()
-    except FileNotFoundError:
-        existing_tweaks_content = ''
-
-    if tweaks_content == existing_tweaks_content:
-        logging.info("Tweaks file hasn't changed")
-    else:
-        with open(TWEAKS_FILE_PATH, 'w') as tweak_file:
-            tweak_file.write(tweaks_content)
-
-    folder = f'build-{build}'
-    __shell(f'cmake -DCMAKE_BUILD_TYPE={build} -B{folder} {src}', get=False)
-    __shell(f'cmake --build {folder} --target {target} -j{threads}', get=False)
-    return Path(folder, target)
-
-
-def __get_system_info() -> Dict[str, str]:
-    # Tell to git on docker that this is safe.
-    __shell('git config --global --add safe.directory /brkga')
-    return {
-        'commit': __shell('git log --format="%H" -n 1'),
-        'system': __shell('uname -v'),
-        'cpu': __shell('cat /proc/cpuinfo | grep "model name"'
-                       ' | uniq | cut -d" " -f 3-'),
-        'host-memory':
-            __shell('grep MemTotal /proc/meminfo | awk \'{print $2 / 1024}\'')
-            + 'MiB',
-        'gpu': (__shell('lspci | grep " VGA " | cut -d" " -f 5-')
-                .split('\n')[DEVICE]
-                .strip()),
-        'gpu-memory':
-            (__shell('lshw -C display | grep product | cut -d":" -f2-')
-             .split('\n')[DEVICE]
-             .strip()),
-        'nvcc': __shell('nvcc --version | grep "release" | grep -o "V.*"'),
-        'g++': __shell('g++ --version | grep "g++"'),
-    }
-
-
-def __shell(cmd: str, get: bool = True) -> str:
-    logging.debug(f'Execute command `{cmd}`')
-    output = ''
-    errors = ''
-    try:
-        stdout = subprocess.PIPE if get else None
-        stderr = subprocess.PIPE if CATCH_FAILURES else None
-        process = subprocess.run(cmd, stdout=stdout, stderr=stderr, text=True,
-                                 shell=True, check=True)
-        output = process.stdout.strip() if get else ''
-        errors = process.stderr.strip() if CATCH_FAILURES else ''
-        if errors:
-            logging.warning(f'Script stderr:\n{errors}\n=======')
-    except subprocess.CalledProcessError as error:
-        output = error.stdout.strip() if get else ''
-        errors = error.stderr.strip() if CATCH_FAILURES else ''
-        raise ShellError(errors)
-    finally:
-        if output:
-            logging.debug(f'Script output:\n{output}\n=======')
-
-    return output
-
-
-def experiment(
-        parameters: Iterable[Dict[str, Any]],
-) -> Iterable[Dict[str, str]]:
-    for params in parameters:
-        executable = compile_optimizer(params['tool'], params['problem'])
-        params['instance'] = get_instance_path(params['problem'],
-                                               params['instance-name'])
-
-        result = __run_test(executable, params)
-        if result is not None:
-            result['tool'] = params['tool']
-            result['problem'] = params['problem']
-            result['instance'] = params['instance-name']
-            yield result
-
-
-def __run_test(
-        executable: Path,
-        params: Dict[str, Union[str, float, int]],
-) -> Optional[Dict[str, str]]:
-    parsed_params = {key: __parse_param(value)
-                     for key, value in params.items()}
-
-    cmd = str(executable.absolute())
-    cmd += ''.join(f' --{arg} {value}' for arg, value in parsed_params.items())
-
-    try:
-        result = dict(tuple(r.split('=')) for r in __shell(cmd).split())
-        if 'convergence' not in result or result['convergence'] == '[]':
-            result['convergence'] = '?'
-
-        return {
-            **parsed_params,
-            'ans': result['ans'],
-            'elapsed': result['elapsed'],
-            'convergence': result.get('convergence', '?'),
-        }
-    except Exception:
-        if not CATCH_FAILURES:
-            raise
-
-        logging.warning('Test failed')
-        with open('errors.txt', 'a') as errors:
-            errors.write(traceback.format_exc() + '\n')
-            errors.write(f'=======\n\n')
-
-        return None
-
-
-def __parse_param(value: Union[int, float, str]) -> str:
-    if isinstance(value, float):
-        return str(round(value, 6))
-    return str(value)
-
-
-def save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]]):
-    OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
-
-    backup_file = OUTPUT_PATH.joinpath('.backup.tsv')
-    results = pd.DataFrame()
-    for res in iter_results:
-        results = pd.concat((results, pd.DataFrame([{**res, **info}])))
-        results.to_csv(backup_file, index=False, sep='\t')
-
-    if results.empty:
-        logging.warning('All tests failed')
-        return
-
-    test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
-    results['test_time'] = test_time
-
-    # Define the first columns of the .tsv
-    # The others are still written to the file after these ones
-    first_columns = ['test_time', 'commit', 'tool',
-                     'problem', 'instance', 'ans', 'elapsed', 'seed']
-    other_columns = [c for c in results.columns if c not in first_columns]
-    results = results[first_columns + other_columns]
-
-    output = OUTPUT_PATH.joinpath(f'{test_time}.tsv')
-    results.to_csv(output, index=False, sep='\t')
-
-
 def main():
     # Execute here to avoid changes by the user.
     info = __get_system_info()
 
-    results = itertools.chain(
-        # experiment(__build_params(
+    results = __experiment(itertools.chain(
+        # __build_params(
         #     tool='brkga-api',
         #     problems=['scp', 'tsp', 'cvrp_greedy', 'cvrp'],
         #     decoders=['cpu'],
         #     test_count=TEST_COUNT,
-        # )),
-        # experiment(__build_params(
+        # ),
+        # __build_params(
         #     tool='gpu-brkga',
         #     problems=['scp', 'cvrp_greedy', 'cvrp'],
         #     decoders=['cpu', 'gpu'],
         #     test_count=TEST_COUNT,
-        # )),
-        # experiment(__build_params(
+        # ),
+        # __build_params(
         #     tool='gpu-brkga-fix',
         #     problems=['scp', 'cvrp_greedy', 'cvrp'],
         #     decoders=['cpu', 'gpu'],
         #     test_count=TEST_COUNT,
-        # )),
-        # experiment(__build_params(
+        # ),
+        # __build_params(
         #     tool='brkga-cuda-1.0',
         #     problems=['tsp', 'cvrp_greedy', 'cvrp'],
         #     decoders=['cpu', 'gpu', 'gpu-permutation'],
         #     test_count=TEST_COUNT,
-        # )),
-        # experiment(__build_params(
+        # ),
+        # __build_params(
         #     tool='brkga-cuda-1.0',
         #     problems=['scp'],
         #     decoders=['cpu', 'gpu'],
         #     test_count=TEST_COUNT,
-        # )),
-        experiment(__build_params(
+        # ),
+        __build_params(
             tool='brkga-cuda-2.0',
             problems=['scp'],
-            decoders=['cpu'],
+            decoders=['cpu', 'all-cpu', 'gpu', 'all-gpu'],
             test_count=TEST_COUNT,
-        )),
-        experiment(__build_params(
+        ),
+        __build_params(
             tool='brkga-cuda-2.0',
             problems=['tsp', 'cvrp', 'cvrp_greedy'],
             decoders=[
-                'cpu-permutation',
+                'cpu', 'all-cpu', 'cpu-permutation', 'all-cpu-permutation',
+                'gpu', 'all-gpu', 'gpu-permutation', 'all-gpu-permutation',
             ],
             test_count=TEST_COUNT,
-        )),
-    )
+        ),
+    ))
 
-    save_results(info, results)
+    __save_results(info, results)
+
+
+def __get_system_info() -> Dict[str, str]:
+    # Tell to git on docker that this is safe.
+    shell('git config --global --add safe.directory /brkga')
+    return {
+        'commit': shell('git log --format="%H" -n 1'),
+        'system': shell('uname -v'),
+        'cpu': shell('cat /proc/cpuinfo | grep "model name"'
+                     ' | uniq | cut -d" " -f 3-'),
+        'host-memory':
+            shell('grep MemTotal /proc/meminfo | awk \'{print $2 / 1024}\'')
+            + 'MiB',
+        'gpu': (shell('lspci | grep " VGA " | cut -d" " -f 5-')
+                .split('\n')[DEVICE]
+                .strip()),
+        'gpu-memory':
+            (shell('lshw -C display | grep product | cut -d":" -f2-')
+             .split('\n')[DEVICE]
+             .strip()),
+        'nvcc': shell('nvcc --version | grep "release" | grep -o "V.*"'),
+        'g++': shell('g++ --version | grep "g++"'),
+    }
 
 
 def __build_params(
@@ -356,7 +209,7 @@ def __build_params(
         'problem': problems,
         'decoder': decoders,
         'seed': range(1, test_count + 1),
-        'omp-threads': int(__shell('nproc')),
+        'omp-threads': int(shell('nproc')),
         'threads': 256,
         'generations': 1000,
         'pop-count': 3,
@@ -386,6 +239,131 @@ def __combinations(of: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
     dict_of_lists: Dict[str, Any] = {k: get(v) for k, v in of.items()}
     keys, values = zip(*dict_of_lists.items())
     return (dict(zip(keys, v)) for v in itertools.product(*values))
+
+
+def __experiment(
+        parameters: Iterable[Dict[str, Any]],
+) -> Iterable[Dict[str, str]]:
+    UNUSED_PARAMS = {'tool', 'problem', 'problem-name', 'instance-name'}
+    for params in parameters:
+        executable = __compile_optimizer(params['tool'], params['problem'])
+        params['instance'] = get_instance_path(params['problem-name'],
+                                               params['instance-name'])
+
+        test_params = {
+            name: param
+            for name, param in params.items() if name not in UNUSED_PARAMS
+        }
+
+        logging.info("Test %s on problem %s (%s) with instance %s",
+                     params['tool'], params['problem-name'].upper(),
+                     params['problem'], params['instance-name'])
+        logging.debug("Parameters:\n%s",
+                      '\n'.join(f"\t- {name} = {value}"
+                                for name, value in test_params))
+
+        result = __run_test(executable, test_params)
+        if result is not None:
+            result['tool'] = params['tool']
+            result['problem'] = params['problem']
+            result['instance'] = params['instance-name']
+            yield result
+
+
+def __compile_optimizer(target: str, problem: str) -> Path:
+    return __cmake(str(SOURCE_PATH.absolute()), BUILD_TYPE, target,
+                   tweaks=[problem.upper()])
+
+
+def __cmake(
+        src: str,
+        build: str,
+        target: str,
+        threads: int = 6,
+        tweaks: List[str] = [],
+) -> Path:
+    tweaks_content = (
+        "#pragma once\n"
+        + ''.join(f"#define {tweak}\n" for tweak in tweaks)
+    )
+    try:
+        with open(TWEAKS_FILE_PATH, 'r') as tweak_file:
+            existing_tweaks_content = tweak_file.read()
+    except FileNotFoundError:
+        existing_tweaks_content = ''
+
+    if tweaks_content == existing_tweaks_content:
+        logging.info("Tweaks file hasn't changed")
+    else:
+        with open(TWEAKS_FILE_PATH, 'w') as tweak_file:
+            tweak_file.write(tweaks_content)
+
+    folder = f'build-{build}'
+    shell(f'cmake -DCMAKE_BUILD_TYPE={build} -B{folder} {src}', get=False)
+    shell(f'cmake --build {folder} --target {target} -j{threads}', get=False)
+    return Path(folder, target)
+
+
+def __run_test(
+        executable: Path,
+        params: Dict[str, Any],
+) -> Optional[Dict[str, str]]:
+    parsed_params = {
+        key: str(round(value, 6) if isinstance(value, float) else value)
+        for key, value in params.items()
+    }
+
+    cmd = str(executable.absolute())
+    cmd += ''.join(f' --{arg} {value}' for arg, value in parsed_params.items())
+
+    try:
+        result = dict(tuple(r.split('=')) for r in shell(cmd).split())
+        if 'convergence' not in result or result['convergence'] == '[]':
+            result['convergence'] = '?'
+
+        return {
+            **parsed_params,
+            'ans': result['ans'],
+            'elapsed': result['elapsed'],
+            'convergence': result.get('convergence', '?'),
+        }
+    except Exception:
+        if not CATCH_FAILURES:
+            raise
+
+        logging.warning("Test failed")
+        with open('errors.txt', 'a') as errors:
+            errors.write(traceback.format_exc() + '\n')
+            errors.write(f'=======\n\n')
+
+        return None
+
+
+def __save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]]):
+    OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
+
+    backup_file = OUTPUT_PATH.joinpath('.backup.tsv')
+    results = pd.DataFrame()
+    for res in iter_results:
+        results = pd.concat((results, pd.DataFrame([{**res, **info}])))
+        results.to_csv(backup_file, index=False, sep='\t')
+
+    if results.empty:
+        logging.warning("All tests failed")
+        return
+
+    test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
+    results['test_time'] = test_time
+
+    # Define the first columns of the .tsv
+    # The others are still written to the file after these ones
+    first_columns = ['test_time', 'commit', 'tool',
+                     'problem', 'instance', 'ans', 'elapsed', 'seed']
+    other_columns = [c for c in results.columns if c not in first_columns]
+    results = results[first_columns + other_columns]
+
+    output = OUTPUT_PATH.joinpath(f'{test_time}.tsv')
+    results.to_csv(output, index=False, sep='\t')
 
 
 if __name__ == '__main__':
