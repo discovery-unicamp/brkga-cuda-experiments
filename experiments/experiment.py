@@ -260,7 +260,7 @@ def __experiment(
                      params['problem'], params['instance-name'])
         logging.debug("Parameters:\n%s",
                       '\n'.join(f"\t- {name} = {value}"
-                                for name, value in test_params))
+                                for name, value in test_params.items()))
 
         result = __run_test(executable, test_params)
         if result is not None:
