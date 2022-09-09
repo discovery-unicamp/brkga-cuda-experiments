@@ -46,6 +46,8 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
       params.seed = std::stoi(value);
     } else if (arg == "--decoder") {
       params.decoder = value;
+    } else if (arg == "--similarity-threshold") {
+      params.similarityThreshold = std::stof(value);
     } else if (arg == "--threads") {
       params.threadsPerBlock = std::stoi(value);
     } else if (arg == "--omp-threads") {

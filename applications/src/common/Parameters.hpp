@@ -19,6 +19,7 @@ struct Parameters {
   unsigned exchangeBestCount = 0;
   unsigned seed = 0;
   std::string decoder;
+  float similarityThreshold = 0;
   unsigned threadsPerBlock = 0;
   unsigned ompThreads = 0;
   unsigned logStep = 0;

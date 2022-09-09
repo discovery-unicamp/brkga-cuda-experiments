@@ -151,17 +151,20 @@ int main(int argc, char** argv) {
   std::vector<std::pair<float, float>> convergence;
   convergence.push_back({brkga.getBestFitness(), timer.seconds()});
 
-  for (unsigned gen = 1; gen <= params.generations; ++gen) {
+  for (unsigned gen = 1; timer.seconds() < 3 * 60; ++gen) {
     brkga.evolve();
-    if (gen % params.exchangeBestInterval == 0 && gen != params.generations)
+    if (gen % params.exchangeBestInterval == 0 && gen != params.generations) {
       brkga.exchangeElite(params.exchangeBestCount);
-    if (gen % 10 == 0) {
-      std::vector<std::pair<unsigned, unsigned>> pairs;
-      const auto nElites = params.getNumberOfElites();
-      for (unsigned k = 0; k < nElites; ++k)
-        pairs.emplace_back(k, nElites + (nElites - k - 1));
-      brkga.runPathRelinking(pairs, 2);
+      brkga.removeSimilarElites(box::EpsilonFilter(
+          instance.chromosomeLength(), params.similarityThreshold, 1e-7f));
     }
+    // if (gen % 10 == 0) {
+    //   brkga.runPathRelinking();
+    //   brkga.removeSimilarElites(
+    //       box::EpsilonFilter(instance.chromosomeLength(), .94f, 1e-7f));
+    // }
+    // box::logger::info("Generation", gen);
+    // brkga.printStatus();
     if (gen % params.logStep == 0)
       convergence.push_back({brkga.getBestFitness(), timer.seconds()});
   }
