@@ -9,6 +9,9 @@ class ScpDecoder : public box::Decoder {
 public:
   using box::Decoder::decode;
 
+  ScpDecoder()
+      : instance(nullptr), dCosts(nullptr), dSets(nullptr), dSetEnd(nullptr) {}
+
   ScpDecoder(ScpInstance* instance);
 
   ~ScpDecoder();

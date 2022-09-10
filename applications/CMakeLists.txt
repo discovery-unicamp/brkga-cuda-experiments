@@ -30,6 +30,8 @@ SET(COMMON_SRC
   ${CMAKE_CURRENT_LIST_DIR}/src/common/Parameters.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/Point.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/Point.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/common/Runner.cu
+  ${CMAKE_CURRENT_LIST_DIR}/src/common/Runner.hpp
 )
 
 SET(CUDA_COMMON_SRC

@@ -9,6 +9,8 @@ class CvrpDecoder : public box::Decoder {
 public:
   using box::Decoder::decode;
 
+  CvrpDecoder() : instance(nullptr), dDemands(nullptr), dDistances(nullptr) {}
+
   CvrpDecoder(CvrpInstance* instance);
 
   ~CvrpDecoder();

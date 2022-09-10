@@ -9,6 +9,8 @@ class TspDecoder : public box::Decoder {
 public:
   using box::Decoder::decode;
 
+  TspDecoder() : instance(nullptr), dDistances(nullptr) {}
+
   TspDecoder(TspInstance* instance);
 
   ~TspDecoder();
