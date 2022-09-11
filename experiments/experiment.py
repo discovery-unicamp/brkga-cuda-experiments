@@ -191,12 +191,12 @@ def __get_system_info() -> Dict[str, str]:
                      ' | uniq | cut -d" " -f 3-'),
         'cpu-memory':
             shell("grep MemTotal /proc/meminfo | awk '{print $2 / 1024}'"),
-        'gpu': (shell('lspci | grep " VGA " | cut -d" " -f 5-')
-                .split('\n')[DEVICE]
-                .strip()),
+        'gpu':
+            shell("nvidia-smi -L | grep -oP 'NVIDIA.*(?= \(UUID)'")
+            .split('\n')[DEVICE],
         'gpu-memory': shell(f"nvidia-smi -i {DEVICE}"
                             " | grep -m1 -oP '[0-9]*(?=MiB)'"
-                            " | tail -n1").strip(),
+                            " | tail -n1"),
         'nvcc': shell('nvcc --version | grep "release" | grep -o "V.*"'),
         'g++': shell('g++ --version | grep "g++"'),
     }
