@@ -7,6 +7,7 @@ import traceback
 from typing import Any, Dict, Iterable, List, Optional, Union
 import pandas as pd
 
+from result import save_results
 from instance import get_instance_path
 from shell import CATCH_FAILURES, shell
 
@@ -367,8 +368,7 @@ def __save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]])
     other_columns = [c for c in results.columns if c not in first_columns]
     results = results[first_columns + other_columns]
 
-    output = OUTPUT_PATH.joinpath(f'{test_time}.tsv')
-    results.to_csv(output, index=False, sep='\t')
+    save_results(results, OUTPUT_PATH.joinpath(f'{test_time}.tsv'))
 
 
 if __name__ == '__main__':
