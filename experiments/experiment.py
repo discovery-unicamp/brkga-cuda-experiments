@@ -189,9 +189,8 @@ def __get_system_info() -> Dict[str, str]:
         'system': shell('uname -v'),
         'cpu': shell('cat /proc/cpuinfo | grep "model name"'
                      ' | uniq | cut -d" " -f 3-'),
-        'host-memory':
-            shell('grep MemTotal /proc/meminfo | awk \'{print $2 / 1024}\'')
-            + 'MiB',
+        'cpu-memory':
+            shell("grep MemTotal /proc/meminfo | awk '{print $2 / 1024}'"),
         'gpu': (shell('lspci | grep " VGA " | cut -d" " -f 5-')
                 .split('\n')[DEVICE]
                 .strip()),
