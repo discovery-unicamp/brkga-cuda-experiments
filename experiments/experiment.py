@@ -54,7 +54,7 @@ INSTANCES = {
         # 'X-n480-k70',
         # 'X-n548-k50',
         # 'X-n586-k159',
-        'X-n599-k92',
+        # 'X-n599-k92',
         # 'X-n655-k131',
         # # The following doesn't work with the original GPU-BRKGA code
         # 'X-n733-k159',
@@ -65,18 +65,18 @@ INSTANCES = {
         # 'X-n916-k207',
         # 'X-n957-k87',
         # 'X-n979-k58',
-        'X-n1001-k43',
+        # 'X-n1001-k43',
     ],
     'scp': [
         'scp41',
         # 'scp42',
         # 'scp43',
         # 'scp44',
-        'scp45',
+        # 'scp45',
         # 'scp46',
         # 'scp47',
         # 'scp48',
-        'scp49',
+        # 'scp49',
         # Missing instances:
         # 'scp51',
         # 'scp52',
@@ -109,13 +109,13 @@ INSTANCES = {
         # 'ja9847',
         # 'gr9882',
         # 'kz9976',
-        'fi10639',
+        # 'fi10639',
         # 'mo14185',
         # 'ho14473',
         # 'it16862',
         # 'vm22775',
         # 'sw24978',
-        'bm33708',
+        # 'bm33708',
     ]
 }
 
@@ -195,10 +195,9 @@ def __get_system_info() -> Dict[str, str]:
         'gpu': (shell('lspci | grep " VGA " | cut -d" " -f 5-')
                 .split('\n')[DEVICE]
                 .strip()),
-        'gpu-memory':
-            (shell('lshw -C display | grep product | cut -d":" -f2-')
-             .split('\n')[DEVICE]
-             .strip()),
+        'gpu-memory': shell(f"nvidia-smi -i {DEVICE}"
+                            " | grep -m1 -oP '[0-9]*(?=MiB)'"
+                            " | tail -n1").strip(),
         'nvcc': shell('nvcc --version | grep "release" | grep -o "V.*"'),
         'g++': shell('g++ --version | grep "g++"'),
     }
@@ -217,16 +216,16 @@ def __build_params(
         'seed': range(1, test_count + 1),
         'omp-threads': int(shell('nproc')),
         'threads': 256,
-        'generations': 1000,
+        'generations': 100,
         'pop-count': 3,
         'pop-size': 256,
-        'rhoe': [.75, .85, .95],
-        'elite': [.02, .04, .06, .08, .10],
+        'rhoe': .75,
+        'elite': .10,
         'mutant': .10,
         'exchange-interval': 50,
         'exchange-count': 2,
-        'similarity-threshold': [.90, .93, .96, .99],
-        'log-step': 1,
+        'similarity-threshold': .99,
+        'log-step': 25,
     }
     for params in __combinations(param_combinations):
         params['problem-name'] = PROBLEM_NAME[params['problem']]
