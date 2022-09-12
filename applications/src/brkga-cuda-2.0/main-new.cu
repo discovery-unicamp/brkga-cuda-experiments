@@ -55,8 +55,6 @@ public:
                    .ompThreads(params.ompThreads)
                    .build()) {}
 
-  bool usesGpu() const override { return true; }
-
   bool stop() const override { return generation >= params.generations; }
 
   box::Brkga* getAlgorithm() override { return new box::Brkga(config); }

@@ -13,6 +13,7 @@ ADD_COMPILE_DEFINITIONS(LOG_LEVEL=3)
 SET(BRKGA_API_ROOT "${CMAKE_CURRENT_LIST_DIR}/../toso-brkga-api")
 SET(BRKGA_CUDA_1_ROOT "${CMAKE_CURRENT_LIST_DIR}/../brkga-cuda-1.0")
 SET(BRKGA_CUDA_ROOT "${CMAKE_CURRENT_LIST_DIR}/../brkga-cuda/src")
+SET(BRKGA_MP_IPR_ROOT "${CMAKE_CURRENT_LIST_DIR}/../brkga_mp_ipr_cpp")
 SET(GPU_BRKGA_ROOT "${CMAKE_CURRENT_LIST_DIR}/../GPU-BRKGA")
 
 SET(COMMON_SRC
@@ -22,6 +23,7 @@ SET(COMMON_SRC
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/ScpInstance.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/TspInstance.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/TspInstance.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/common/utils/ThrustSort.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/utils/StringUtils.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/utils/StringUtils.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/Checker.hpp
@@ -30,7 +32,7 @@ SET(COMMON_SRC
   ${CMAKE_CURRENT_LIST_DIR}/src/common/Parameters.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/Point.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/Point.hpp
-  ${CMAKE_CURRENT_LIST_DIR}/src/common/Runner.cu
+  ${CMAKE_CURRENT_LIST_DIR}/src/common/Runner.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/Runner.hpp
 )
 
@@ -42,9 +44,11 @@ SET(CUDA_COMMON_SRC
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/ScpInstance.cuh
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/TspInstance.cu
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/TspInstance.cuh
+  ${CMAKE_CURRENT_LIST_DIR}/src/common/utils/ThrustSort.cu
 )
 
 INCLUDE("${CMAKE_CURRENT_LIST_DIR}/src/brkga-api/CMakeLists.txt")
 INCLUDE("${CMAKE_CURRENT_LIST_DIR}/src/brkga-cuda-1.0/CMakeLists.txt")
 INCLUDE("${CMAKE_CURRENT_LIST_DIR}/src/brkga-cuda-2.0/CMakeLists.txt")
+INCLUDE("${CMAKE_CURRENT_LIST_DIR}/src/brkga-mp-ipr/CMakeLists.txt")
 INCLUDE("${CMAKE_CURRENT_LIST_DIR}/src/gpu-brkga/CMakeLists.txt")

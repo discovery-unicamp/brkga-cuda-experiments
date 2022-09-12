@@ -59,8 +59,6 @@ public:
 
   virtual ~RunnerBase() { delete algorithm; }
 
-  virtual bool usesGpu() const = 0;
-
   virtual bool stop() const = 0;
 
   virtual Algorithm* getAlgorithm() = 0;
