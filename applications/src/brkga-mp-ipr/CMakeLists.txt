@@ -16,8 +16,7 @@ add_executable(brkga-mp-ipr
 )
 
 target_compile_features(brkga-mp-ipr PRIVATE cxx_std_17)
-target_compile_options(brkga-mp-ipr PRIVATE -DUSE_CPP_ONLY)
-target_link_libraries(brkga-cuda-1.0 PUBLIC OpenMP::OpenMP_CXX PUBLIC -fopenmp)
+target_compile_options(brkga-mp-ipr PRIVATE "-DUSE_CPP_ONLY")
 
 # brkga-mp-ipr
 include_directories(SYSTEM ${BRKGA_MP_IPR_ROOT})
@@ -28,5 +27,6 @@ target_sources(brkga-mp-ipr-lib INTERFACE
   ${BRKGA_MP_IPR_ROOT}/brkga_mp_ipr/chromosome.hpp
   ${BRKGA_MP_IPR_ROOT}/brkga_mp_ipr/fitness_type.hpp
 )
+target_link_libraries(brkga-mp-ipr-lib INTERFACE OpenMP::OpenMP_CXX)
 
 target_link_libraries(brkga-mp-ipr LINK_PUBLIC brkga-mp-ipr-lib)
