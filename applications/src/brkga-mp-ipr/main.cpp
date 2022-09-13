@@ -7,6 +7,7 @@
 #include <brkga_mp_ipr/brkga_mp_ipr.hpp>
 
 #include <algorithm>
+#include <cassert>
 #include <vector>
 
 #if defined(TSP)
@@ -37,10 +38,17 @@ inline bool contains(const std::string& str, const std::string& pattern) {
   return str.find(pattern) != std::string::npos;
 }
 
-class BrkgaMPIprRunner : public RunnerBase<BrkgaMPIpr, Instance> {
+class BrkgaMPIprRunner : public RunnerBase<double, BrkgaMPIpr, Instance> {
 public:
+  typedef RunnerBase<double, BrkgaMPIpr, Instance> Base;
+
   BrkgaMPIprRunner(int argc, char** argv)
-      : RunnerBase(argc, argv), decoder(&instance), config() {
+      : Base(argc, argv),
+        bestFitness(1e100),
+        bestChromosome(),
+        decoder(&instance),
+        config() {
+    box::logger::info("Initializing runner");
     if (params.decoder != "cpu") {
       throw std::invalid_argument("Decode type " + params.decoder
                                   + " is not support by BRKGA_MP_IPR");
@@ -68,9 +76,12 @@ public:
   bool stop() const override { return getTimeElapsed() >= 3 * 60; }
 
   BrkgaMPIpr* getAlgorithm() override {
-    auto* algo = new BrkgaMPIpr(decoder, BRKGA::Sense::MINIMIZE, params.seed,
-                                instance.chromosomeLength(), config);
+    box::logger::info("Building the algorithm");
+    auto* algo =
+        new BrkgaMPIpr(decoder, BRKGA::Sense::MINIMIZE, params.seed,
+                       instance.chromosomeLength(), config, params.ompThreads);
 
+    box::logger::debug("Set rhoe to BRKGA-MP-IPR");
     algo->setBiasCustomFunction([this](unsigned r) {
       if (r == 1) return params.rhoe;
       if (r == 2) return 1 - params.rhoe;
@@ -79,24 +90,27 @@ public:
       abort();
     });
 
+    box::logger::debug("Initialize BRKGA-MP-IPR");
     algo->initialize();
+    // Doesn't work without any `evolve` call
+    // updateBest();
+
+    box::logger::debug("The algorithm was built");
     return algo;
   }
 
-  float getBestFitness() override { return (float)algorithm->getBestFitness(); }
+  Base::Fitness getBestFitness() override { return bestFitness; }
 
-  std::vector<float> getBestChromosome() override {
-    std::vector<double> best = algorithm->getBestChromosome();
-    std::vector<float> fBest(best.size());
-    std::transform(best.begin(), best.end(), fBest.begin(),
-                   [](double gene) { return (float)gene; });
-    return fBest;
+  Base::Chromosome getBestChromosome() override { return bestChromosome; }
+
+  void evolve() override {
+    algorithm->evolve();
+    updateBest();
   }
-
-  void evolve() override { algorithm->evolve(); }
 
   void exchangeElites(unsigned count) override {
     algorithm->exchangeElite(count);
+    updateBest();
   }
 
   SortMethod determineSortMethod(const std::string&) const override {
@@ -104,6 +118,20 @@ public:
   }
 
 private:
+  void updateBest() {
+    box::logger::debug("Updating the best solution");
+    const Base::Fitness currentFitness = algorithm->getBestFitness();
+    if (currentFitness < bestFitness) {
+      box::logger::debug("Solution improved from", bestFitness, "to",
+                         currentFitness);
+      bestFitness = currentFitness;
+      bestChromosome = algorithm->getBestChromosome();
+      assert((unsigned)bestChromosome.size() == instance.chromosomeLength());
+    }
+  }
+
+  Base::Fitness bestFitness;
+  Base::Chromosome bestChromosome;
   Decoder decoder;
   BRKGA::BrkgaParams config;
 };

@@ -27,6 +27,7 @@ target_sources(brkga-mp-ipr-lib INTERFACE
   ${BRKGA_MP_IPR_ROOT}/brkga_mp_ipr/chromosome.hpp
   ${BRKGA_MP_IPR_ROOT}/brkga_mp_ipr/fitness_type.hpp
 )
+target_compile_options(brkga-mp-ipr-lib INTERFACE "-fopenmp")
 target_link_libraries(brkga-mp-ipr-lib INTERFACE OpenMP::OpenMP_CXX)
 
 target_link_libraries(brkga-mp-ipr LINK_PUBLIC brkga-mp-ipr-lib)

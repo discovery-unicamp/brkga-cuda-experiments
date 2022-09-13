@@ -1,6 +1,7 @@
 #ifndef RUNNER_HPP
 #define RUNNER_HPP
 
+#include "Logger.hpp"
 #include "Parameters.hpp"
 
 #include <chrono>
@@ -55,9 +56,12 @@ void sortChromosomeToValidate(const double* chromosome,
                               unsigned* permutation,
                               unsigned length);
 
-template <class Algorithm, class Instance>
+template <class Float, class Algorithm, class Instance>
 class RunnerBase {
 public:
+  typedef Float Fitness;
+  typedef std::vector<Float> Chromosome;
+
   RunnerBase(int argc, char** argv)
       : params(Parameters::parse(argc, argv)),
         instance(Instance::fromFile(params.instanceFileName)),
@@ -70,9 +74,9 @@ public:
 
   virtual Algorithm* getAlgorithm() = 0;
 
-  virtual float getBestFitness() = 0;
+  virtual Fitness getBestFitness() = 0;
 
-  virtual std::vector<float> getBestChromosome() = 0;
+  virtual Chromosome getBestChromosome() = 0;
 
   virtual void evolve() = 0;
 
@@ -86,21 +90,26 @@ public:
   }
 
   inline void run() {
-    std::clog << "Optimizing" << std::endl;
+    box::logger::info("Optimizing");
     startTime = now();
     algorithm = getAlgorithm();
 
     std::vector<std::tuple<float, float, unsigned>> convergence;
     while (!stop()) {
-      if (generation % params.logStep == 0)
+      if (generation % params.logStep == 0) {
+        box::logger::debug("Save convergence log");
         convergence.emplace_back(getBestFitness(), getTimeElapsed(),
                                  generation);
+      }
 
+      box::logger::debug("Evolve to the next generation");
       evolve();
       ++generation;
 
       if (generation % params.exchangeBestInterval == 0
           && generation != params.generations) {
+        box::logger::debug("Exchange", params.exchangeBestCount,
+                           "elites between populations");
         exchangeElites(params.exchangeBestCount);
       }
     }
@@ -113,19 +122,19 @@ public:
     algorithm = nullptr;
     convergence.emplace_back(bestFitness, timeElapsed, generation);
 
-    std::clog << "Optimization has finished after " << timeElapsed
-              << "s with fitness " << bestFitness << std::endl;
+    box::logger::info("Optimization has finished after", timeElapsed,
+                      "seconds with fitness", bestFitness);
 
     std::cout << std::fixed << std::setprecision(6) << "ans=" << bestFitness
               << " elapsed=" << timeElapsed << " convergence=" << convergence
               << std::endl;
 
-    std::clog << "Validating the solution" << std::endl;
+    box::logger::info("Validating the solution");
     sortToValidateMethod = determineSortMethod(params.decoder);
     instance.validate(bestChromosome.data(), bestFitness);
 
-    std::clog << "Everything looks good!" << std::endl;
-    std::clog << "Exiting" << std::endl;
+    box::logger::info("Everything looks good!");
+    box::logger::info("Exiting");
   }
 
   Parameters params;

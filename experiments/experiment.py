@@ -29,6 +29,7 @@ logging.basicConfig(
 )
 
 DEVICE = int(os.environ['DEVICE'])
+RESUME_FROM_BACKUP = False
 TEST_COUNT = 1
 BUILD_TYPE = 'release'
 TWEAKS_FILE_PATH = Path('applications', 'src', 'Tweaks.hpp')
@@ -349,7 +350,11 @@ def __save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]])
     OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
     backup_file = OUTPUT_PATH.joinpath('.backup.tsv')
-    results = pd.DataFrame()
+    if RESUME_FROM_BACKUP and backup_file.is_file():
+        logging.warning("Using results from past backup file")
+        results = pd.read_csv(backup_file, sep='\t')
+    else:
+        results = pd.DataFrame()
     for res in iter_results:
         results = pd.concat((results, pd.DataFrame([{**res, **info}])))
         results.to_csv(backup_file, index=False, sep='\t')
