@@ -6,12 +6,14 @@
 template <class T>
 class DeviceMinQueue {
 public:
+  static const unsigned INITIAL_CAPACITY = 15;
+
   __device__ DeviceMinQueue()
-      : queue(new T[initialCapacity]),
+      : queue(new T[INITIAL_CAPACITY]),
         begin(queue),
         end(queue),
-        capacity(initialCapacity),
-        popc(new unsigned[initialCapacity]) {}
+        capacity(INITIAL_CAPACITY),
+        popc(new unsigned[INITIAL_CAPACITY]) {}
 
   __device__ ~DeviceMinQueue() {
     delete[] queue;
@@ -64,8 +66,6 @@ public:
   }
 
 private:
-  const unsigned initialCapacity = 15;
-
   T* queue;  /// Pointer to the queue
   T* begin;  /// Pointer to the first data
   T* end;  /// Pointer to one position after the last data

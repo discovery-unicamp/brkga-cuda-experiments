@@ -4,12 +4,12 @@ PROJECT(brkga-mp-ipr-optimizer LANGUAGES CXX)
 # Dependencies
 find_package(OpenMP REQUIRED)
 
-#   ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.cpp
-#   ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.hpp
-#   ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.cpp
-#   ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.hpp
 add_executable(brkga-mp-ipr
   ${COMMON_SRC}
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.hpp
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cpp
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.hpp
   ${CMAKE_CURRENT_LIST_DIR}/main.cpp
