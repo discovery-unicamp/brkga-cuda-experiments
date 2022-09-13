@@ -65,7 +65,7 @@ public:
     config.pr_percentage = 1.0;
   }
 
-  bool stop() const override { return generation >= params.generations; }
+  bool stop() const override { return getTimeElapsed() >= 3 * 60; }
 
   BrkgaMPIpr* getAlgorithm() override {
     auto* algo = new BrkgaMPIpr(decoder, BRKGA::Sense::MINIMIZE, params.seed,
