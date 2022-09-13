@@ -71,7 +71,7 @@ public:
     auto* algo = new BrkgaMPIpr(decoder, BRKGA::Sense::MINIMIZE, params.seed,
                                 instance.chromosomeLength(), config);
 
-    algo->setBiasCustomFunction([&](unsigned r) {
+    algo->setBiasCustomFunction([this](unsigned r) {
       if (r == 1) return params.rhoe;
       if (r == 2) return 1 - params.rhoe;
       std::cerr << __PRETTY_FUNCTION__ << ": unexpected call with r=" << r

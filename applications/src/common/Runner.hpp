@@ -8,14 +8,21 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
-/// Outputs a pair/vector with no spaces
+/// Outputs a pair/tuple/vector with no spaces
 namespace std {
 template <class T1, class T2>
 inline ostream& operator<<(ostream& out, const pair<T1, T2>& p) {
   return out << '(' << p.first << ',' << p.second << ')';
+}
+
+template <class T1, class T2, class T3>
+inline ostream& operator<<(ostream& out, const tuple<T1, T2, T3>& t) {
+  return out << '(' << std::get<0>(t) << ',' << std::get<1>(t) << ','
+             << std::get<2>(t) << ')';
 }
 
 template <class T>
@@ -83,10 +90,11 @@ public:
     startTime = now();
     algorithm = getAlgorithm();
 
-    std::vector<std::pair<float, float>> convergence;
+    std::vector<std::tuple<float, float, unsigned>> convergence;
     while (!stop()) {
       if (generation % params.logStep == 0)
-        convergence.emplace_back(getBestFitness(), getTimeElapsed());
+        convergence.emplace_back(getBestFitness(), getTimeElapsed(),
+                                 generation);
 
       evolve();
       ++generation;
@@ -103,7 +111,7 @@ public:
 
     delete algorithm;
     algorithm = nullptr;
-    convergence.emplace_back(bestFitness, timeElapsed);
+    convergence.emplace_back(bestFitness, timeElapsed, generation);
 
     std::clog << "Optimization has finished after " << timeElapsed
               << "s with fitness " << bestFitness << std::endl;

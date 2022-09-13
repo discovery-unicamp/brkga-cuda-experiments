@@ -35,15 +35,14 @@ def __compress_convergence(convergence: str) -> str:
     compressed = []
     previous = ''
     begin = None
-    gen = 0
     for i in range(len(convergence)):
         if convergence[i] == '(':
             begin = i + 1
         elif convergence[i] == ')':
-            gen += 1
-            fitness, elapsed = convergence[begin: i].split(',')
+            fitness, elapsed, generation = convergence[begin: i].split(',')
             if fitness != previous:
-                compressed.append(f"({float(fitness):g},{float(elapsed):g},{gen})")
+                comp = f"({float(fitness):g},{float(elapsed):g},{generation})"
+                compressed.append(comp)
                 previous = fitness
 
     return '[' + ','.join(compressed) + ']'

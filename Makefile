@@ -21,5 +21,5 @@ fix-git: # Rule created due the errors on dl-1
 
 .PHONY: clean
 clean:
-	docker run -it -v $(project_path)/:/brkga/ --rm ubuntu /bin/bash -c 'cd brkga; rm -f .setup; rm -rf build-*'
+	docker run -it -v $(project_path)/:/brkga/ --rm ubuntu /bin/bash -c 'cd brkga; rm -f .setup; rm -rf build*'
 	docker rmi $$(docker images 'brkga' -a -q) || exit 0
