@@ -1,17 +1,17 @@
 #ifndef DECODERS_CVRPDECODER_HPP
 #define DECODERS_CVRPDECODER_HPP
 
-#include "../../common/Parameters.hpp"
-
-#include <vector>
+#include "BaseDecoder.hpp"
 
 class CvrpInstance;
 
-class CvrpDecoder {
+class CvrpDecoder : public BaseDecoder {
 public:
-  CvrpDecoder(CvrpInstance* _instance) : instance(_instance) {}
+  CvrpDecoder(CvrpInstance* _instance = nullptr) : instance(_instance) {}
 
-  double decode(const std::vector<double>& chromosome, bool) const;
+  ~CvrpDecoder() = default;
+
+  Fitness decode(Chromosome& chromosome, bool) const override;
 
 private:
   CvrpInstance* instance;

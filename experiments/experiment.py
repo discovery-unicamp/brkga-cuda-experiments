@@ -36,6 +36,15 @@ TWEAKS_FILE_PATH = Path('applications', 'src', 'Tweaks.hpp')
 SOURCE_PATH = Path('applications')
 OUTPUT_PATH = Path('experiments', 'results')
 
+GENE_TYPE = {
+    'brkga-api': 'double',
+    'brkga-cuda-1.0': 'float',
+    'brkga-cuda-2.0': 'float',
+    'brkga-mp-ipr': 'double',
+    'gpu-brkga': 'float',
+    'gpu-brkga-fix': 'float',
+}
+
 PROBLEM_NAME = {
     'cvrp': 'cvrp',
     'cvrp_greedy': 'cvrp',
@@ -178,6 +187,18 @@ def main():
             decoders=['cpu'],
             test_count=TEST_COUNT,
         ),
+        __build_params(
+            tool='brkga-cuda-2.0',
+            problems=['tsp', 'cvrp', 'scp'],
+            decoders=['cpu', 'gpu'],
+            test_count=TEST_COUNT,
+        ),
+        __build_params(
+            tool='brkga-cuda-2.0',
+            problems=['tsp', 'cvrp'],
+            decoders=['cpu-permutation', 'gpu-permutation'],
+            test_count=TEST_COUNT,
+        ),
     ))
 
     __save_results(info, results)
@@ -217,11 +238,11 @@ def __build_params(
         'seed': range(1, test_count + 1),
         'omp-threads': int(shell('nproc')),
         'threads': 256,
-        'generations': 1000,
+        'generations': 200,
         'pop-count': 3,
         'pop-size': 256,
-        'rhoe': [.75, .85, .95],
-        'elite': [.02, .04, .06, .08, .10],
+        'rhoe': .75,
+        'elite': .10,
         'mutant': .10,
         'exchange-interval': 50,
         'exchange-count': 2,
@@ -279,7 +300,7 @@ def __experiment(
 
 def __compile_optimizer(target: str, problem: str) -> Path:
     return __cmake(str(SOURCE_PATH.absolute()), BUILD_TYPE, target,
-                   tweaks=[problem.upper()])
+                   tweaks=[problem.upper(), f"Gene {GENE_TYPE[target]}"])
 
 
 def __cmake(

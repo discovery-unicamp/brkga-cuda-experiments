@@ -3,27 +3,18 @@
 #endif  // USE_CPP_ONLY
 
 #include "../Tweaks.hpp"  // Must be generated
-#include "../common/Runner.hpp"
-#include <brkga_mp_ipr/brkga_mp_ipr.hpp>
-
-#include <algorithm>
-#include <cassert>
-#include <vector>
 
 #if defined(TSP)
-#warning Compile TSP
 #include "../common/instances/TspInstance.hpp"
 #include "decoders/TspDecoder.hpp"
 typedef TspInstance Instance;
 typedef TspDecoder Decoder;
 #elif defined(SCP)
-#warning Compile SCP
 #include "../common/instances/ScpInstance.hpp"
 #include "decoders/ScpDecoder.hpp"
 typedef ScpInstance Instance;
 typedef ScpDecoder Decoder;
 #elif defined(CVRP) || defined(CVRP_GREEDY)
-#warning Compile CVRP
 #include "../common/instances/CvrpInstance.hpp"
 #include "decoders/CvrpDecoder.hpp"
 typedef CvrpInstance Instance;
@@ -32,26 +23,36 @@ typedef CvrpDecoder Decoder;
 #error No problem/instance/decoder defined
 #endif
 
+#include "../common/Runner.hpp"
+#include <brkga_mp_ipr/brkga_mp_ipr.hpp>
+
+#include <algorithm>
+#include <cassert>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
 typedef BRKGA::BRKGA_MP_IPR<Decoder> BrkgaMPIpr;
 
 inline bool contains(const std::string& str, const std::string& pattern) {
   return str.find(pattern) != std::string::npos;
 }
 
-class BrkgaMPIprRunner : public RunnerBase<double, BrkgaMPIpr, Instance> {
+class BrkgaMPIprRunner
+    : public RunnerBase<Decoder::Fitness, BrkgaMPIpr, Instance> {
 public:
-  typedef RunnerBase<double, BrkgaMPIpr, Instance> Base;
+  // TODO add option to set import/export flags
 
   BrkgaMPIprRunner(int argc, char** argv)
-      : Base(argc, argv),
-        bestFitness(1e100),
+      : RunnerBase(argc, argv),
+        bestFitness((Decoder::Fitness)1e100),
         bestChromosome(),
         decoder(&instance),
         config() {
     box::logger::info("Initializing runner");
     if (params.decoder != "cpu") {
       throw std::invalid_argument("Decode type " + params.decoder
-                                  + " is not support by BRKGA_MP_IPR");
+                                  + " is not supported by BRKGA_MP_IPR");
     }
 
     config.population_size = params.populationSize;
@@ -73,9 +74,13 @@ public:
     config.pr_percentage = 1.0;
   }
 
-  bool stop() const override { return getTimeElapsed() >= 3 * 60; }
+  bool stop() const override {
+    // return getTimeElapsed() >= 3 * 60;
+    return generation >= params.generations;
+  }
 
-  BrkgaMPIpr* getAlgorithm() override {
+  BrkgaMPIpr* getAlgorithm(const std::vector<std::vector<std::vector<Gene>>>&
+                               initialPopulation) override {
     box::logger::info("Building the algorithm");
     auto* algo =
         new BrkgaMPIpr(decoder, BRKGA::Sense::MINIMIZE, params.seed,
@@ -90,18 +95,43 @@ public:
       abort();
     });
 
-    box::logger::debug("Initialize BRKGA-MP-IPR");
-    algo->initialize();
-    // Doesn't work without any `evolve` call
-    // updateBest();
+    box::logger::debug("Initializing BRKGA-MP-IPR");
+    if (!initialPopulation.empty()) {
+      box::logger::debug("Using the provided initial population");
+
+      std::vector<Chromosome> chromosomes;
+      assert(initialPopulation.size() == params.numberOfPopulations);
+      for (unsigned p = 0; p < params.numberOfPopulations; ++p) {
+        const auto& pop = initialPopulation[p];
+        chromosomes.insert(chromosomes.end(), pop.begin(), pop.end());
+      }
+
+      algo->setInitialPopulation(chromosomes);
+      algo->initialize();
+    } else {
+      algo->initialize(true);
+    }
+
+    // Set the `algorithm` variable to calculate the fitness
+    algorithm = algo;
+    updateBest();
 
     box::logger::debug("The algorithm was built");
     return algo;
   }
 
-  Base::Fitness getBestFitness() override { return bestFitness; }
+  Decoder::Fitness getBestFitness() override { return bestFitness; }
 
-  Base::Chromosome getBestChromosome() override { return bestChromosome; }
+  Chromosome getBestChromosome() override { return bestChromosome; }
+
+  std::vector<Chromosome> getPopulation(unsigned p) override {
+    std::vector<Chromosome> parsedPopulation;
+    BRKGA::Population population = algorithm->getCurrentPopulation(p);
+    for (unsigned i = 0; i < population.getPopulationSize(); ++i) {
+      parsedPopulation.push_back(population.getChromosome(i));
+    }
+    return parsedPopulation;
+  }
 
   void evolve() override {
     algorithm->evolve();
@@ -120,7 +150,8 @@ public:
 private:
   void updateBest() {
     box::logger::debug("Updating the best solution");
-    const Base::Fitness currentFitness = algorithm->getBestFitness();
+    assert(algorithm != nullptr);
+    const Decoder::Fitness currentFitness = algorithm->getBestFitness();
     if (currentFitness < bestFitness) {
       box::logger::debug("Solution improved from", bestFitness, "to",
                          currentFitness);
@@ -130,18 +161,19 @@ private:
     }
   }
 
-  Base::Fitness bestFitness;
-  Base::Chromosome bestChromosome;
+  Decoder::Fitness bestFitness;
+  Chromosome bestChromosome;
   Decoder decoder;
   BRKGA::BrkgaParams config;
 };
 
 void bbSegSortCall(float*, unsigned*, unsigned) {
-  std::clog << "No bb-segsort for brkga-mp-ipr" << std::endl;
+  box::logger::error("No bb-segsort for BRKGA-MP-IPR");
   abort();
 }
 
 int main(int argc, char** argv) {
+  box::logger::info("Using BRKGA-MP-IPR to optimize");
   BrkgaMPIprRunner(argc, argv).run();
   return 0;
 }

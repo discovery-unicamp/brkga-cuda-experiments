@@ -1,60 +1,78 @@
 #ifndef INSTANCES_SCPINSTANCES_HPP
 #define INSTANCES_SCPINSTANCES_HPP 1
 
-#include <limits>
+#include "BaseInstance.hpp"
+
+#include <cmath>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
-class ScpInstance {
+class ScpInstance : public BaseInstance<float> {
 public:
   static ScpInstance fromFile(const std::string& fileName);
 
   [[nodiscard]] inline unsigned getNumberOfSets() const {
-    return static_cast<unsigned>(sets.size());
+    return (unsigned)setsEnd.size();
   }
 
-  [[nodiscard]] inline unsigned chromosomeLength() const {
+  [[nodiscard]] inline unsigned chromosomeLength() const override {
     return getNumberOfSets();
   }
 
-  void validate(const float* chromosome, float fitness) const;
+  void validate(const Gene* chromosome, float fitness) const override;
 
-  void validate(const double* chromosome, double fitness) const;
+  void validate(const unsigned*, float) const override {
+    throw std::runtime_error("SCP doesn't support permutations");
+  }
 
-  static constexpr float ACCEPT_THRESHOLD = 0.5;
-
+  float acceptThreshold;
   unsigned universeSize;  ///< Number of elements in the universe
   std::vector<float> costs;
-  std::vector<std::vector<unsigned>> sets;
+  std::vector<unsigned> sets;
+  std::vector<unsigned> setsEnd;
 
 private:
-  ScpInstance() : universeSize((unsigned)-1) {}
+  ScpInstance() : acceptThreshold(0.5f), universeSize(-1u) {}
 };
 
 template <class T>
-T getFitness(const T* selection,
-             const unsigned n,
-             const unsigned universeSize,
-             const T threshold,
-             const std::vector<float>& costs,
-             const std::vector<std::vector<unsigned>> sets) {
-  T fitness = 0;
-  std::vector<bool> covered(universeSize);
+inline HOST_DEVICE_CUDA_ONLY float getFitness(const T& selection,
+                                              const unsigned n,
+                                              const unsigned universeSize,
+                                              const float threshold,
+                                              const float* costs,
+                                              const unsigned* sets,
+                                              const unsigned* setsEnd) {
+#ifdef __CUDA_ARCH__
+  bool* covered = new bool[universeSize];
+  for (unsigned i = 0; i < universeSize; ++i) covered[i] = false;
+#else
+  std::vector<bool> covered(universeSize, false);
+#endif  // __CUDA_ARCH__
+
+  float fitness = 0;
   unsigned numCovered = 0;
   for (unsigned i = 0; i < n; ++i) {
     if (selection[i] > threshold) {
       fitness += costs[i];
-      for (auto element : sets[i]) {
-        if (!covered[element]) {
-          covered[element] = true;
+      const auto l = (i == 0 ? 0u : setsEnd[i - 1]);
+      const auto r = setsEnd[i];
+      for (unsigned j = l; j < r; ++j) {
+        const auto item = sets[j];
+        if (!covered[item]) {
+          covered[item] = true;
           ++numCovered;
         }
       }
     }
   }
 
-  if (numCovered != universeSize) return std::numeric_limits<T>::infinity();
-  return fitness;
+#ifdef __CUDA_ARCH__
+  delete[] covered;
+#endif  // __CUDA_ARCH__
+
+  return numCovered != universeSize ? INFINITY : fitness;
 }
 
 #endif  // INSTANCES_SCPINSTANCES_HPP

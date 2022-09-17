@@ -1,5 +1,6 @@
-#include "../../common/instances/ScpInstance.cuh"
+#include "../../common/instances/ScpInstance.hpp"
 #include "ScpDecoder.hpp"
+#include <brkga-cuda/Chromosome.hpp>
 #include <brkga-cuda/CudaUtils.hpp>
 
 #include <cuda_runtime.h>
@@ -17,21 +18,13 @@ ScpDecoder::ScpDecoder(ScpInstance* _instance)
   box::cuda::copy2d(nullptr, dCosts, instance->costs.data(),
                     instance->costs.size());
 
-  std::vector<unsigned> tempSets;
-  std::vector<unsigned> tempSetEnd;
-  for (auto set : instance->sets) {
-    tempSetEnd.push_back(tempSetEnd.empty() ? 0 : tempSetEnd.back());
-    for (auto element : set) {
-      tempSets.push_back(element);
-      ++tempSetEnd.back();
-    }
-  }
+  const auto& sets = instance->sets;
+  dSets = box::cuda::alloc<unsigned>(nullptr, sets.size());
+  box::cuda::copy2d(nullptr, dSets, sets.data(), sets.size());
 
-  dSets = box::cuda::alloc<unsigned>(nullptr, tempSets.size());
-  box::cuda::copy2d(nullptr, dSets, tempSets.data(), tempSets.size());
-
-  dSetEnd = box::cuda::alloc<unsigned>(nullptr, tempSetEnd.size());
-  box::cuda::copy2d(nullptr, dSetEnd, tempSetEnd.data(), tempSetEnd.size());
+  const auto& setsEnd = instance->setsEnd;
+  dSetEnd = box::cuda::alloc<unsigned>(nullptr, setsEnd.size());
+  box::cuda::copy2d(nullptr, dSetEnd, setsEnd.data(), setsEnd.size());
 }
 
 ScpDecoder::~ScpDecoder() {
@@ -41,28 +34,9 @@ ScpDecoder::~ScpDecoder() {
 }
 
 float ScpDecoder::decode(const box::Chromosome<float>& chromosome) const {
-  const auto n = config->chromosomeLength;
-  const auto& costs = instance->costs;
-  const auto& sets = instance->sets;
-
-  float fitness = 0;
-  std::vector<bool> covered(instance->universeSize);
-  unsigned numCovered = 0;
-  for (unsigned i = 0; i < n; ++i) {
-    if (chromosome[i] > ScpInstance::ACCEPT_THRESHOLD) {
-      fitness += costs[i];
-      for (auto element : sets[i]) {
-        if (!covered[element]) {
-          covered[element] = true;
-          ++numCovered;
-        }
-      }
-    }
-  }
-
-  if (numCovered != instance->universeSize)
-    return std::numeric_limits<float>::infinity();
-  return fitness;
+  return getFitness(chromosome, config->chromosomeLength, instance->universeSize,
+              instance->acceptThreshold, instance->costs.data(),
+              instance->sets.data(), instance->setsEnd.data());
 }
 
 __global__ void deviceDecode(float* results,
@@ -73,31 +47,11 @@ __global__ void deviceDecode(float* results,
                              const float threshold,
                              const float* dCosts,
                              const unsigned* dSets,
-                             const unsigned* dSetEnd) {
+                             const unsigned* dSetsEnd) {
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= numberOfChromosomes) return;
-
-  const auto& chromosome = dChromosomes[tid];
-
-  unsigned numCovered = 0;
-  bool* covered = new bool[universeSize];
-  for (unsigned i = 0; i < universeSize; ++i) covered[i] = false;
-
-  float fitness = 0;
-  for (unsigned i = 0; i < n; ++i) {
-    if (chromosome[i] > threshold) {
-      fitness += dCosts[i];
-      for (unsigned j = (i == 0 ? 0 : dSetEnd[i - 1]); j < dSetEnd[i]; ++j) {
-        if (!covered[dSets[j]]) {
-          covered[dSets[j]] = true;
-          ++numCovered;
-        }
-      }
-    }
-  }
-
-  delete[] covered;
-  results[tid] = numCovered != universeSize ? INFINITY : fitness;
+  results[tid] = getFitness(dChromosomes[tid], n, universeSize, threshold,
+                            dCosts, dSets, dSetsEnd);
 }
 
 void ScpDecoder::decode(cudaStream_t stream,
@@ -108,7 +62,7 @@ void ScpDecoder::decode(cudaStream_t stream,
   const auto blocks = box::cuda::blocks(numberOfChromosomes, threads);
   deviceDecode<<<blocks, threads, 0, stream>>>(
       dResults, numberOfChromosomes, dChromosomes, config->chromosomeLength,
-      instance->universeSize, ScpInstance::ACCEPT_THRESHOLD, dCosts, dSets,
+      instance->universeSize, instance->acceptThreshold, dCosts, dSets,
       dSetEnd);
   CUDA_CHECK_LAST();
 }

@@ -1,22 +1,28 @@
-#include "Runner.hpp"
+#include "BaseInstance.hpp"
 
-#include "utils/ThrustSort.hpp"
+#include "../Logger.hpp"
+#include "../SortMethod.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <iostream>
 #include <numeric>
 
 #ifndef USE_CPP_ONLY
+#include "../utils/ThrustSort.hpp"
+
 #include <cuda_runtime.h>
 #endif  // USE_CPP_ONLY
 
 SortMethod sortToValidateMethod;
 
-template <class T>
-void sortChromosomeToValidateImpl(const T* chromosome,
-                                  unsigned* permutation,
-                                  unsigned length) {
+void bbSegSortCall(float* dChromosome, unsigned* dPermutation, unsigned length);
+
+void sortChromosomeToValidate(const Gene* chromosome,
+                              unsigned* permutation,
+                              unsigned length) {
   auto method = sortToValidateMethod;
+  box::logger::debug("Sorting chromosome to validate with method", method);
   std::iota(permutation, permutation + length, 0);
 
   if (method == SortMethod::stdSort) {
@@ -32,9 +38,9 @@ void sortChromosomeToValidateImpl(const T* chromosome,
             << ") not allowed with flag USE_CPP_ONLY" << std::endl;
   abort();
 #else
-  T* dChromosome = nullptr;
-  cudaMalloc(&dChromosome, length * sizeof(T));
-  cudaMemcpy(dChromosome, chromosome, length * sizeof(T),
+  Gene* dChromosome = nullptr;
+  cudaMalloc(&dChromosome, length * sizeof(Gene));
+  cudaMemcpy(dChromosome, chromosome, length * sizeof(Gene),
              cudaMemcpyHostToDevice);
 
   unsigned* dPermutation = nullptr;
@@ -43,7 +49,7 @@ void sortChromosomeToValidateImpl(const T* chromosome,
              cudaMemcpyHostToDevice);
 
   if (method == SortMethod::bbSegSort) {
-    assert(sizeof(T) == sizeof(float));
+    assert(sizeof(Gene) == sizeof(float));
     bbSegSortCall((float*)dChromosome, dPermutation, length);
   } else if (method == SortMethod::thrustHost) {
     thrustSort(dChromosome, dPermutation, length);
@@ -62,16 +68,4 @@ void sortChromosomeToValidateImpl(const T* chromosome,
   cudaFree(dChromosome);
   cudaFree(dPermutation);
 #endif  // USE_CPP_ONLY
-}
-
-void sortChromosomeToValidate(const float* chromosome,
-                              unsigned* permutation,
-                              unsigned length) {
-  sortChromosomeToValidateImpl(chromosome, permutation, length);
-}
-
-void sortChromosomeToValidate(const double* chromosome,
-                              unsigned* permutation,
-                              unsigned length) {
-  sortChromosomeToValidateImpl(chromosome, permutation, length);
 }

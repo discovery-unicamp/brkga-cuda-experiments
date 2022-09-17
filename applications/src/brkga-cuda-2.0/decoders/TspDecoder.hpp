@@ -7,6 +7,8 @@ class TspInstance;
 
 class TspDecoder : public box::Decoder {
 public:
+  typedef float Fitness;
+
   using box::Decoder::decode;
 
   TspDecoder() : instance(nullptr), dDistances(nullptr) {}

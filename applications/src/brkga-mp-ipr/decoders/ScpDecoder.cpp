@@ -4,8 +4,9 @@
 
 #include <vector>
 
-double ScpDecoder::decode(const std::vector<double>& chromosome, bool) const {
-  return getFitness(
-      chromosome.data(), (unsigned)chromosome.size(), instance->universeSize,
-      (double)ScpInstance::ACCEPT_THRESHOLD, instance->costs, instance->sets);
+auto ScpDecoder::decode(Chromosome& chromosome, bool) const -> Fitness {
+  return getFitness(chromosome.data(), (unsigned)chromosome.size(),
+                    instance->universeSize, instance->acceptThreshold,
+                    instance->costs.data(), instance->sets.data(),
+                    instance->setsEnd.data());
 }

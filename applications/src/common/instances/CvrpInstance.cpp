@@ -1,14 +1,14 @@
 #include "CvrpInstance.hpp"
 
-#include "../../Tweaks.hpp"
 #include "../Checker.hpp"
-#include "../MinQueue.hpp"
+#include "../Point.hpp"
 
 #include <algorithm>
-#include <cassert>  // FIXME use `CHECK`
+#include <cmath>
 #include <fstream>
 #include <numeric>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -35,7 +35,7 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
   while ((file >> str) && str != "DEMAND_SECTION") {
     float x, y;
     file >> x >> y;
-    locations.push_back({x, y});
+    locations.emplace_back(x, y);
   }
   instance.numberOfClients = (unsigned)(locations.size() - 1);
 
@@ -47,14 +47,21 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
   }
 
   // Perform validations
-  assert(instance.numberOfClients != static_cast<unsigned>(-1));
-  assert(instance.capacity != static_cast<unsigned>(-1));
-  assert(locations.size() > 1);
-  assert(locations.size() == instance.numberOfClients + 1);
-  assert(instance.demands.size() == instance.numberOfClients + 1);
-  assert(instance.demands[0] == 0);
-  assert(std::all_of(instance.demands.begin() + 1, instance.demands.end(),
-                     [](int d) { return d > 0; }));
+  CHECK(instance.numberOfClients != static_cast<unsigned>(-1),
+        "Missing number of clients");
+  CHECK(instance.capacity != static_cast<unsigned>(-1), "Missing capacity");
+  CHECK(instance.numberOfClients > 1, "CVRP requires at least two clients");
+  CHECK(locations.size() == instance.numberOfClients + 1,
+        "Missing some location (did you forget the depot?)");
+  CHECK(instance.demands.size() == instance.numberOfClients + 1,
+        "Missing some demand (did you forget the depot?)");
+  CHECK(instance.demands[0] == 0, "Depot should have no demand");
+  CHECK(std::all_of(instance.demands.begin() + 1, instance.demands.end(),
+                    [](unsigned d) { return d > 0; }),
+        "All demands must be positive (except the depot)");
+  CHECK(std::all_of(instance.demands.begin() + 1, instance.demands.end(),
+                    [&instance](unsigned d) { return d <= instance.capacity; }),
+        "Demands should not exceed the truck capacity");
 
   // Calculate the 2d distances
   const auto n = instance.numberOfClients;
@@ -69,37 +76,17 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
   return instance;
 }
 
-void CvrpInstance::validate(const float* chromosome,
-                            const float fitness) const {
-  std::vector<unsigned> tour(numberOfClients);
-  std::iota(tour.begin(), tour.end(), 0);
-  sortChromosomeToValidate(chromosome, tour.data(), (unsigned)tour.size());
-  validate(tour, fitness);
-}
-
-void CvrpInstance::validate(const double* chromosome,
-                            const double fitness) const {
-  std::vector<unsigned> tour(numberOfClients);
-  std::iota(tour.begin(), tour.end(), 0);
-  sortChromosomeToValidate(chromosome, tour.data(), (unsigned)tour.size());
-  validate(tour, (float)fitness);
-}
-
-void CvrpInstance::validate(const std::vector<unsigned>& tour,
-                            const float fitness) const {
-  CHECK(!tour.empty(), "Tour is empty");
-  CHECK(tour.size() == numberOfClients,
-        "The tour should visit all the clients");
-
-  CHECK(*std::min_element(tour.begin(), tour.end()) == 0,
+void CvrpInstance::validate(const unsigned* tour, const float fitness) const {
+  CHECK(*std::min_element(tour, tour + numberOfClients) == 0,
         "Invalid first client: %u != %u",
-        *std::min_element(tour.begin(), tour.end()), 0);
-  CHECK(*std::max_element(tour.begin(), tour.end()) == numberOfClients - 1,
+        *std::min_element(tour, tour + numberOfClients), 0);
+  CHECK(*std::max_element(tour, tour + numberOfClients) == numberOfClients - 1,
         "Invalid last client: %u != %u",
-        *std::max_element(tour.begin(), tour.end()), numberOfClients - 1);
+        *std::max_element(tour, tour + numberOfClients), numberOfClients - 1);
 
   std::set<unsigned> alreadyVisited;
-  for (unsigned v : tour) {
+  for (unsigned i = 0; i < numberOfClients; ++i) {
+    const auto v = tour[i];
     CHECK(alreadyVisited.count(v) == 0, "Client %u was visited twice", v);
     alreadyVisited.insert(v);
   }
@@ -107,84 +94,9 @@ void CvrpInstance::validate(const std::vector<unsigned>& tour,
         "Wrong number of clients: %u != %u", (unsigned)alreadyVisited.size(),
         numberOfClients);
 
-  float expectedFitness = getFitness(tour.data(), numberOfClients, capacity,
+  float expectedFitness = getFitness(tour, numberOfClients, capacity,
                                      demands.data(), distances.data());
   CHECK(std::abs(expectedFitness - fitness) < 1e-6f,
         "Wrong fitness evaluation: expected %f, but found %f", expectedFitness,
         fitness);
 }
-
-#ifdef CVRP_GREEDY
-float getFitness(const unsigned* tour,
-                 const unsigned n,
-                 const unsigned capacity,
-                 const unsigned* demands,
-                 const float* distances) {
-  unsigned loaded = 0;
-  unsigned u = 0;  // Start on the depot.
-  float fitness = 0;
-  for (unsigned i = 0; i < n; ++i) {
-    auto v = tour[i] + 1;
-    if (loaded + demands[v] >= capacity) {
-      // Truck is full: return from the previous client to the depot.
-      fitness += distances[u];
-      u = 0;
-      loaded = 0;
-    }
-
-    fitness += distances[u * (n + 1) + v];
-    loaded += demands[v];
-    u = v;
-  }
-
-  fitness += distances[u];  // Back to the depot.
-  return fitness;
-}
-#else
-float getFitness(const unsigned* tour,
-                 const unsigned n,
-                 const unsigned capacity,
-                 const unsigned* demands,
-                 const float* distances) {
-  // calculates the optimal tour cost in O(n) using dynamic programming
-  unsigned i = 0;  // first client of the truck
-  unsigned loaded = 0;  // the amount used from the capacity of the truck
-
-  MinQueue<float> q;
-  q.push(0);
-  for (unsigned j = 0; j < n; ++j) {  // last client of the truck
-    // remove the leftmost client while the truck is overloaded
-    loaded += demands[tour[j] + 1];
-    while (loaded > capacity) {
-      loaded -= demands[tour[i] + 1];
-      ++i;
-      q.pop();
-    }
-    if (j == n - 1) break;
-
-    // cost to return to from j to the depot and from the depot to j+1
-    // since j doesn't goes to j+1 anymore, we remove it from the total cost
-    const auto u = tour[j] + 1;
-    const auto v = tour[j + 1] + 1;
-    auto backToDepotCost =
-        distances[u] + distances[v] - distances[u * (n + 1) + v];
-
-    // optimal cost of tour ending at j+1 is the optimal cost of any tour
-    //  ending between i and j + the cost to return to the depot at j
-    auto bestFitness = q.min();
-    q.push(bestFitness + backToDepotCost);
-  }
-
-  // now calculates the TSP cost from/to depot + the split cost in the queue
-  auto fitness = q.min();  // `q.min` is the optimal split cost
-  unsigned u = 0;  // starts on the depot
-  for (unsigned j = 0; j < n; ++j) {
-    auto v = tour[j] + 1;
-    fitness += distances[u * (n + 1) + v];
-    u = v;
-  }
-  fitness += distances[u];  // Back to the depot.
-
-  return fitness;
-}
-#endif  // CVRP_GREEDY

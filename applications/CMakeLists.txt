@@ -17,6 +17,8 @@ SET(BRKGA_MP_IPR_ROOT "${CMAKE_CURRENT_LIST_DIR}/../brkga_mp_ipr_cpp")
 SET(GPU_BRKGA_ROOT "${CMAKE_CURRENT_LIST_DIR}/../GPU-BRKGA")
 
 SET(COMMON_SRC
+  ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/BaseInstance.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/BaseInstance.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/CvrpInstance.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/CvrpInstance.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/ScpInstance.cpp
@@ -32,19 +34,13 @@ SET(COMMON_SRC
   ${CMAKE_CURRENT_LIST_DIR}/src/common/Parameters.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/Point.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/Point.hpp
-  ${CMAKE_CURRENT_LIST_DIR}/src/common/Runner.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/Runner.hpp
 )
 
 SET(CUDA_COMMON_SRC
   ${COMMON_SRC}
-  ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/CvrpInstance.cu
-  ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/CvrpInstance.cuh
-  ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/ScpInstance.cu
-  ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/ScpInstance.cuh
-  ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/TspInstance.cu
-  ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/TspInstance.cuh
   ${CMAKE_CURRENT_LIST_DIR}/src/common/utils/ThrustSort.cu
+  ${CMAKE_CURRENT_LIST_DIR}/src/common/utils/ThrustSort.hpp
 )
 
 INCLUDE("${CMAKE_CURRENT_LIST_DIR}/src/brkga-api/CMakeLists.txt")

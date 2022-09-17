@@ -1,4 +1,4 @@
-#include "../../common/instances/TspInstance.cuh"
+#include "../../common/instances/TspInstance.hpp"
 #include "TspDecoder.hpp"
 #include <brkga-cuda/CudaUtils.hpp>
 
@@ -64,7 +64,7 @@ __global__ void deviceDecode(const unsigned numberOfChromosomes,
   thrust::device_ptr<unsigned> vals(tour);
   thrust::sort_by_key(thrust::device, keys, keys + chromosomeLength, vals);
 
-  dFitness[tid] = deviceGetFitness(tour, chromosomeLength, dDistances);
+  dFitness[tid] = getFitness(tour, chromosomeLength, dDistances);
 }
 
 void TspDecoder::decode(cudaStream_t stream,

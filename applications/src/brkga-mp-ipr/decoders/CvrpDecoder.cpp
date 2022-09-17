@@ -6,7 +6,7 @@
 #include <numeric>
 #include <vector>
 
-double CvrpDecoder::decode(const std::vector<double>& chromosome, bool) const {
+auto CvrpDecoder::decode(Chromosome& chromosome, bool) const -> Fitness {
   std::vector<unsigned> permutation(chromosome.size());
   std::iota(permutation.begin(), permutation.end(), 0);
   std::sort(permutation.begin(), permutation.end(),

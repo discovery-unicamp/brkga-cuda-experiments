@@ -25,7 +25,7 @@ ScpInstance ScpInstance::fromFile(const std::string& fileName) {
     CHECK(instance.costs[i] > 0, "Invalid cost: %f", instance.costs[i]);
   }
 
-  instance.sets.resize(numberOfSets);
+  std::vector<std::vector<unsigned>> setById(numberOfSets);
   for (unsigned element = 0; element < instance.universeSize; ++element) {
     unsigned setsCoveringCount;
     file >> setsCoveringCount;
@@ -34,27 +34,39 @@ ScpInstance ScpInstance::fromFile(const std::string& fileName) {
       unsigned setId;
       file >> setId;
       CHECK(1 <= setId && setId <= numberOfSets, "Invalid set: %u", setId);
-      instance.sets[setId - 1].push_back(element);
+      setById[setId - 1].push_back(element);
     }
   }
-
   CHECK(file.good(), "Reading SCP instance failed");
 
   for (unsigned i = 0; i < numberOfSets; ++i) {
-    if (instance.sets[i].empty())
-      throw std::runtime_error("Found an empty set");
+    if (setById[i].empty()) throw std::runtime_error("Found an empty set");
+  }
+
+  for (const auto& set : setById) {
+    instance.setsEnd.push_back(
+        instance.setsEnd.empty() ? 0 : instance.setsEnd.back());
+    for (auto item : set) {
+      instance.sets.push_back(item);
+      ++instance.setsEnd.back();
+    }
   }
 
   return instance;
 }
 
-void ScpInstance::validate(const float* chromosome, const float fitness) const {
+void ScpInstance::validate(const Gene* chromosome, float fitness) const {
   float expectedFitness = 0;
   std::vector<bool> covered(universeSize);
-  for (unsigned j = 0; j < chromosomeLength(); ++j) {
-    if (chromosome[j] > ScpInstance::ACCEPT_THRESHOLD) {
-      expectedFitness += costs[j];
-      for (auto element : sets[j]) covered[element] = true;
+  for (unsigned i = 0; i < chromosomeLength(); ++i) {
+    if (chromosome[i] > acceptThreshold) {
+      expectedFitness += costs[i];
+      const auto l = i == 0 ? 0 : setsEnd[i - 1];
+      const auto r = setsEnd[i + 1];
+      for (unsigned j = l; j < r; ++j) {
+        const auto item = sets[j];
+        covered[item] = true;
+      }
     }
   }
 
@@ -62,10 +74,4 @@ void ScpInstance::validate(const float* chromosome, const float fitness) const {
   CHECK(std::abs(expectedFitness - fitness) < 1e-6f,
         "Wrong fitness evaluation: expected %f, but found %f", expectedFitness,
         fitness);
-}
-
-void ScpInstance::validate(const double* chromosome,
-                           const double fitness) const {
-  std::vector<float> chromosomef(chromosome, chromosome + chromosomeLength());
-  validate(chromosomef.data(), (float)fitness);
 }

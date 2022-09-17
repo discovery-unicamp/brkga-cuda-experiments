@@ -1,6 +1,7 @@
 #include "Parameters.hpp"
 
 #include "Checker.hpp"
+#include "Logger.hpp"
 
 #include <iostream>
 
@@ -8,6 +9,8 @@ static const char* RESET = "\033[0m";
 static const char* YELLOW = "\033[33m";
 
 Parameters Parameters::parse(unsigned argc, char** argv) {
+  box::logger::info("Reading parameters");
+
   Parameters params;
   for (unsigned i = 1; i < argc; i += 2) {
     std::string arg = argv[i];

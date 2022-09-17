@@ -1,9 +1,17 @@
-#ifndef CVRP_EXAMPLE_SRC_POINT_HPP
-#define CVRP_EXAMPLE_SRC_POINT_HPP
+#ifndef POINT_HPP
+#define POINT_HPP
 
 struct Point {
-  float x, y;
+  float x;
+  float y;
+
+  Point() : Point(0, 0) {}
+
+  Point(float _x, float _y) : x(_x), y(_y) {}
+
+  ~Point() = default;
+
   [[nodiscard]] float distance(const Point& other) const;
 };
 
-#endif  // CVRP_EXAMPLE_SRC_POINT_HPP
+#endif  // POINT_HPP

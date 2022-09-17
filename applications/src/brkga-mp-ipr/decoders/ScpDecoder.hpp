@@ -1,17 +1,17 @@
 #ifndef DECODERS_SCPDECODER_HPP
 #define DECODERS_SCPDECODER_HPP
 
-#include "../../common/Parameters.hpp"
-
-#include <vector>
+#include "BaseDecoder.hpp"
 
 class ScpInstance;
 
-class ScpDecoder {
+class ScpDecoder : public BaseDecoder {
 public:
   ScpDecoder(ScpInstance* _instance) : instance(_instance) {}
 
-  double decode(const std::vector<double>& chromosome, bool) const;
+  ~ScpDecoder() = default;
+
+  Fitness decode(Chromosome& chromosome, bool) const override;
 
 private:
   ScpInstance* instance;

@@ -1,19 +1,19 @@
 #include "TspInstance.hpp"
 
 #include "../Checker.hpp"
+#include "../Logger.hpp"
+#include "../Point.hpp"
 #include "../utils/StringUtils.hpp"
 
 #include <algorithm>
 #include <fstream>
-#include <istream>
-#include <numeric>
 #include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
-std::pair<std::string, std::string> readValue(std::istream& file) {
+std::pair<std::string, std::string> readValue(std::ifstream& file) {
   if (!file.good()) throw std::runtime_error("File is not good (reached EOF?)");
 
   std::string line;
@@ -27,12 +27,15 @@ std::pair<std::string, std::string> readValue(std::istream& file) {
 }
 
 TspInstance TspInstance::fromFile(const std::string& filename) {
+  box::logger::info("Reading TSP instance from", filename);
+
   std::ifstream file(filename);
   if (!file.is_open())
     throw std::runtime_error("Failed to open file " + filename);
 
   TspInstance instance;
 
+  box::logger::debug("Reading number of clients");
   std::pair<std::string, std::string> key;
   while (key = readValue(file), key.first != "NODE_COORD_SECTION")
     if (key.first == "DIMENSION")
@@ -40,12 +43,13 @@ TspInstance TspInstance::fromFile(const std::string& filename) {
   if (instance.numberOfClients == static_cast<unsigned>(-1))
     throw std::runtime_error("Missing number of clients in the instance file");
 
+  box::logger::debug("Reading 2D locations");
   std::vector<Point> locations;
   std::string str;
   while ((file >> str) && str != "EOF") {
     float x, y;
     file >> x >> y;
-    locations.push_back({x, y});
+    locations.emplace_back(x, y);
   }
   if (locations.size() != instance.numberOfClients)
     throw std::runtime_error("Wrong number of locations");
@@ -53,64 +57,37 @@ TspInstance TspInstance::fromFile(const std::string& filename) {
   // TODO Test if calculating the distances on the decoder have any performance
   //  impact.
   const auto n = instance.numberOfClients;
+  box::logger::debug("Building TSP distance matrix of size", n * n);
   instance.distances.resize(n * n);
   for (unsigned i = 0; i < n; ++i)
     for (unsigned j = 0; j < n; ++j)
       instance.distances[i * n + j] = locations[i].distance(locations[j]);
 
+  box::logger::debug("TSP instance was built successfully");
   return instance;
 }
 
-void TspInstance::validate(const float* chromosome, const float fitness) const {
-  std::vector<unsigned> tour(numberOfClients);
-  std::iota(tour.begin(), tour.end(), 0);
-  sortChromosomeToValidate(chromosome, tour.data(), (unsigned)tour.size());
-  validate(tour, fitness);
-}
+void TspInstance::validate(const unsigned* permutation, float fitness) const {
+  box::logger::info("Validating TSP solution");
 
-void TspInstance::validate(const double* chromosome,
-                           const double fitness) const {
-  std::vector<unsigned> tour(numberOfClients);
-  std::iota(tour.begin(), tour.end(), 0);
-  sortChromosomeToValidate(chromosome, tour.data(), (unsigned)tour.size());
-  validate(tour, (float)fitness);
-}
-
-void TspInstance::validate(const std::vector<unsigned>& tour,
-                           const float fitness) const {
-  CHECK(!tour.empty(), "Tour is empty");
-  CHECK(tour.size() == numberOfClients,
-        "The tour should visit all the clients");
-
-  CHECK(*std::min_element(tour.begin(), tour.end()) == 0,
+  const auto n = chromosomeLength();
+  CHECK(*std::min_element(permutation, permutation + n) == 0,
         "Invalid range of clients");
-  CHECK(*std::max_element(tour.begin(), tour.end()) == numberOfClients - 1,
+  CHECK(*std::max_element(permutation, permutation + n) == n - 1,
         "Invalid range of clients");
 
   std::set<unsigned> alreadyVisited;
-  for (unsigned v : tour) {
+  for (unsigned i = 0; i < n; ++i) {
+    const auto v = permutation[i];
     CHECK(alreadyVisited.count(v) == 0, "Client %u was visited twice", v);
     alreadyVisited.insert(v);
   }
-  CHECK(alreadyVisited.size() == numberOfClients,
-        "Wrong number of clients: %u != %u", (unsigned)alreadyVisited.size(),
-        numberOfClients);
 
-  float expectedFitness =
-      distances[tour[numberOfClients - 1] * numberOfClients + tour[0]];
-  for (unsigned i = 1; i < numberOfClients; ++i)
-    expectedFitness += distances[tour[i - 1] * numberOfClients + tour[i]];
+  float expectedFitness = distances[permutation[n - 1] * n + permutation[0]];
+  for (unsigned i = 1; i < n; ++i)
+    expectedFitness += distances[permutation[i - 1] * n + permutation[i]];
 
   CHECK(std::abs(expectedFitness - fitness) < 1e-6f,
         "Wrong fitness evaluation: expected %f, but found %f", expectedFitness,
         fitness);
-}
-
-float getFitness(const unsigned* tour,
-                 const unsigned n,
-                 const float* distances) {
-  float fitness = distances[tour[0] * n + tour[n - 1]];
-  for (unsigned i = 1; i < n; ++i)
-    fitness += distances[tour[i - 1] * n + tour[i]];
-  return fitness;
 }

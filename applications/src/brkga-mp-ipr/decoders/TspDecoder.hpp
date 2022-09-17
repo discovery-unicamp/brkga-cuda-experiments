@@ -1,15 +1,17 @@
 #ifndef TSP_DECODER_HPP
 #define TSP_DECODER_HPP
 
-#include <vector>
+#include "BaseDecoder.hpp"
 
 class TspInstance;
 
-class TspDecoder {
+class TspDecoder : public BaseDecoder {
 public:
   TspDecoder(TspInstance* _instance = nullptr) : instance(_instance) {}
 
-  double decode(const std::vector<double>& chromosome, bool) const;
+  ~TspDecoder() = default;
+
+  Fitness decode(Chromosome& chromosome, bool) const override;
 
 private:
   TspInstance* instance;

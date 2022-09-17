@@ -7,6 +7,8 @@ class ScpInstance;
 
 class ScpDecoder : public box::Decoder {
 public:
+  typedef float Fitness;
+
   using box::Decoder::decode;
 
   ScpDecoder()

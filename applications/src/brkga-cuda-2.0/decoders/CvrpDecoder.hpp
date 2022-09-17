@@ -7,6 +7,8 @@ class CvrpInstance;
 
 class CvrpDecoder : public box::Decoder {
 public:
+  typedef float Fitness;
+
   using box::Decoder::decode;
 
   CvrpDecoder() : instance(nullptr), dDemands(nullptr), dDistances(nullptr) {}

@@ -1,17 +1,26 @@
 #ifndef RUNNER_HPP
 #define RUNNER_HPP
 
+#include "../Tweaks.hpp"
 #include "Logger.hpp"
 #include "Parameters.hpp"
+#include "SortMethod.hpp"
 
+#include <algorithm>
+#include <cassert>
 #include <chrono>
+#include <fstream>
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
+
+extern SortMethod sortToValidateMethod;  // Defined on `BaseInstance.cpp`
 
 /// Outputs a pair/tuple/vector with no spaces
 namespace std {
@@ -42,25 +51,10 @@ inline ostream& operator<<(ostream& out, const vector<T>& v) {
 }
 }  // namespace std
 
-enum SortMethod { stdSort, thrustHost, thrustKernel, bbSegSort };
-
-extern SortMethod sortToValidateMethod;
-
-void bbSegSortCall(float* dChromosome, unsigned* dPermutation, unsigned length);
-
-void sortChromosomeToValidate(const float* chromosome,
-                              unsigned* permutation,
-                              unsigned length);
-
-void sortChromosomeToValidate(const double* chromosome,
-                              unsigned* permutation,
-                              unsigned length);
-
-template <class Float, class Algorithm, class Instance>
+template <class Fitness, class Algorithm, class Instance>
 class RunnerBase {
 public:
-  typedef Float Fitness;
-  typedef std::vector<Float> Chromosome;
+  typedef std::vector<Gene> Chromosome;
 
   RunnerBase(int argc, char** argv)
       : params(Parameters::parse(argc, argv)),
@@ -68,33 +62,99 @@ public:
         algorithm(nullptr),
         generation(0) {}
 
-  virtual ~RunnerBase() { delete algorithm; }
+  virtual ~RunnerBase() {}
 
-  virtual bool stop() const = 0;
+  std::vector<std::vector<Chromosome>> importPopulation(std::istream& in) {
+    unsigned p = 0;  // Population id
+    std::vector<Chromosome> population;
+    std::vector<std::vector<Chromosome>> allPopulations;
 
-  virtual Algorithm* getAlgorithm() = 0;
+    std::string line;
+    unsigned lineCount = 0;
+    bool flag = true;
+    while (flag) {
+      flag = (bool)std::getline(in, line);
+      lineCount += 1;
+      if (flag && line[0] == '\t') {
+        std::istringstream ss(line);
 
-  virtual Fitness getBestFitness() = 0;
+        Chromosome chromosome;
+        Gene gene = -1;
+        while (ss >> gene) chromosome.push_back(gene);
 
-  virtual Chromosome getBestChromosome() = 0;
+        if (chromosome.size() != instance.chromosomeLength())
+          throw std::runtime_error("Missing genes on line "
+                                   + std::to_string(lineCount));
 
-  virtual void evolve() = 0;
+        population.push_back(std::move(chromosome));
+      } else if (!population.empty()) {
+        box::logger::debug("Found", population.size(),
+                           "chromosomes for population", p);
 
-  virtual void exchangeElites(unsigned count) = 0;
+        // TODO add this validation in the framework
+        if (p >= params.numberOfPopulations)
+          throw std::runtime_error("Found more than "
+                                   + std::to_string(params.numberOfPopulations)
+                                   + " populations");
+        if (population.size() != params.populationSize)
+          throw std::runtime_error("Invalid population size: found "
+                                   + std::to_string(population.size())
+                                   + " but expected "
+                                   + std::to_string(params.populationSize));
 
-  virtual SortMethod determineSortMethod(
-      const std::string& decodeType) const = 0;
+        allPopulations.push_back(std::move(population));
+        assert(population.empty());
+        ++p;
+      }
+    }
 
-  inline float getTimeElapsed() const {
-    return RunnerBase::timeDiff(startTime, RunnerBase::now());
+    return allPopulations;
+  }
+
+  void exportPopulation(std::ostream& out) {
+    for (unsigned p = 0; p < params.numberOfPopulations; ++p) {
+      const auto population = getPopulation(p);
+
+      out << "Population " << p + 1 << ":\n";
+      for (const auto& ch : population) {
+        out << '\t';
+        bool flag = false;
+        for (const auto gene : ch) {
+          if (flag) {
+            out << ' ';
+          } else {
+            flag = true;
+          }
+          out << gene;
+        }
+        out << '\n';
+      }
+    }
   }
 
   inline void run() {
-    box::logger::info("Optimizing");
-    startTime = now();
-    algorithm = getAlgorithm();
+    const auto filename = "pop.txt";
+    if (importPop) {
+      box::logger::info("Importing initial population from", filename);
+      std::ifstream population(filename);
+      const auto initialPopulation = importPopulation(population);
+      population.close();
+      startTime = now();
+      algorithm = getAlgorithm(initialPopulation);
+    } else {
+      box::logger::info("Generating the initial population");
+      startTime = now();
+      algorithm = getAlgorithm();
+    }
 
-    std::vector<std::tuple<float, float, unsigned>> convergence;
+    if (exportPop) {
+      box::logger::info("Exporting initial population to", filename);
+      std::ofstream population(filename);
+      exportPopulation(population);
+    }
+
+    box::logger::info("Optimizing");
+    std::vector<std::tuple<Fitness, float, unsigned>> convergence;
     while (!stop()) {
       if (generation % params.logStep == 0) {
         box::logger::debug("Save convergence log");
@@ -114,6 +174,7 @@ public:
       }
     }
 
+    box::logger::debug("Get the best result");
     auto bestFitness = getBestFitness();
     auto timeElapsed = getTimeElapsed();
     auto bestChromosome = getBestChromosome();
@@ -136,6 +197,34 @@ public:
     box::logger::info("Everything looks good!");
     box::logger::info("Exiting");
   }
+
+protected:
+  typedef std::vector<std::vector<Gene>> Population;
+  virtual bool stop() const = 0;
+
+  virtual Algorithm* getAlgorithm(
+      const std::vector<Population>& initialPopulation =
+          std::vector<Population>()) = 0;
+
+  virtual Fitness getBestFitness() = 0;
+
+  virtual Chromosome getBestChromosome() = 0;
+
+  virtual std::vector<Chromosome> getPopulation(unsigned p) = 0;
+
+  virtual void evolve() = 0;
+
+  virtual void exchangeElites(unsigned count) = 0;
+
+  virtual SortMethod determineSortMethod(
+      const std::string& decodeType) const = 0;
+
+  inline float getTimeElapsed() const {
+    return RunnerBase::timeDiff(startTime, RunnerBase::now());
+  }
+
+  bool importPop = false;
+  bool exportPop = false;
 
   Parameters params;
   Instance instance;

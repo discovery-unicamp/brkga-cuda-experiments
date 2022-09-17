@@ -1,48 +1,46 @@
 #ifndef INSTANCES_TSPINSTANCE_HPP
 #define INSTANCES_TSPINSTANCE_HPP 1
 
-#include "../Point.hpp"
+#include "BaseInstance.hpp"
 
 #include <string>
 #include <vector>
 
-class TspInstance {
+class TspInstance : public BaseInstance<float> {
 public:
   static TspInstance fromFile(const std::string& filename);
 
-  TspInstance(TspInstance&& that)
+  inline TspInstance(TspInstance&& that)
       : numberOfClients(that.numberOfClients),
         distances(std::move(that.distances)) {}
 
   ~TspInstance() = default;
 
-  [[nodiscard]] inline unsigned chromosomeLength() const {
+  [[nodiscard]] inline unsigned chromosomeLength() const override {
     return numberOfClients;
   }
 
-  void validate(const float* chromosome, const float fitness) const;
+  inline void validate(const Gene* chromosome, float fitness) const override {
+    validate(getSortedChromosome(chromosome).data(), fitness);
+  }
 
-  void validate(const double* chromosome, const double fitness) const;
-
-  void validate(const std::vector<unsigned>& tour, const float fitness) const;
+  void validate(const unsigned* permutation, float fitness) const override;
 
   unsigned numberOfClients;
   std::vector<float> distances;
 
 private:
-  TspInstance() : numberOfClients(-1u) {}
+  inline TspInstance() : numberOfClients(-1u) {}
 };
 
-float getFitness(const unsigned* tour,
-                 const unsigned n,
-                 const float* distances);
-
-void sortChromosomeToValidate(const float* chromosome,
-                              unsigned* permutation,
-                              unsigned size);
-
-void sortChromosomeToValidate(const double* chromosome,
-                              unsigned* permutation,
-                              unsigned size);
+template <class T>
+inline HOST_DEVICE_CUDA_ONLY float getFitness(const T& tour,
+                                              const unsigned n,
+                                              const float* distances) {
+  float fitness = distances[tour[0] * n + tour[n - 1]];
+  for (unsigned i = 1; i < n; ++i)
+    fitness += distances[tour[i - 1] * n + tour[i]];
+  return fitness;
+}
 
 #endif  // INSTANCES_TSPINSTANCE_HPP
