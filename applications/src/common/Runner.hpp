@@ -139,11 +139,17 @@ public:
       std::ifstream population(filename);
       const auto initialPopulation = importPopulation(population);
       population.close();
+
+      box::logger::info("Starting to measure time now");
       startTime = now();
+
+      box::logger::info("Building the algorithm with the given population");
       algorithm = getAlgorithm(initialPopulation);
     } else {
-      box::logger::info("Generating the initial population");
+      box::logger::info("Starting to measure time now");
       startTime = now();
+
+      box::logger::info("Building the algorithm with a generated population");
       algorithm = getAlgorithm();
     }
 
@@ -158,14 +164,25 @@ public:
     while (!stop()) {
       if (generation % params.logStep == 0) {
         box::logger::debug("Save convergence log");
-        convergence.emplace_back(getBestFitness(), getTimeElapsed(),
-                                 generation);
+
+        const auto curFitness = getBestFitness();
+        const auto curElapsed = getTimeElapsed();
+        convergence.emplace_back(curFitness, curElapsed, generation);
+
+        if (LOG_LEVEL == box::logger::_LogType::INFO) {
+          std::clog << "Generation " << generation << ": " << curFitness << '('
+                    << curElapsed << "s)" << '\r' << std::flush;
+        }
       }
 
       box::logger::debug("Evolve to the next generation");
       evolve();
       ++generation;
 
+      if (params.prInterval != 0 && generation % params.prInterval == 0) {
+        box::logger::debug("Run path relink heuristic");
+        pathRelink();
+      }
       if (generation % params.exchangeBestInterval == 0
           && generation != params.generations) {
         box::logger::debug("Exchange", params.exchangeBestCount,
@@ -179,12 +196,12 @@ public:
     auto timeElapsed = getTimeElapsed();
     auto bestChromosome = getBestChromosome();
 
+    box::logger::info("Optimization has finished after", timeElapsed,
+                      "seconds with fitness", bestFitness);
+
     delete algorithm;
     algorithm = nullptr;
     convergence.emplace_back(bestFitness, timeElapsed, generation);
-
-    box::logger::info("Optimization has finished after", timeElapsed,
-                      "seconds with fitness", bestFitness);
 
     std::cout << std::fixed << std::setprecision(6) << "ans=" << bestFitness
               << " elapsed=" << timeElapsed << " convergence=" << convergence
@@ -216,6 +233,11 @@ protected:
 
   virtual void exchangeElites(unsigned count) = 0;
 
+  // FIXME what are the parameters?
+  virtual void pathRelink() {
+    throw std::runtime_error("Path Relink wasn't implemented");
+  }
+
   virtual SortMethod determineSortMethod(
       const std::string& decodeType) const = 0;
 
@@ -232,28 +254,18 @@ protected:
   unsigned generation;
 
 private:
-  // #ifdef _OPENMP
-  //   typedef double Elapsed;
-  // #else
   typedef std::chrono::time_point<std::chrono::high_resolution_clock> Elapsed;
-  // #endif
 
-  static Elapsed now() {
-    // #ifdef _OPENMP
-    //   return omp_get_wtime();
-    // #else
+  static inline Elapsed now() {
     return std::chrono::high_resolution_clock::now();
-    // #endif
   }
 
-  static float timeDiff(const Elapsed& start, const Elapsed& end) {
+  static inline float timeDiff(const Elapsed& start, const Elapsed& end) {
     std::chrono::duration<float> diff = end - start;
     return diff.count();
   }
 
   Elapsed startTime;
-  // cudaEvent_t startEvent;
-  // cudaEvent_t stopEvent;
 };
 
 #endif  // RUNNER_HPP

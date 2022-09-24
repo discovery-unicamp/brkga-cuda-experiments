@@ -3,13 +3,12 @@ import itertools
 import logging
 import os
 from pathlib import Path
-import traceback
 from typing import Any, Dict, Iterable, List, Optional, Union
 import pandas as pd
 
 from result import save_results
 from instance import get_instance_path
-from shell import CATCH_FAILURES, shell
+from shell import shell
 
 
 #             threads exchange-interval exchange-count pop-count pop-size elite   mutant  rhoe
@@ -120,13 +119,13 @@ INSTANCES = {
         # 'ja9847',
         # 'gr9882',
         # 'kz9976',
-        'fi10639',
+        # 'fi10639',
         # 'mo14185',
         # 'ho14473',
         # 'it16862',
         # 'vm22775',
         # 'sw24978',
-        'bm33708',
+        # 'bm33708',
     ]
 }
 
@@ -139,6 +138,12 @@ def main():
         # __build_params(
         #     tool='brkga-api',
         #     problems=['scp', 'tsp', 'cvrp_greedy', 'cvrp'],
+        #     decoders=['cpu'],
+        #     test_count=TEST_COUNT,
+        # ),
+        # __build_params(
+        #     tool='brkga-mp-ipr',
+        #     problems=['tsp', 'cvrp', 'scp'],
         #     decoders=['cpu'],
         #     test_count=TEST_COUNT,
         # ),
@@ -182,23 +187,17 @@ def main():
         #     test_count=TEST_COUNT,
         # ),
         __build_params(
-            tool='brkga-mp-ipr',
-            problems=['tsp', 'cvrp', 'scp'],
+            tool='brkga-cuda-2.0',
+            problems=['tsp'],
             decoders=['cpu'],
             test_count=TEST_COUNT,
         ),
-        __build_params(
-            tool='brkga-cuda-2.0',
-            problems=['tsp', 'cvrp', 'scp'],
-            decoders=['cpu', 'gpu'],
-            test_count=TEST_COUNT,
-        ),
-        __build_params(
-            tool='brkga-cuda-2.0',
-            problems=['tsp', 'cvrp'],
-            decoders=['cpu-permutation', 'gpu-permutation'],
-            test_count=TEST_COUNT,
-        ),
+        # __build_params(
+        #     tool='brkga-cuda-2.0',
+        #     problems=['tsp', 'cvrp'],
+        #     decoders=['cpu-permutation', 'gpu-permutation'],
+        #     test_count=TEST_COUNT,
+        # ),
     ))
 
     __save_results(info, results)
@@ -215,7 +214,7 @@ def __get_system_info() -> Dict[str, str]:
         'cpu-memory':
             shell("grep MemTotal /proc/meminfo | awk '{print $2 / 1024}'"),
         'gpu':
-            shell("nvidia-smi -L | grep -oP 'NVIDIA.*(?= \(UUID)'")
+            shell("nvidia-smi -L | grep -oP " r"'NVIDIA.*(?= \(UUID)'")
             .split('\n')[DEVICE],
         'gpu-memory': shell(f"nvidia-smi -i {DEVICE}"
                             " | grep -m1 -oP '[0-9]*(?=MiB)'"
@@ -238,15 +237,17 @@ def __build_params(
         'seed': range(1, test_count + 1),
         'omp-threads': int(shell('nproc')),
         'threads': 256,
-        'generations': 200,
+        'generations': 1000,
         'pop-count': 3,
         'pop-size': 256,
         'rhoe': .75,
-        'elite': .10,
-        'mutant': .10,
+        'elite': .10,  # % of the population
+        'mutant': .10,  # % of the population
         'exchange-interval': 50,
         'exchange-count': 2,
-        'similarity-threshold': .90,
+        'pr-interval': 100,
+        'pr-block-factor': .10,  # % of the chromosome length
+        'similarity-threshold': .90,  # % of the chromosome length
         'log-step': 1,
     }
     for params in __combinations(param_combinations):
@@ -318,9 +319,11 @@ def __cmake(
         with open(TWEAKS_FILE_PATH, 'r') as tweak_file:
             existing_tweaks_content = tweak_file.read()
     except FileNotFoundError:
+        logging.warning("Tweaks file not found; generating one")
         existing_tweaks_content = ''
 
     if tweaks_content == existing_tweaks_content:
+        # Doesn't rewrite to avoid make thinking it should recompile the code
         logging.info("Tweaks file hasn't changed")
     else:
         with open(TWEAKS_FILE_PATH, 'w') as tweak_file:
@@ -343,31 +346,23 @@ def __run_test(
 
     cmd = str(executable.absolute())
     cmd += ''.join(f' --{arg} {value}' for arg, value in parsed_params.items())
+    output = shell(cmd)
+    result = dict(tuple(r.split('=')) for r in output.split())
+    assert 'convergence' in result
+    assert result['convergence'] != '[]'
 
-    try:
-        result = dict(tuple(r.split('=')) for r in shell(cmd).split())
-        if 'convergence' not in result or result['convergence'] == '[]':
-            result['convergence'] = '?'
-
-        return {
-            **parsed_params,
-            'ans': result['ans'],
-            'elapsed': result['elapsed'],
-            'convergence': result.get('convergence', '?'),
-        }
-    except Exception:
-        if not CATCH_FAILURES:
-            raise
-
-        logging.warning("Test failed")
-        with open('errors.txt', 'a') as errors:
-            errors.write(traceback.format_exc() + '\n')
-            errors.write(f'=======\n\n')
-
-        return None
+    return {
+        **parsed_params,
+        'ans': result['ans'],
+        'elapsed': result['elapsed'],
+        'convergence': result['convergence'],
+    }
 
 
-def __save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]]):
+def __save_results(
+        info: Dict[str, str],
+        iter_results: Iterable[Dict[str, str]],
+):
     OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
     backup_file = OUTPUT_PATH.joinpath('.backup.tsv')
@@ -380,17 +375,13 @@ def __save_results(info: Dict[str, str], iter_results: Iterable[Dict[str, str]])
         results = pd.concat((results, pd.DataFrame([{**res, **info}])))
         results.to_csv(backup_file, index=False, sep='\t')
 
-    if results.empty:
-        logging.warning("All tests failed")
-        return
-
     test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
     results['test_time'] = test_time
 
     # Define the first columns of the .tsv
     # The others are still written to the file after these ones
-    first_columns = ['test_time', 'commit', 'tool',
-                     'problem', 'instance', 'ans', 'elapsed', 'seed']
+    first_columns = ['test_time', 'commit', 'tool', 'problem', 'instance',
+                     'seed', 'ans', 'elapsed']
     other_columns = [c for c in results.columns if c not in first_columns]
     results = results[first_columns + other_columns]
 

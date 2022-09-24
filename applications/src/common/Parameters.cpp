@@ -31,6 +31,12 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
       params.exchangeBestInterval = std::stoi(value);
     } else if (arg == "--exchange-count") {
       params.exchangeBestCount = std::stoi(value);
+    } else if (arg == "--pr-interval") {
+      params.prInterval = std::stoi(value);
+    } else if (arg == "--pr-block-size") {
+      params.prBlockSize = std::stoi(value);
+    } else if (arg == "--pr-block-factor") {
+      params.prBlockFactor = std::stof(value);
     } else if (arg == "--pop-count") {
       params.numberOfPopulations = std::stoi(value);
     } else if (arg == "--pop-size") {
@@ -38,9 +44,9 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
     } else if (arg == "--nelite") {
       params.eliteSize = std::stoi(value);
     } else if (arg == "--elite") {
-      params.eliteProportion = std::stof(value);
+      params.eliteFactor = std::stof(value);
     } else if (arg == "--mutant") {
-      params.mutantProportion = std::stof(value);
+      params.mutantFactor = std::stof(value);
     } else if (arg == "--nmutant") {
       params.mutantSize = std::stoi(value);
     } else if (arg == "--rhoe") {

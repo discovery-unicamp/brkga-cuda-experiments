@@ -24,6 +24,7 @@ typedef CvrpDecoder Decoder;
 #endif
 
 #include "../common/Runner.hpp"
+#include "../common/utils/StringUtils.hpp"
 #include <brkga_mp_ipr/brkga_mp_ipr.hpp>
 
 #include <algorithm>
@@ -33,10 +34,6 @@ typedef CvrpDecoder Decoder;
 #include <vector>
 
 typedef BRKGA::BRKGA_MP_IPR<Decoder> BrkgaMPIpr;
-
-inline bool contains(const std::string& str, const std::string& pattern) {
-  return str.find(pattern) != std::string::npos;
-}
 
 class BrkgaMPIprRunner
     : public RunnerBase<Decoder::Fitness, BrkgaMPIpr, Instance> {
@@ -56,8 +53,8 @@ public:
     }
 
     config.population_size = params.populationSize;
-    config.elite_percentage = params.getEliteProportion();
-    config.mutants_percentage = params.getMutantProportion();
+    config.elite_percentage = params.getEliteFactor();
+    config.mutants_percentage = params.getMutantFactor();
     config.num_elite_parents = 1;
     config.total_parents = 2;
     config.bias_type = BRKGA::BiasFunctionType::CUSTOM;  // use the old rhoe
@@ -109,10 +106,10 @@ public:
       algo->setInitialPopulation(chromosomes);
       algo->initialize();
     } else {
-      algo->initialize(true);
+      algo->initialize(true);  // set to generate random solutions
     }
 
-    // Set the `algorithm` variable to calculate the fitness
+    // Set the `algorithm` variable to calculate the fitness.
     algorithm = algo;
     updateBest();
 

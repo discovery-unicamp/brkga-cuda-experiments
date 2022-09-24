@@ -11,12 +11,15 @@ struct Parameters {
   unsigned numberOfPopulations = 0;
   unsigned populationSize = 0;
   unsigned eliteSize = 0;
-  float eliteProportion = 0;
+  float eliteFactor = 0;
   unsigned mutantSize = 0;
-  float mutantProportion = 0;
+  float mutantFactor = 0;
   float rhoe = 0;
   unsigned exchangeBestInterval = 0;
   unsigned exchangeBestCount = 0;
+  unsigned prInterval = 0;
+  unsigned prBlockSize = 0;
+  float prBlockFactor = 0;
   unsigned seed = 0;
   std::string decoder;
   float similarityThreshold = 0;
@@ -24,26 +27,38 @@ struct Parameters {
   unsigned ompThreads = 0;
   unsigned logStep = 0;
 
-  [[nodiscard]] inline float getEliteProportion() const {
+  [[nodiscard]] inline float getEliteFactor() const {
     return (eliteSize != 0 ? (float)eliteSize / (float)populationSize
-                           : eliteProportion);
+                           : eliteFactor);
   }
 
   [[nodiscard]] inline unsigned getNumberOfElites() const {
-    return (eliteSize != 0
-                ? eliteSize
-                : (unsigned)(eliteProportion * (float)populationSize));
+    return (eliteSize != 0 ? eliteSize
+                           : (unsigned)(eliteFactor * (float)populationSize));
   }
 
-  [[nodiscard]] inline float getMutantProportion() const {
+  [[nodiscard]] inline float getMutantFactor() const {
     return (mutantSize != 0 ? (float)mutantSize / (float)populationSize
-                            : mutantProportion);
+                            : mutantFactor);
   }
 
   [[nodiscard]] inline unsigned getNumberOfMutants() const {
-    return (mutantSize != 0
-                ? mutantSize
-                : (unsigned)(mutantProportion * (float)populationSize));
+    return (mutantSize != 0 ? mutantSize
+                            : (unsigned)(mutantFactor * (float)populationSize));
+  }
+
+  [[nodiscard]] inline float getPathRelinkBlockFactor() const {
+    if (prBlockSize != 0)
+      throw std::runtime_error(
+          "Cannot get the factor without chromosome length");
+    return prBlockFactor;
+  }
+
+  [[nodiscard]] inline unsigned getPathRelinkBlockSize() const {
+    if (prBlockSize == 0)
+      throw std::runtime_error(
+          "Cannot get the size without chromosome length");
+    return prBlockSize;
   }
 };
 

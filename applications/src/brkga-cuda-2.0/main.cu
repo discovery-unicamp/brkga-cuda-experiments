@@ -85,6 +85,10 @@ public:
         instance.chromosomeLength(), params.similarityThreshold, 1e-7f));
   }
 
+  void pathRelink() override {
+    algorithm->runPathRelink(box::PathRelinkPair::bestElites, 3);
+  }
+
   SortMethod determineSortMethod(const std::string& decodeType) const override {
     if (contains(decodeType, "permutation")) return SortMethod::bbSegSort;
     if (contains(decodeType, "gpu")) return SortMethod::thrustKernel;
