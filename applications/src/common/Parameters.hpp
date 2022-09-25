@@ -1,6 +1,7 @@
 #ifndef MAIN_PARAMETERS_HPP
 #define MAIN_PARAMETERS_HPP 1
 
+#include <stdexcept>
 #include <string>
 
 struct Parameters {
@@ -56,8 +57,7 @@ struct Parameters {
 
   [[nodiscard]] inline unsigned getPathRelinkBlockSize() const {
     if (prBlockSize == 0)
-      throw std::runtime_error(
-          "Cannot get the size without chromosome length");
+      throw std::runtime_error("Cannot get the size without chromosome length");
     return prBlockSize;
   }
 };

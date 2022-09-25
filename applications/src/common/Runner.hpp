@@ -20,7 +20,10 @@
 #include <utility>
 #include <vector>
 
+#define SHOW_PROGRESS
+
 extern SortMethod sortToValidateMethod;  // Defined on `BaseInstance.cpp`
+constexpr auto TERMINAL_LENGTH = 50;
 
 /// Outputs a pair/tuple/vector with no spaces
 namespace std {
@@ -160,8 +163,9 @@ public:
     }
 
     box::logger::info("Optimizing");
+    float previousLogTime = -1e6;
     std::vector<std::tuple<Fitness, float, unsigned>> convergence;
-    while (!stop()) {
+    while (generation < params.generations) {
       if (generation % params.logStep == 0) {
         box::logger::debug("Save convergence log");
 
@@ -169,10 +173,19 @@ public:
         const auto curElapsed = getTimeElapsed();
         convergence.emplace_back(curFitness, curElapsed, generation);
 
-        if (LOG_LEVEL == box::logger::_LogType::INFO) {
-          std::clog << "Generation " << generation << ": " << curFitness << '('
-                    << curElapsed << "s)" << '\r' << std::flush;
+#ifdef SHOW_PROGRESS
+        if (LOG_LEVEL == box::logger::_LogType::INFO
+            && curElapsed - previousLogTime >= 0.1) {
+          previousLogTime = curElapsed;
+          char sec[10];
+          snprintf(sec, sizeof(sec), "%.1fs", curElapsed);
+          box::logger::pbar((double)generation / (double)params.generations,
+                            TERMINAL_LENGTH,
+                            /* end? */ false,
+                            "Generation " + std::to_string(generation) + ":",
+                            curFitness, "in", sec, "       ");
         }
+#endif  // SHOW_PROGRESS
       }
 
       box::logger::debug("Evolve to the next generation");
@@ -196,6 +209,17 @@ public:
     auto timeElapsed = getTimeElapsed();
     auto bestChromosome = getBestChromosome();
 
+#ifdef SHOW_PROGRESS
+    if (LOG_LEVEL == box::logger::_LogType::INFO) {
+      char sec[10];
+      snprintf(sec, sizeof(sec), "%.1fs", timeElapsed);
+      box::logger::pbar(
+          (double)generation / (double)params.generations, TERMINAL_LENGTH,
+          /* end? */ true, "Generation " + std::to_string(generation) + ":",
+          bestFitness, "in", sec, "       ");
+    }
+#endif  // SHOW_PROGRESS
+
     box::logger::info("Optimization has finished after", timeElapsed,
                       "seconds with fitness", bestFitness);
 
@@ -217,7 +241,6 @@ public:
 
 protected:
   typedef std::vector<std::vector<Gene>> Population;
-  virtual bool stop() const = 0;
 
   virtual Algorithm* getAlgorithm(
       const std::vector<Population>& initialPopulation =

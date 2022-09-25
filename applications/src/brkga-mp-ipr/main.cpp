@@ -71,11 +71,6 @@ public:
     config.pr_percentage = 1.0;
   }
 
-  bool stop() const override {
-    // return getTimeElapsed() >= 3 * 60;
-    return generation >= params.generations;
-  }
-
   BrkgaMPIpr* getAlgorithm(const std::vector<std::vector<std::vector<Gene>>>&
                                initialPopulation) override {
     box::logger::info("Building the algorithm");

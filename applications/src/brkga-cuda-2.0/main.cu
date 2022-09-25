@@ -55,8 +55,6 @@ public:
                    .ompThreads(params.ompThreads)
                    .build()) {}
 
-  bool stop() const override { return generation >= params.generations; }
-
   box::Brkga* getAlgorithm(const std::vector<std::vector<std::vector<Gene>>>&
                                initialPopulation) override {
     return new box::Brkga(config, initialPopulation);
@@ -86,7 +84,12 @@ public:
   }
 
   void pathRelink() override {
-    algorithm->runPathRelink(box::PathRelinkPair::bestElites, 3);
+    const auto factor = params.getPathRelinkBlockFactor();
+    const auto bs = (unsigned)(factor * (double)instance.chromosomeLength());
+    box::logger::debug("Path Relink block size:", bs);
+
+    const unsigned elitesToTake = 3;
+    algorithm->runPathRelink(bs, box::PathRelinkPair::bestElites, elitesToTake);
   }
 
   SortMethod determineSortMethod(const std::string& decodeType) const override {
