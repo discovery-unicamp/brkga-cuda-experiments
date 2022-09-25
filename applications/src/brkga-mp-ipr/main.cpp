@@ -143,26 +143,21 @@ public:
   void pathRelink() override {
     const auto n = instance.chromosomeLength();
 
-#if defined(TSP)
+#if defined(TSP) || defined(CVRP) || defined(CVRP_GREEDY)
     auto prType = BRKGA::PathRelinking::Type::PERMUTATION;
     std::shared_ptr<BRKGA::DistanceFunctionBase> dist(
         new BRKGA::KendallTauDistance);
-    const auto minDistance = n * (n - 1) * (1 - params.similarityThreshold);
+    const auto minDistance = n * (n - 1) / 2 * (1 - params.similarityThreshold);
 #elif defined(SCP)
     auto prType = BRKGA::PathRelinking::Type::DIRECT;
     std::shared_ptr<BRKGA::DistanceFunctionBase> dist(
         new BRKGA::HammingDistance(instance.acceptThreshold));
     const auto minDistance = n * (1 - params.similarityThreshold);
-#elif defined(CVRP) || defined(CVRP_GREEDY)
-    auto prType = BRKGA::PathRelinking::Type::PERMUTATION;
-    std::shared_ptr<BRKGA::DistanceFunctionBase> dist(
-        new BRKGA::KendallTauDistance);
-    const auto minDistance = n * (n - 1) * (1 - params.similarityThreshold);
 #else
 #error No problem/instance/decoder defined
 #endif
 
-    auto selectMethod = BRKGA::PathRelinking::Selection::BESTSOLUTION;
+    auto selectMethod = BRKGA::PathRelinking::Selection::RANDOMELITE;
     unsigned pairs = 0;  // Take the default
     auto bs = (unsigned)(n * params.getPathRelinkBlockFactor());
     unsigned maxTime = 10;
