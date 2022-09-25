@@ -9,12 +9,21 @@ import pandas as pd
 from result import read_results
 
 
-files = [
-    'remove-duplicated-dl3.zip',
-    'remove-duplicated-dl4.zip',
+FILES = [
+    # 'remove-duplicated-dl3.zip',
+    # 'remove-duplicated-dl4.zip',
+    # 'brkga-mp-ipr.zip',
+    'pr-test-v1.zip',
 ]
+DATA = {file: read_results(Path(f'results/{file}')) for file in FILES}
+
+logging.info("Converting convergence to lists...")
+for file in FILES:
+    DATA[file].loc[:, 'convergence'] = DATA[file]['convergence'].apply(eval)
+logging.info("Done.")
 
 PARAMS = [
+    'tool',
     'decoder',
     'threads',
     'generations',
@@ -35,37 +44,50 @@ FITNESS_VAR = [
     'elite',
     'similarity-threshold',
 ]
+PLOT_GENERATIONS = False
 
 
 def convergence():
-    df = read_results(Path(f'results/{files[0]}'))
+    df = DATA[FILES[0]]
     instances = df[['problem', 'instance']].drop_duplicates()
 
-    for _, instance in instances.iterrows():
+    for _, inst in instances.iterrows():
         plt.figure(figsize=(10.80, 7.20))
+        problem = inst['problem']
+        instance = inst['instance']
 
-        for infile in files:
-            df = read_results(Path(f'results/{infile}'))
-            df = df.loc[(df['instance'] == instance['instance'])]
-            df = df.loc[(df['problem'] == instance['problem'])]
-            df.loc[:, 'convergence'] = df['convergence'].apply(eval)
+        for input_file in FILES:
+            df = DATA[input_file]
+            df = df.loc[(df['instance'] == instance)]
+            df = df.loc[(df['problem'] == problem)]
+            # df = df.loc[(df['similarity-threshold'] == .9)]
+            # df = df.loc[(df['elite'] == .1)]
 
             for _, row in df.iterrows():
                 fitness, elapsed, generation = zip(*row['convergence'])
+                fitness = [y
+                           for i, x in enumerate(fitness)
+                           for y in (1 if i == len(fitness) - 1 else 2) * [x]]
+                elapsed = [y
+                           for i, x in enumerate(elapsed)
+                           for y in (1 if i == 0 else 2) * [x]]
+                generation = [y
+                              for i, x in enumerate(generation)
+                              for y in (1 if i == 0 else 2) * [x]]
                 plt.plot(
-                    elapsed,
+                    (generation if PLOT_GENERATIONS else elapsed),
                     fitness,
                     label='_'.join(map(str, row[PARAMS])),
                 )
 
-        name = f"{instance['problem']}-{instance['instance']}"
+        name = f"{problem}-{instance}"
 
-        if instance['problem'] == 'scp':
+        if problem == 'scp':
             plt.ylim((500, 1500))
 
         plt.title(f"{name} convergence")
-        plt.xlabel("Time (s)")
-        plt.ylabel("Fitness / BKS")
+        plt.xlabel("Generation" if PLOT_GENERATIONS else "Time (s)")
+        plt.ylabel("Fitness")
         legend = plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.minorticks_on()
         plt.grid(axis='y', which='minor', linestyle=':')
@@ -81,16 +103,12 @@ def fitness():
     def bb(conv: List[Tuple[float, float, float]], elapsed: float):
         assert len(conv) > 0
         k = bisect_right(conv, elapsed, key=lambda c: c[1])
+        assert k > 0
         assert conv[k - 1][1] <= elapsed
         assert k == len(conv) or conv[k][1] > elapsed
         return conv[k - 1][0]
 
-    data = {file: read_results(Path(f'results/{file}')) for file in files}
-
-    for file in files:
-        data[file].loc[:, 'convergence'] = data[file]['convergence'].apply(eval)
-
-    instances = data[files[0]][['problem', 'instance']].drop_duplicates()
+    instances = DATA[FILES[0]][['problem', 'instance']].drop_duplicates()
     for _, ins in instances.iterrows():
         instance = ins['instance']
         problem = ins['problem']
@@ -99,7 +117,7 @@ def fitness():
                          problem, instance, var)
             df = pd.concat((
                 df[(df['instance'] == instance) & (df['problem'] == problem)]
-                for df in data.values()
+                for df in DATA.values()
             ))
 
             fig, ax = plt.subplots(3, 3, figsize=(2*10.80, 2*7.20))
@@ -113,10 +131,10 @@ def fitness():
             name = f"{problem}-{instance}-{var}"
             outfile = Path('fitness', name + ".png")
             outfile.parent.mkdir(parents=True, exist_ok=True)
-            fig.savefig(outfile)
+            fig.savefig(str(outfile.absolute()))
             plt.close(fig)
 
 
 if __name__ == '__main__':
-    # convergence()
-    fitness()
+    convergence()
+    # fitness()
