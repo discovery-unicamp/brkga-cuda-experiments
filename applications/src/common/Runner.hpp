@@ -162,8 +162,11 @@ public:
       exportPopulation(population);
     }
 
-    box::logger::info("Optimizing");
+#ifdef SHOW_PROGRESS
     float previousLogTime = -1e6;
+#endif  // SHOW_PROGRESS
+
+    box::logger::info("Optimizing");
     std::vector<std::tuple<Fitness, float, unsigned>> convergence;
     while (generation < params.generations
            && getTimeElapsed() < params.maxTimeSeconds) {
@@ -182,8 +185,10 @@ public:
           snprintf(sec, sizeof(sec), "%.1fs", curElapsed);
           box::logger::pbar((double)generation / (double)params.generations,
                             TERMINAL_LENGTH,
-                            /* end? */ false,
-                            "Generation " + std::to_string(generation) + ":",
+                            /* begin? */ generation == 0,
+                            "Generation",
+                            std::to_string(generation) + "/"
+                                + std::to_string(params.generations) + ":",
                             curFitness, "in", sec, "       ");
         }
 #endif  // SHOW_PROGRESS
@@ -214,10 +219,11 @@ public:
     if (LOG_LEVEL == box::logger::_LogType::INFO) {
       char sec[10];
       snprintf(sec, sizeof(sec), "%.1fs", timeElapsed);
-      box::logger::pbar(
-          (double)generation / (double)params.generations, TERMINAL_LENGTH,
-          /* end? */ true, "Generation " + std::to_string(generation) + ":",
-          bestFitness, "in", sec, "       ");
+      box::logger::pbar((double)generation / (double)params.generations,
+                        TERMINAL_LENGTH,
+                        /* begin? */ generation == 0,
+                        "Generation " + std::to_string(generation) + ":",
+                        bestFitness, "in", sec, "       ");
     }
 #endif  // SHOW_PROGRESS
 

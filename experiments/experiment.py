@@ -30,6 +30,8 @@ logging.basicConfig(
 DEVICE = int(os.environ['DEVICE'])
 RESUME_FROM_BACKUP = False
 TEST_COUNT = 1
+MAX_TIME_SECONDS = 3 * 60
+TIMEOUT_SECONDS = MAX_TIME_SECONDS + 1 * 60
 BUILD_TYPE = 'release'
 TWEAKS_FILE_PATH = Path('applications', 'src', 'Tweaks.hpp')
 SOURCE_PATH = Path('applications')
@@ -262,7 +264,7 @@ def __build_params(
         'omp-threads': int(shell('nproc')),
         'threads': 256,
         'generations': 1000,
-        'max-time': 3 * 60,
+        'max-time': MAX_TIME_SECONDS,
         'pop-count': 3,
         'pop-size': 256,
         'rhoe': [.75, .85],
@@ -370,7 +372,8 @@ def __run_test(
         for key, value in params.items()
     }
 
-    cmd = str(executable.absolute())
+    cmd = f'timeout {TIMEOUT_SECONDS}s'
+    cmd += ' ' + str(executable.absolute())
     cmd += ''.join(f' --{arg} {value}' for arg, value in parsed_params.items())
     output = shell(cmd)
     result = dict(tuple(r.split('=')) for r in output.split())
