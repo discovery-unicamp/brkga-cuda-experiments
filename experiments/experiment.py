@@ -110,7 +110,7 @@ INSTANCES = {
         # 'mu1979',
         # 'nu3496',
         # 'ca4663',
-        # 'tz6117',
+        'tz6117',
         # 'eg7146',
         # 'ym7663',
         # 'pm8079',
@@ -119,7 +119,7 @@ INSTANCES = {
         # 'ja9847',
         # 'gr9882',
         # 'kz9976',
-        # 'fi10639',
+        'fi10639',
         # 'mo14185',
         # 'ho14473',
         # 'it16862',
@@ -138,12 +138,6 @@ def main():
         # __build_params(
         #     tool='brkga-api',
         #     problems=['scp', 'tsp', 'cvrp_greedy', 'cvrp'],
-        #     decoders=['cpu'],
-        #     test_count=TEST_COUNT,
-        # ),
-        # __build_params(
-        #     tool='brkga-mp-ipr',
-        #     problems=['tsp', 'cvrp', 'scp'],
         #     decoders=['cpu'],
         #     test_count=TEST_COUNT,
         # ),
@@ -187,8 +181,38 @@ def main():
         #     test_count=TEST_COUNT,
         # ),
         __build_params(
+            tool='brkga-mp-ipr',
+            problems=['tsp'],
+            decoders=['cpu'],
+            test_count=TEST_COUNT,
+        ),
+        __build_params(
             tool='brkga-cuda-2.0',
             problems=['tsp'],
+            decoders=['cpu'],
+            test_count=TEST_COUNT,
+        ),
+        __build_params(
+            tool='brkga-mp-ipr',
+            problems=['cvrp'],
+            decoders=['cpu'],
+            test_count=TEST_COUNT,
+        ),
+        __build_params(
+            tool='brkga-cuda-2.0',
+            problems=['cvrp'],
+            decoders=['cpu'],
+            test_count=TEST_COUNT,
+        ),
+        __build_params(
+            tool='brkga-mp-ipr',
+            problems=['scp'],
+            decoders=['cpu'],
+            test_count=TEST_COUNT,
+        ),
+        __build_params(
+            tool='brkga-cuda-2.0',
+            problems=['scp'],
             decoders=['cpu'],
             test_count=TEST_COUNT,
         ),
@@ -238,16 +262,18 @@ def __build_params(
         'omp-threads': int(shell('nproc')),
         'threads': 256,
         'generations': 1000,
+        'max-time': 3 * 60,
         'pop-count': 3,
         'pop-size': 256,
-        'rhoe': .75,
-        'elite': .10,  # % of the population
+        'rhoe': [.75, .85],
+        'elite': [.04, .07, .10],  # % of the population
         'mutant': .10,  # % of the population
         'exchange-interval': 50,
         'exchange-count': 2,
         'pr-interval': 100,
-        'pr-block-factor': .10,  # % of the chromosome length
-        'similarity-threshold': .90,  # % of the chromosome length
+        'pr-pairs': 3,
+        'pr-block-factor': [.04, .07, .10],  # % of the chromosome length
+        'similarity-threshold': [.90, .94, .98],  # % of the chromosome length
         'log-step': 1,
     }
     for params in __combinations(param_combinations):

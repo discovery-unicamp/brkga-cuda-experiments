@@ -9,6 +9,7 @@ struct Parameters {
 
   std::string instanceFileName;
   unsigned generations = 0;
+  float maxTimeSeconds = 1e18f;
   unsigned numberOfPopulations = 0;
   unsigned populationSize = 0;
   unsigned eliteSize = 0;
@@ -19,6 +20,7 @@ struct Parameters {
   unsigned exchangeBestInterval = 0;
   unsigned exchangeBestCount = 0;
   unsigned prInterval = 0;
+  unsigned prPairs = 0;
   unsigned prBlockSize = 0;
   float prBlockFactor = 0;
   unsigned seed = 0;

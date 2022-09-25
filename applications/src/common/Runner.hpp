@@ -165,7 +165,8 @@ public:
     box::logger::info("Optimizing");
     float previousLogTime = -1e6;
     std::vector<std::tuple<Fitness, float, unsigned>> convergence;
-    while (generation < params.generations) {
+    while (generation < params.generations
+           && getTimeElapsed() < params.maxTimeSeconds) {
       if (generation % params.logStep == 0) {
         box::logger::debug("Save convergence log");
 
@@ -220,6 +221,8 @@ public:
     }
 #endif  // SHOW_PROGRESS
 
+    if (generation < params.generations)
+      box::logger::info("Time limit reached!");
     box::logger::info("Optimization has finished after", timeElapsed,
                       "seconds with fitness", bestFitness);
 

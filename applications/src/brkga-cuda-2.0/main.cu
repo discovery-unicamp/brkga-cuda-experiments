@@ -84,12 +84,16 @@ public:
   }
 
   void pathRelink() override {
+    if (params.prPairs < 1)
+      throw std::runtime_error(
+          "Pairs for Path Relinking should be at least one");
+
     const auto factor = params.getPathRelinkBlockFactor();
     const auto bs = (unsigned)(factor * (double)instance.chromosomeLength());
     box::logger::debug("Path Relink block size:", bs);
 
-    const unsigned elitesToTake = 3;
-    algorithm->runPathRelink(bs, box::PathRelinkPair::bestElites, elitesToTake);
+    algorithm->runPathRelink(bs, box::PathRelinkPair::bestElites,
+                             params.prPairs);
   }
 
   SortMethod determineSortMethod(const std::string& decodeType) const override {

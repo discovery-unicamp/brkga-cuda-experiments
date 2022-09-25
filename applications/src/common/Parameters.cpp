@@ -27,12 +27,16 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
       params.instanceFileName = value;
     } else if (arg == "--generations") {
       params.generations = std::stoi(value);
+    } else if (arg == "--max-time") {
+      params.maxTimeSeconds = std::stof(value);
     } else if (arg == "--exchange-interval") {
       params.exchangeBestInterval = std::stoi(value);
     } else if (arg == "--exchange-count") {
       params.exchangeBestCount = std::stoi(value);
     } else if (arg == "--pr-interval") {
       params.prInterval = std::stoi(value);
+    } else if (arg == "--pr-pairs") {
+      params.prPairs = std::stoi(value);
     } else if (arg == "--pr-block-size") {
       params.prBlockSize = std::stoi(value);
     } else if (arg == "--pr-block-factor") {

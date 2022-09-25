@@ -51,6 +51,10 @@ public:
       throw std::invalid_argument("Decode type " + params.decoder
                                   + " is not supported by BRKGA_MP_IPR");
     }
+    if (params.prInterval != 0 && params.prPairs != 1) {
+      box::logger::warning("BRKGA-MP-IPR requires exactly one pair for the PR",
+                           "-- ignoring the paramater:", params.prPairs);
+    }
 
     config.population_size = params.populationSize;
     config.elite_percentage = params.getEliteFactor();
@@ -60,12 +64,13 @@ public:
     config.bias_type = BRKGA::BiasFunctionType::CUSTOM;  // use the old rhoe
     config.num_independent_populations = params.numberOfPopulations;
 
-    // IPR config is required to be valid even if not used
+    // PR config is required to be valid even if not used.
+    // In fact, we replace them when calling the PR.
     config.pr_number_pairs = 1;
     config.pr_minimum_distance = 1 - params.similarityThreshold;
     config.pr_type = BRKGA::PathRelinking::Type::DIRECT;
-    config.pr_selection = BRKGA::PathRelinking::Selection::RANDOMELITE;
-    config.alpha_block_size = .1;  // block-size = alpha * pop-size
+    config.pr_selection = BRKGA::PathRelinking::Selection::BESTSOLUTION;
+    config.alpha_block_size = .5;  // block-size = alpha * sqrt(pop-size)
 
     // ipr-max-iterations = pr% * ceil(chromosome-length / block-size)
     config.pr_percentage = 1.0;
@@ -133,6 +138,41 @@ public:
   void exchangeElites(unsigned count) override {
     algorithm->exchangeElite(count);
     updateBest();
+  }
+
+  void pathRelink() override {
+    const auto n = instance.chromosomeLength();
+
+#if defined(TSP)
+    auto prType = BRKGA::PathRelinking::Type::PERMUTATION;
+    std::shared_ptr<BRKGA::DistanceFunctionBase> dist(
+        new BRKGA::KendallTauDistance);
+    const auto minDistance = n * (n - 1) * (1 - params.similarityThreshold);
+#elif defined(SCP)
+    auto prType = BRKGA::PathRelinking::Type::DIRECT;
+    std::shared_ptr<BRKGA::DistanceFunctionBase> dist(
+        new BRKGA::HammingDistance(instance.acceptThreshold));
+    const auto minDistance = n * (1 - params.similarityThreshold);
+#elif defined(CVRP) || defined(CVRP_GREEDY)
+    auto prType = BRKGA::PathRelinking::Type::PERMUTATION;
+    std::shared_ptr<BRKGA::DistanceFunctionBase> dist(
+        new BRKGA::KendallTauDistance);
+    const auto minDistance = n * (n - 1) * (1 - params.similarityThreshold);
+#else
+#error No problem/instance/decoder defined
+#endif
+
+    auto selectMethod = BRKGA::PathRelinking::Selection::BESTSOLUTION;
+    unsigned pairs = 0;  // Take the default
+    auto bs = (unsigned)(n * params.getPathRelinkBlockFactor());
+    unsigned maxTime = 10;
+    algorithm->pathRelink(prType, selectMethod, dist, pairs, minDistance, bs,
+                          maxTime);
+
+    const auto previousFitness = getBestFitness();
+    updateBest();
+    box::logger::debug("Path Relink improved", previousFitness, "to",
+                       getBestFitness());
   }
 
   SortMethod determineSortMethod(const std::string&) const override {
