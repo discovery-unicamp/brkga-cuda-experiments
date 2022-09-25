@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+import sys
 import time
 import pandas as pd
 
@@ -53,4 +54,26 @@ def read_results(path: Path) -> pd.DataFrame:
     types = {col: 'category' for col in CATEGORIES}
     types['ans'] = 'float'
     types['elapsed'] = 'float'
-    return pd.read_csv(path, sep='\t', dtype=types)
+
+    results_df = pd.read_csv(path, sep='\t', dtype=types)
+    logging.debug("Found %d entries", len(results_df))
+
+    results_df.loc[:, 'convergence'] = (
+        results_df['convergence']
+        .str
+        .replace('inf', "float('inf')")
+    )
+    return results_df
+
+
+def __compress_tsv(path: Path):
+    if path.suffix != '.tsv':
+        raise ValueError("Only `.tsv` results can be compressed")
+
+    results_df = read_results(path)
+    save_results(results_df, path)
+
+
+if __name__ == '__main__':
+    assert len(sys.argv) == 2
+    __compress_tsv(Path(sys.argv[1]))
