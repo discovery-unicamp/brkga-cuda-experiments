@@ -162,10 +162,6 @@ public:
       exportPopulation(population);
     }
 
-#ifdef SHOW_PROGRESS
-    float previousLogTime = -1e6;
-#endif  // SHOW_PROGRESS
-
     box::logger::info("Optimizing");
     std::vector<std::tuple<Fitness, float, unsigned>> convergence;
     while (generation < params.generations
@@ -178,9 +174,7 @@ public:
         convergence.emplace_back(curFitness, curElapsed, generation);
 
 #ifdef SHOW_PROGRESS
-        if (LOG_LEVEL == box::logger::_LogType::INFO
-            && curElapsed - previousLogTime >= 0.1) {
-          previousLogTime = curElapsed;
+        if (LOG_LEVEL == box::logger::_LogType::INFO) {
           char sec[10];
           snprintf(sec, sizeof(sec), "%.1fs", curElapsed);
           box::logger::pbar((double)generation / (double)params.generations,
