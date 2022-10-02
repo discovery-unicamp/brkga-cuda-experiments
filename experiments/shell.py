@@ -15,6 +15,6 @@ def shell(cmd: str, get: bool = True) -> str:
         raise
     finally:
         if output:
-            logging.debug(f'Script output:\n{output}\n=======')
+            logging.debug(f'Script output:\n{output}')
 
     return output

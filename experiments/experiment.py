@@ -29,7 +29,9 @@ logging.basicConfig(
 
 DEVICE = int(os.environ['DEVICE'])
 RESUME_FROM_BACKUP = False
-TEST_COUNT = 1
+TEST_COUNT = 20
+TUNE_PARAMS = True
+MAX_GENERATIONS = 10000
 MAX_TIME_SECONDS = 3 * 60
 TIMEOUT_SECONDS = MAX_TIME_SECONDS + 1 * 60
 BUILD_TYPE = 'release'
@@ -66,7 +68,7 @@ INSTANCES = {
         # 'X-n480-k70',
         # 'X-n548-k50',
         # 'X-n586-k159',
-        'X-n599-k92',
+        # 'X-n599-k92',
         # 'X-n655-k131',
         # # The following doesn't work with the original GPU-BRKGA code
         # 'X-n733-k159',
@@ -77,7 +79,7 @@ INSTANCES = {
         # 'X-n916-k207',
         # 'X-n957-k87',
         # 'X-n979-k58',
-        'X-n1001-k43',
+        # 'X-n1001-k43',
     ],
     'scp': [
         'scp41',
@@ -182,30 +184,30 @@ def main():
         #     ],
         #     test_count=TEST_COUNT,
         # ),
-        __build_params(
-            tool='brkga-mp-ipr',
-            problems=['tsp'],
-            decoders=['cpu'],
-            test_count=TEST_COUNT,
-        ),
+        # __build_params(
+        #     tool='brkga-mp-ipr',
+        #     problems=['tsp'],
+        #     decoders=['cpu'],
+        #     test_count=TEST_COUNT,
+        # ),
         # __build_params(
         #     tool='brkga-cuda-2.0',
         #     problems=['tsp'],
         #     decoders=['cpu'],
         #     test_count=TEST_COUNT,
         # ),
-        __build_params(
-            tool='brkga-mp-ipr',
-            problems=['cvrp'],
-            decoders=['cpu'],
-            test_count=TEST_COUNT,
-        ),
         # __build_params(
-        #     tool='brkga-cuda-2.0',
+        #     tool='brkga-mp-ipr',
         #     problems=['cvrp'],
         #     decoders=['cpu'],
         #     test_count=TEST_COUNT,
         # ),
+        __build_params(
+            tool='brkga-cuda-2.0',
+            problems=['cvrp'],
+            decoders=['cpu'],
+            test_count=TEST_COUNT,
+        ),
         # __build_params(
         #     tool='brkga-mp-ipr',
         #     problems=['scp'],
@@ -256,32 +258,90 @@ def __build_params(
         decoders: List[str],
         test_count: int,
 ) -> Iterable[Dict[str, Union[str, int, float]]]:
+    if TUNE_PARAMS:
+        yield from __tuning_params(tool, problems, decoders, test_count)
+        return
+
     param_combinations = {
         'tool': tool,
         'problem': problems,
         'decoder': decoders,
         'seed': range(1, test_count + 1),
         'omp-threads': int(shell('nproc')),
-        'threads': 256,
-        'generations': 1000,
+        'threads': [64, 128, 256, 512],
+        'generations': 10000,
         'max-time': MAX_TIME_SECONDS,
-        'pop-count': 3,
-        'pop-size': 256,
-        'rhoe': [.75, .85],
-        'elite': [.04, .07, .10],  # % of the population
-        'mutant': .10,  # % of the population
-        'exchange-interval': 50,
-        'exchange-count': 2,
-        'pr-interval': 100,
-        'pr-pairs': 3,
-        'pr-block-factor': [.04, .07, .10],  # % of the chromosome length
-        'similarity-threshold': [.90, .94, .98],  # % of the chromosome length
+        'pop-count': [3, 4, 5, 6],
+        'pop-size': [64, 128, 256, 512],
+        'rhoe': [.70, .75, .80, .85],
+        'elite': [.04, .07, .10, .13],  # % of the population
+        'mutant': [.04, .07, .10, .13],  # % of the population
+        'exchange-interval': [25, 50, 75, 100],
+        'exchange-count': [1, 2, 3, 4],
+        'pr-interval': [50, 100, 150, 200],
+        'pr-pairs': [2, 3, 4, 5],
+        'pr-block-factor': [.04, .07, .10, .13],  # % of the chromosome length
+        'similarity-threshold': [.90, .93, .96, .99],  # % of the chromosome length
         'log-step': 1,
     }
     for params in __combinations(param_combinations):
         params['problem-name'] = PROBLEM_NAME[params['problem']]
         params['instance-name'] = INSTANCES[params['problem-name']]
         yield from __combinations(params)
+
+
+def __tuning_params(
+        tool: str,
+        problems: List[str],
+        decoders: List[str],
+        test_count: int,
+) -> Iterable[Dict[str, Union[str, int, float]]]:
+    logging.info(tool)
+    initial_combinations = {
+        'tool': tool,
+        'problem': problems,
+        'decoder': decoders,
+        'seed': range(1, test_count + 1),
+        'omp-threads': int(shell('nproc')),
+        'threads': 256,
+        'generations': MAX_GENERATIONS,
+        'max-time': MAX_TIME_SECONDS,
+        'pop-count': 3,
+        'pop-size': 128,
+        'rhoe': .75,
+        'elite': .10,  # % of the population
+        'mutant': .10,  # % of the population
+        'exchange-interval': 50,
+        'exchange-count': 2,
+        'pr-interval': 100,
+        'pr-pairs': 3,
+        'pr-block-factor': .10,  # % of the chromosome length
+        'similarity-threshold': .90,  # % of the chromosome length
+        'log-step': 1,
+    }
+    tests = {
+        'threads': [64, 128, 256, 512],
+        'pop-count': [3, 4, 5, 6],
+        'pop-size': [64, 128, 256, 512],
+        'rhoe': [.70, .75, .80, .85],
+        'elite': [.04, .07, .10, .13],
+        'mutant': [.04, .07, .10, .13],
+        'exchange-interval': [25, 50, 75, 100],
+        'exchange-count': [1, 2, 3, 4],
+        'pr-interval': [50, 100, 150, 200],
+        'pr-pairs': [2, 3, 4, 5],
+        'pr-block-factor': [.04, .07, .10, .13],
+        'similarity-threshold': [.90, .93, .96, .99],
+    }
+    logging.info(initial_combinations)
+    for params in __combinations(initial_combinations):
+        logging.info(params)
+        params['problem-name'] = PROBLEM_NAME[params['problem']]
+        params['instance-name'] = INSTANCES[params['problem-name']]
+        for param_name, values in tests.items():
+            for value in values:
+                params[param_name] = value
+                yield from __combinations(params)
 
 
 def __combinations(of: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
@@ -404,6 +464,7 @@ def __save_results(
         results = pd.concat((results, pd.DataFrame([{**res, **info}])))
         results.to_csv(backup_file, index=False, sep='\t')
 
+    assert not results.empty
     test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
     results['test_time'] = test_time
 
