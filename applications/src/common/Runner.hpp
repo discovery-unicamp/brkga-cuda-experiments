@@ -179,8 +179,7 @@ public:
           snprintf(sec, sizeof(sec), "%.1fs", curElapsed);
           box::logger::pbar((double)generation / (double)params.generations,
                             TERMINAL_LENGTH,
-                            /* begin? */ generation == 0,
-                            "Generation",
+                            /* begin? */ generation == 0, "Generation",
                             std::to_string(generation) + "/"
                                 + std::to_string(params.generations) + ":",
                             curFitness, "in", sec, "       ");
@@ -201,6 +200,11 @@ public:
         box::logger::debug("Exchange", params.exchangeBestCount,
                            "elites between populations");
         exchangeElites(params.exchangeBestCount);
+      }
+      if (params.pruneInterval != 0 && generation % params.pruneInterval == 0
+          && generation != params.generations) {
+        box::logger::debug("Prune the population to remove duplicates");
+        prunePopulation();
       }
     }
 
@@ -261,7 +265,11 @@ protected:
 
   // FIXME what are the parameters?
   virtual void pathRelink() {
-    throw std::runtime_error("Path Relink wasn't implemented");
+    box::logger::warning("Path Relink wasn't implemented");
+  }
+
+  virtual void prunePopulation() {
+    box::logger::warning("Prune wasn't implemented");
   }
 
   virtual SortMethod determineSortMethod(

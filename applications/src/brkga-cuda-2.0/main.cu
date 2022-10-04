@@ -79,8 +79,6 @@ public:
 
   void exchangeElites(unsigned count) override {
     algorithm->exchangeElite(count);
-    algorithm->removeSimilarElites(box::EpsilonFilter(
-        instance.chromosomeLength(), params.similarityThreshold, 1e-7f));
   }
 
   void pathRelink() override {
@@ -94,6 +92,11 @@ public:
 
     algorithm->runPathRelink(bs, box::PathRelinkPair::bestElites,
                              params.prPairs);
+  }
+
+  void prunePopulation() override {
+    algorithm->removeSimilarElites(box::EpsilonFilter(
+        instance.chromosomeLength(), params.similarityThreshold, 1e-7f));
   }
 
   SortMethod determineSortMethod(const std::string& decodeType) const override {

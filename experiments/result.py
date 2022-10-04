@@ -2,7 +2,10 @@ import logging
 from pathlib import Path
 import sys
 import time
+from typing import List
 import pandas as pd
+
+from shell import shell
 
 
 logging.basicConfig(
@@ -16,23 +19,52 @@ logging.Formatter.converter = time.gmtime
 CATEGORIES = ['test_time', 'commit', 'tool', 'problem', 'instance',
               'decoder', 'system', 'cpu', 'gpu', 'nvcc', 'g++']
 
+INFO_SCRIPTS = {
+    'commit': 'git log --format="%H" -n 1',
+    'system': 'uname -v',
+    'cpu': 'cat /proc/cpuinfo | grep "model name" | uniq | cut -d" " -f 3-',
+    'cpu-memory': "grep MemTotal /proc/meminfo | awk '{print $2 / 1024}'",
+    'gpu': "nvidia-smi -L | grep -oP 'NVIDIA.*(?= \(UUID)'"
+           ' | sed -n "$(([DEVICE] + 1)) p"',
+    'gpu-memory': "nvidia-smi -i [DEVICE] | grep -m1 -oP '[0-9]*(?=MiB)'"
+                  " | tail -n1",
+    'nvcc': 'nvcc --version | grep "release" | grep -o "V.*"',
+    'g++': 'g++ --version | grep "g++"',
+}
 
-def save_results(df: pd.DataFrame, path: Path):
+
+def save_results(
+        df: pd.DataFrame,
+        path: Path,
+        system: List[str] = [],
+        device: int = 1,
+):
     dest_file = path.with_suffix('.zip')
     logging.info("Saving results to the file %s (%s)", dest_file, path.name)
 
     if path.suffix != '.tsv':
         raise ValueError("Only .tsv files are supported")
 
-    logging.debug("Compress convergence to save")
-    df.loc[:, 'convergence'] = df['convergence'].apply(__compress_convergence)
+    logging.debug("Add system info")
+    for info in system:
+        script = INFO_SCRIPTS[info].replace('[DEVICE]', str(device))
+        df.loc[:, info] = shell(script)
+
+    logging.debug("Sort values and columns to ease view")
+    df = df.sort_values(by=['tool', 'problem', 'instance'])
+
+    columns = ['start_time', 'tool', 'problem', 'instance', 'seed', 'ans',
+               'elapsed']
+    columns += [c for c in df.columns if c not in columns and c not in system]
+    columns += system
+    df = df.loc[:, columns]
 
     logging.debug("Saving compressed results to %s", dest_file)
     df.to_csv(dest_file, sep='\t', index=False,
               compression={'method': 'zip', 'archive_name': path.name})
 
 
-def __compress_convergence(convergence: str) -> str:
+def compress_convergence(convergence: str) -> str:
     compressed = []
     previous = ''
     begin = None
@@ -41,12 +73,13 @@ def __compress_convergence(convergence: str) -> str:
             begin = i + 1
         elif convergence[i] == ')':
             fitness, elapsed, generation = convergence[begin: i].split(',')
+            begin = None
             if fitness != previous:
                 comp = f"({float(fitness):g},{float(elapsed):g},{generation})"
                 compressed.append(comp)
                 previous = fitness
 
-    return '[' + ','.join(compressed) + ']'
+    return f"[{','.join(compressed)}]"
 
 
 def read_results(path: Path) -> pd.DataFrame:
