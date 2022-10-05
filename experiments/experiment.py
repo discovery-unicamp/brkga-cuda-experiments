@@ -31,7 +31,7 @@ DEVICE = int(os.environ['DEVICE'])
 RESUME_FROM_BACKUP = False
 TEST_COUNT = 20
 TUNE_PARAMS = True
-MAX_GENERATIONS = 6000
+MAX_GENERATIONS = 10000
 MAX_TIME_SECONDS = 60 * 60
 TIMEOUT_SECONDS = MAX_TIME_SECONDS + 1 * 60
 BUILD_TYPE = 'release'
@@ -68,7 +68,7 @@ INSTANCES = {
         # 'X-n480-k70',
         # 'X-n548-k50',
         # 'X-n586-k159',
-        'X-n599-k92',
+        # 'X-n599-k92',
         # 'X-n655-k131',
         # # The following doesn't work with the original GPU-BRKGA code
         # 'X-n733-k159',
@@ -79,7 +79,7 @@ INSTANCES = {
         # 'X-n916-k207',
         # 'X-n957-k87',
         # 'X-n979-k58',
-        # 'X-n1001-k43',
+        'X-n1001-k43',
     ],
     'scp': [
         'scp41',
