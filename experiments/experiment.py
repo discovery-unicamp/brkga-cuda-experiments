@@ -311,6 +311,7 @@ def __tuning_params(
         'prune-interval': [25, 50, 75, 100],
     }
     logging.info(initial_combinations)
+    combinations_tested = set()
     for params in __combinations(initial_combinations):
         logging.info(params)
         params['problem-name'] = PROBLEM_NAME[params['problem']]
@@ -322,6 +323,13 @@ def __tuning_params(
                     new_params[param_name] = value
                     new_params['seed'] = range(1, test_count + 1)
                     new_params['combination_id'] = hash(str(new_params))
+
+                    if new_params['combination_id'] in combinations_tested:
+                        # Matches the parameters from the initial config.
+                        # Ignore it to avoid over testing the same params.
+                        continue
+                    combinations_tested.add(new_params['combination_id'])
+
                     yield from __combinations(new_params)
 
 

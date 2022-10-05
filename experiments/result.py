@@ -68,10 +68,10 @@ def compress_convergence(convergence: str) -> str:
     compressed = []
     previous = ''
     begin = None
-    for i in range(len(convergence)):
-        if convergence[i] == '(':
+    for i, symbol in enumerate(convergence):
+        if symbol == '(':
             begin = i + 1
-        elif convergence[i] == ')':
+        elif symbol == ')':
             fitness, elapsed, generation = convergence[begin: i].split(',')
             begin = None
             if fitness != previous:
@@ -104,6 +104,9 @@ def __compress_tsv(path: Path):
         raise ValueError("Only `.tsv` results can be compressed")
 
     results_df = read_results(path)
+    results_df.loc[:, 'convergence'] = (
+        results_df['convergence'].apply(compress_convergence)
+    )
     save_results(results_df, path)
 
 
