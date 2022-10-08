@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 
-#define SHOW_PROGRESS
+// #define SHOW_PROGRESS
 
 extern SortMethod sortToValidateMethod;  // Defined on `BaseInstance.cpp`
 constexpr auto TERMINAL_LENGTH = 50;
@@ -166,7 +166,7 @@ public:
     std::vector<std::tuple<Fitness, float, unsigned>> convergence;
     while (generation < params.generations
            && getTimeElapsed() < params.maxTimeSeconds) {
-      if (generation % params.logStep == 0) {
+      if (params.logStep != 0 && generation % params.logStep == 0) {
         box::logger::debug("Save convergence log");
 
         const auto curFitness = getBestFitness();

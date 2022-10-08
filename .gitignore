@@ -8,6 +8,7 @@
 # generated
 .backup*
 .setup
+.tuning-setup
 __pycache__
 build*
 core

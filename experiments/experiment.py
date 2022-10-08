@@ -245,7 +245,7 @@ def __build_params(
         'seed': range(1, test_count + 1),
         'omp-threads': int(shell('nproc')),
         'threads': [64, 128, 256, 512],
-        'generations': 10000,
+        'generations': MAX_GENERATIONS,
         'max-time': MAX_TIME_SECONDS,
         'pop-count': [3, 4, 5, 6],
         'pop-size': [64, 128, 256, 512],
@@ -352,7 +352,7 @@ def __experiment(
 ) -> Iterable[Dict[str, str]]:
     UNUSED_PARAMS = {'tool', 'problem', 'problem-name', 'instance-name'}
     for params in parameters:
-        executable = __compile_optimizer(params['tool'], params['problem'])
+        executable = compile_optimizer(params['tool'], params['problem'])
         params['instance'] = get_instance_path(params['problem-name'],
                                                params['instance-name'])
 
@@ -376,7 +376,7 @@ def __experiment(
             yield result
 
 
-def __compile_optimizer(target: str, problem: str) -> Path:
+def compile_optimizer(target: str, problem: str) -> Path:
     return __cmake(str(SOURCE_PATH.absolute()), BUILD_TYPE, target,
                    tweaks=[problem.upper(), f"Gene {GENE_TYPE[target]}"])
 
