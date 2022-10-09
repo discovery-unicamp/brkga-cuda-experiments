@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 
-#define SHOW_PROGRESS
+// #define SHOW_PROGRESS
 
 extern SortMethod sortToValidateMethod;  // Defined on `BaseInstance.cpp`
 constexpr auto TERMINAL_LENGTH = 50;
@@ -162,15 +162,11 @@ public:
       exportPopulation(population);
     }
 
-#ifdef SHOW_PROGRESS
-    float previousLogTime = -1e6;
-#endif  // SHOW_PROGRESS
-
     box::logger::info("Optimizing");
     std::vector<std::tuple<Fitness, float, unsigned>> convergence;
     while (generation < params.generations
            && getTimeElapsed() < params.maxTimeSeconds) {
-      if (generation % params.logStep == 0) {
+      if (params.logStep != 0 && generation % params.logStep == 0) {
         box::logger::debug("Save convergence log");
 
         const auto curFitness = getBestFitness();
@@ -178,15 +174,12 @@ public:
         convergence.emplace_back(curFitness, curElapsed, generation);
 
 #ifdef SHOW_PROGRESS
-        if (LOG_LEVEL == box::logger::_LogType::INFO
-            && curElapsed - previousLogTime >= 0.1) {
-          previousLogTime = curElapsed;
+        if (LOG_LEVEL == box::logger::_LogType::INFO) {
           char sec[10];
           snprintf(sec, sizeof(sec), "%.1fs", curElapsed);
           box::logger::pbar((double)generation / (double)params.generations,
                             TERMINAL_LENGTH,
-                            /* begin? */ generation == 0,
-                            "Generation",
+                            /* begin? */ generation == 0, "Generation",
                             std::to_string(generation) + "/"
                                 + std::to_string(params.generations) + ":",
                             curFitness, "in", sec, "       ");
@@ -207,6 +200,11 @@ public:
         box::logger::debug("Exchange", params.exchangeBestCount,
                            "elites between populations");
         exchangeElites(params.exchangeBestCount);
+      }
+      if (params.pruneInterval != 0 && generation % params.pruneInterval == 0
+          && generation != params.generations) {
+        box::logger::debug("Prune the population to remove duplicates");
+        prunePopulation();
       }
     }
 
@@ -267,7 +265,11 @@ protected:
 
   // FIXME what are the parameters?
   virtual void pathRelink() {
-    throw std::runtime_error("Path Relink wasn't implemented");
+    box::logger::warning("Path Relink wasn't implemented");
+  }
+
+  virtual void prunePopulation() {
+    box::logger::warning("Prune wasn't implemented");
   }
 
   virtual SortMethod determineSortMethod(

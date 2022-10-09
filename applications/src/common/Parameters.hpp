@@ -23,6 +23,7 @@ struct Parameters {
   unsigned prPairs = 0;
   unsigned prBlockSize = 0;
   float prBlockFactor = 0;
+  unsigned pruneInterval = 0;
   unsigned seed = 0;
   std::string decoder;
   float similarityThreshold = 0;

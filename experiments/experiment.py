@@ -6,16 +6,12 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Union
 import pandas as pd
 
-from result import save_results
+from result import compress_convergence, save_results
 from instance import get_instance_path
 from shell import shell
 
 
 #             threads exchange-interval exchange-count pop-count pop-size elite   mutant  rhoe
-# best time:  256     25                1              3         128      0.10    0.10    0.75
-# avg-1 time: 256     25                1              3         128      0.05    0.10    0.75
-# avg-2 time: 256     50                1              3         128      0.10    0.15    0.80
-# worst time: 256     25                1              3         128      0.05    0.15    0.80
 # GPU-BRKGA:  -       -                 -              1         256      0.15625 0.15625 0.70
 # GPU-BRKGA:  -       -                 -              1         512      0.15625 0.15625 0.70
 # GPU-BRKGA:  -       -                 -              1         1024     0.15625 0.15625 0.70
@@ -29,8 +25,10 @@ logging.basicConfig(
 
 DEVICE = int(os.environ['DEVICE'])
 RESUME_FROM_BACKUP = False
-TEST_COUNT = 1
-MAX_TIME_SECONDS = 3 * 60
+TEST_COUNT = 20
+TUNE_PARAMS = True
+MAX_GENERATIONS = 10000
+MAX_TIME_SECONDS = 60 * 60
 TIMEOUT_SECONDS = MAX_TIME_SECONDS + 1 * 60
 BUILD_TYPE = 'release'
 TWEAKS_FILE_PATH = Path('applications', 'src', 'Tweaks.hpp')
@@ -54,7 +52,7 @@ PROBLEM_NAME = {
 }
 INSTANCES = {
     'cvrp': [
-        'X-n219-k73',
+        # 'X-n219-k73',
         # 'X-n266-k58',
         # 'X-n317-k53',
         # 'X-n336-k84',
@@ -66,7 +64,7 @@ INSTANCES = {
         # 'X-n480-k70',
         # 'X-n548-k50',
         # 'X-n586-k159',
-        'X-n599-k92',
+        # 'X-n599-k92',
         # 'X-n655-k131',
         # # The following doesn't work with the original GPU-BRKGA code
         # 'X-n733-k159',
@@ -133,9 +131,6 @@ INSTANCES = {
 
 
 def main():
-    # Execute here to avoid changes by the user.
-    info = __get_system_info()
-
     results = __experiment(itertools.chain(
         # __build_params(
         #     tool='brkga-api',
@@ -182,30 +177,30 @@ def main():
         #     ],
         #     test_count=TEST_COUNT,
         # ),
-        __build_params(
-            tool='brkga-mp-ipr',
-            problems=['tsp'],
-            decoders=['cpu'],
-            test_count=TEST_COUNT,
-        ),
+        # __build_params(
+        #     tool='brkga-mp-ipr',
+        #     problems=['tsp'],
+        #     decoders=['cpu'],
+        #     test_count=TEST_COUNT,
+        # ),
         # __build_params(
         #     tool='brkga-cuda-2.0',
         #     problems=['tsp'],
         #     decoders=['cpu'],
         #     test_count=TEST_COUNT,
         # ),
-        __build_params(
-            tool='brkga-mp-ipr',
-            problems=['cvrp'],
-            decoders=['cpu'],
-            test_count=TEST_COUNT,
-        ),
         # __build_params(
-        #     tool='brkga-cuda-2.0',
+        #     tool='brkga-mp-ipr',
         #     problems=['cvrp'],
         #     decoders=['cpu'],
         #     test_count=TEST_COUNT,
         # ),
+        __build_params(
+            tool='brkga-cuda-2.0',
+            problems=['cvrp'],
+            decoders=['cpu'],
+            test_count=TEST_COUNT,
+        ),
         # __build_params(
         #     tool='brkga-mp-ipr',
         #     problems=['scp'],
@@ -226,28 +221,7 @@ def main():
         # ),
     ))
 
-    __save_results(info, results)
-
-
-def __get_system_info() -> Dict[str, str]:
-    # Tell to git on docker that this is safe.
-    shell('git config --global --add safe.directory /brkga')
-    return {
-        'commit': shell('git log --format="%H" -n 1'),
-        'system': shell('uname -v'),
-        'cpu': shell('cat /proc/cpuinfo | grep "model name"'
-                     ' | uniq | cut -d" " -f 3-'),
-        'cpu-memory':
-            shell("grep MemTotal /proc/meminfo | awk '{print $2 / 1024}'"),
-        'gpu':
-            shell("nvidia-smi -L | grep -oP " r"'NVIDIA.*(?= \(UUID)'")
-            .split('\n')[DEVICE],
-        'gpu-memory': shell(f"nvidia-smi -i {DEVICE}"
-                            " | grep -m1 -oP '[0-9]*(?=MiB)'"
-                            " | tail -n1"),
-        'nvcc': shell('nvcc --version | grep "release" | grep -o "V.*"'),
-        'g++': shell('g++ --version | grep "g++"'),
-    }
+    __save_results(results)
 
 
 def __build_params(
@@ -256,32 +230,103 @@ def __build_params(
         decoders: List[str],
         test_count: int,
 ) -> Iterable[Dict[str, Union[str, int, float]]]:
+    if TUNE_PARAMS:
+        yield from __tuning_params(tool, problems, decoders, test_count)
+        return
+
     param_combinations = {
         'tool': tool,
         'problem': problems,
         'decoder': decoders,
         'seed': range(1, test_count + 1),
         'omp-threads': int(shell('nproc')),
-        'threads': 256,
-        'generations': 1000,
+        'threads': [64, 128, 256, 512],
+        'generations': MAX_GENERATIONS,
         'max-time': MAX_TIME_SECONDS,
-        'pop-count': 3,
-        'pop-size': 256,
-        'rhoe': [.75, .85],
-        'elite': [.04, .07, .10],  # % of the population
-        'mutant': .10,  # % of the population
-        'exchange-interval': 50,
-        'exchange-count': 2,
-        'pr-interval': 100,
-        'pr-pairs': 3,
-        'pr-block-factor': [.04, .07, .10],  # % of the chromosome length
-        'similarity-threshold': [.90, .94, .98],  # % of the chromosome length
+        'pop-count': [3, 4, 5, 6],
+        'pop-size': [64, 128, 256, 512],
+        'rhoe': [.70, .75, .80, .85],
+        'elite': [.04, .07, .10, .13],  # % of the population
+        'mutant': [.04, .07, .10, .13],  # % of the population
+        'exchange-interval': [25, 50, 75, 100],
+        'exchange-count': [1, 2, 3, 4],
+        'pr-interval': [50, 100, 150, 200],
+        'pr-pairs': [2, 3, 4, 5],
+        'pr-block-factor': [.04, .07, .10, .13],  # % of the chromosome length
+        'similarity-threshold': [.90, .93, .96, .99],  # % of the chromosome length
         'log-step': 1,
     }
     for params in __combinations(param_combinations):
         params['problem-name'] = PROBLEM_NAME[params['problem']]
         params['instance-name'] = INSTANCES[params['problem-name']]
         yield from __combinations(params)
+
+
+def __tuning_params(
+        tool: str,
+        problems: List[str],
+        decoders: List[str],
+        test_count: int,
+) -> Iterable[Dict[str, Union[str, int, float]]]:
+    logging.info(tool)
+    initial_combinations = {
+        'tool': tool,
+        'problem': problems,
+        'decoder': decoders,
+        'omp-threads': int(shell('nproc')),
+        'threads': 256,
+        'generations': MAX_GENERATIONS,
+        'max-time': MAX_TIME_SECONDS,
+        'pop-count': 3,
+        'pop-size': 128,
+        'rhoe': .75,
+        'elite': .10,  # % of the population
+        'mutant': .05,  # % of the population
+        'exchange-interval': 50,
+        'exchange-count': 2,
+        'pr-interval': 100,
+        'pr-pairs': 3,
+        'pr-block-factor': .10,  # % of the chromosome length
+        'similarity-threshold': .95,  # % of the chromosome length
+        'prune-interval': 50,
+        'log-step': 1,
+    }
+    tests = {
+        'threads': [32, 64, 128, 256],
+        'pop-count': [3, 4, 5, 6],
+        'pop-size': [64, 128, 256, 512],
+        'rhoe': [.70, .75, .80, .85],
+        'elite': [.04, .07, .10, .13],
+        'mutant': [.04, .07, .10, .13],
+        'exchange-interval': [25, 50, 75, 100],
+        'exchange-count': [1, 2, 3, 4],
+        'pr-interval': [50, 100, 150, 200],
+        'pr-pairs': [2, 3, 4, 5],
+        'pr-block-factor': [.04, .07, .10, .13],
+        'similarity-threshold': [.90, .93, .96, .99],
+        'prune-interval': [25, 50, 75, 100],
+    }
+    logging.info(initial_combinations)
+    combinations_tested = set()
+    for params in __combinations(initial_combinations):
+        logging.info(params)
+        params['problem-name'] = PROBLEM_NAME[params['problem']]
+        params['instance-name'] = INSTANCES[params['problem-name']]
+        for full_params in __combinations(params):
+            for param_name, values in tests.items():
+                for value in values:
+                    new_params = full_params.copy()
+                    new_params[param_name] = value
+                    new_params['seed'] = range(1, test_count + 1)
+                    new_params['combination_id'] = hash(str(new_params))
+
+                    if new_params['combination_id'] in combinations_tested:
+                        # Matches the parameters from the initial config.
+                        # Ignore it to avoid over testing the same params.
+                        continue
+                    combinations_tested.add(new_params['combination_id'])
+
+                    yield from __combinations(new_params)
 
 
 def __combinations(of: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
@@ -303,7 +348,7 @@ def __experiment(
 ) -> Iterable[Dict[str, str]]:
     UNUSED_PARAMS = {'tool', 'problem', 'problem-name', 'instance-name'}
     for params in parameters:
-        executable = __compile_optimizer(params['tool'], params['problem'])
+        executable = compile_optimizer(params['tool'], params['problem'])
         params['instance'] = get_instance_path(params['problem-name'],
                                                params['instance-name'])
 
@@ -327,7 +372,7 @@ def __experiment(
             yield result
 
 
-def __compile_optimizer(target: str, problem: str) -> Path:
+def compile_optimizer(target: str, problem: str) -> Path:
     return __cmake(str(SOURCE_PATH.absolute()), BUILD_TYPE, target,
                    tweaks=[problem.upper(), f"Gene {GENE_TYPE[target]}"])
 
@@ -375,6 +420,8 @@ def __run_test(
     cmd = f'timeout {TIMEOUT_SECONDS}s'
     cmd += ' ' + str(executable.absolute())
     cmd += ''.join(f' --{arg} {value}' for arg, value in parsed_params.items())
+
+    start_time = __now()
     output = shell(cmd)
     result = dict(tuple(r.split('=')) for r in output.split())
     assert 'convergence' in result
@@ -384,14 +431,12 @@ def __run_test(
         **parsed_params,
         'ans': result['ans'],
         'elapsed': result['elapsed'],
-        'convergence': result['convergence'],
+        'convergence': compress_convergence(result['convergence']),
+        'start_time': start_time,
     }
 
 
-def __save_results(
-        info: Dict[str, str],
-        iter_results: Iterable[Dict[str, str]],
-):
+def __save_results(iter_results: Iterable[Dict[str, str]]):
     OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
     backup_file = OUTPUT_PATH.joinpath('.backup.tsv')
@@ -400,21 +445,28 @@ def __save_results(
         results = pd.read_csv(backup_file, sep='\t')
     else:
         results = pd.DataFrame()
+
+    start_time = __now()
     for res in iter_results:
-        results = pd.concat((results, pd.DataFrame([{**res, **info}])))
+        results = pd.concat((results, pd.DataFrame([res])))
         results.to_csv(backup_file, index=False, sep='\t')
 
-    test_time = datetime.datetime.utcnow().replace(microsecond=0).isoformat()
-    results['test_time'] = test_time
+    assert not results.empty
 
-    # Define the first columns of the .tsv
-    # The others are still written to the file after these ones
-    first_columns = ['test_time', 'commit', 'tool', 'problem', 'instance',
-                     'seed', 'ans', 'elapsed']
-    other_columns = [c for c in results.columns if c not in first_columns]
-    results = results[first_columns + other_columns]
+    # Tell to git on docker that this is safe.
+    shell("git config --global"
+          f" --add safe.directory {str(Path('.').absolute())}")
+    save_results(
+        results,
+        OUTPUT_PATH.joinpath(f'{start_time}.tsv'),
+        system=['system', 'cpu', 'cpu-memory', 'gpu', 'gpu-memory',
+                'nvcc', 'g++', 'commit'],
+        device=DEVICE,
+    )
 
-    save_results(results, OUTPUT_PATH.joinpath(f'{test_time}.tsv'))
+
+def __now() -> str:
+    return datetime.datetime.utcnow().replace(microsecond=0).isoformat()
 
 
 if __name__ == '__main__':

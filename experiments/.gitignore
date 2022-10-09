@@ -2,3 +2,6 @@
 
 convergence/
 fitness/
+logs/
+
+target-runner

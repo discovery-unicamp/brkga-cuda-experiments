@@ -26,4 +26,9 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
-CMD [ "python3", "experiments/experiment.py" ]
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y r-base \
+    && R -e 'install.packages("irace", repos="https://cran.r-project.org")'
+ENV PATH=/usr/local/lib/R/site-library/irace/bin:$PATH
+
+CMD [ "python3", "experiments/tuning.py" ]
