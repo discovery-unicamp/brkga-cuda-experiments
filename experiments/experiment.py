@@ -12,10 +12,6 @@ from shell import shell
 
 
 #             threads exchange-interval exchange-count pop-count pop-size elite   mutant  rhoe
-# best time:  256     25                1              3         128      0.10    0.10    0.75
-# avg-1 time: 256     25                1              3         128      0.05    0.10    0.75
-# avg-2 time: 256     50                1              3         128      0.10    0.15    0.80
-# worst time: 256     25                1              3         128      0.05    0.15    0.80
 # GPU-BRKGA:  -       -                 -              1         256      0.15625 0.15625 0.70
 # GPU-BRKGA:  -       -                 -              1         512      0.15625 0.15625 0.70
 # GPU-BRKGA:  -       -                 -              1         1024     0.15625 0.15625 0.70

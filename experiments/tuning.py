@@ -38,7 +38,7 @@ class IraceParam:
         self.range = range
 
     def __str__(self) -> str:
-        name = self.name.replace('-', '')
+        name = self.name.replace('-', '_')
         arg = f"--{self.name} "
         tp = IraceParam.TYPES[self.type]
         rng = ', '.join(f'"{v}"' if isinstance(v, str) else str(v)
@@ -51,7 +51,8 @@ def irace(
         executable: Path,
         instances: List[Path],
         fixed_params: Dict[str, Union[str, int, float]],
-        params: List[IraceParam],
+        tune_params: List[IraceParam],
+        forbidden_combinations: List[str],
         check: bool = False,
 ):
     def text(lines: Iterable):
@@ -63,12 +64,16 @@ def irace(
     instances_path.write_text(text(i.absolute() for i in instances))
 
     params_path = results_path.joinpath('parameters.txt')
-    params_path.write_text(text(map(str, params)))
+    params_path.write_text(text(map(str, tune_params)))
+
+    forbidden_path = results_path.joinpath('forbidden.txt')
+    forbidden_path.write_text(text(forbidden_combinations))
 
     scenario = [
         'trainInstancesDir = ""',
         f'trainInstancesFile = "{str(instances_path.absolute())}"',
         f'parameterFile = "{str(params_path.absolute())}"',
+        f'forbiddenFile = "{str(forbidden_path.absolute())}"',
         f'digits = {PRECISION}',
     ]
     scenario_path = results_path.joinpath('scenario.txt')
@@ -90,8 +95,8 @@ INSTANCE=$4
 shift 4 || error "Not enough parameters"
 CONFIG_PARAMS=$*
 
-STDOUT=logs/$CONFIG_ID-$INSTANCE_ID-$SEED.stdout.txt
-STDERR=logs/$CONFIG_ID-$INSTANCE_ID-$SEED.stderr.txt
+STDOUT=logs/c$CONFIG_ID-i$INSTANCE_ID-s$SEED.stdout
+STDERR=logs/c$CONFIG_ID-i$INSTANCE_ID-s$SEED.stderr
 
 if [ ! -x "$EXE" ]; then
     error "$EXE: not found or not executable (pwd: $(pwd))"
@@ -112,6 +117,7 @@ if [ -s "$STDOUT" ]; then
     cost=$(tail -n 1 "$STDOUT" | grep -o 'ans=[0-9.]*' | grep -o '[0-9.]*')
     time=$(tail -n 1 "$STDOUT" | grep -o 'elapsed=[0-9.]*' | grep -o '[0-9.]*')
     echo $cost $time
+    rm -f "$STDOUT" "$STDERR"
     exit 0
 else
     error "$STDOUT: No such file or directory"
@@ -123,48 +129,57 @@ fi
 
     irace_params = {
         'max-experiments': 300,
-        'log-file': str(results_path.joinpath('results.txt').absolute()),
+        'log-file': str(results_path.joinpath('results.Rdata').absolute()),
         'deterministic': 0,
         'parallel': 1,
         'seed': 0,
     }
     if check:
         irace_params['check'] = ''  # no value required
-    irace = 'irace ' + " ".join(f"--{name} {value}"
-                                for name, value in irace_params.items())
-    shell(f'cd {str(results_path.absolute())} && {irace}', get=False)
+
+    output_path = results_path.joinpath('output.txt')
+    irace_cmd = (
+        "irace "
+        + " ".join(f"--{name} {value}" for name, value in irace_params.items())
+        + " >" + str(output_path.absolute())
+    )
+    shell(f'cd {str(results_path.absolute())} && {irace_cmd}', get=False)
 
 
 def tuning(tool: str, problem: str):
     problem_name = PROBLEM_NAME[problem]
-    executable = compile_optimizer(tool, problem_name)
-    instances_path = [get_instance_path(problem_name, i)
-                      for i in TUNING_INSTANCES[problem_name]]
-
-    fixed_params = {
-        'omp-threads': shell('nproc'),
-        'generations': MAX_GENERATIONS,
-        'max-time': MAX_TIME_SECONDS,
-        'log-step': 0,
-    }
-    tune_params = [
-        IraceParam('threads', 'category', [64, 128, 256]),
-        IraceParam('pop-count', 'int', (3, 8)),
-        IraceParam('pop-size', 'category', [64, 128, 256]),
-        IraceParam('decoder', 'category', ['cpu']),
-        IraceParam('rhoe', 'float', (.70, .90)),
-        IraceParam('elite', 'float', (.02, .20)),
-        IraceParam('mutant', 'float', (.02, .20)),
-        IraceParam('exchange-interval', 'category', [25, 50, 75, 100]),
-        IraceParam('exchange-count', 'int', (1, 3)),
-        IraceParam('pr-interval', 'category', [50, 100, 150, 200]),
-        IraceParam('pr-pairs', 'int', (2, 5)),
-        IraceParam('pr-block-factor', 'float', (.05, .15)),
-        IraceParam('similarity-threshold', 'float', (.90, .98)),
-    ]
-
-    irace(Path('experiments', 'tuning', problem, tool), executable,
-          instances_path, fixed_params, tune_params)
+    irace(
+        results_path=Path('experiments', 'tuning', problem, tool),
+        executable=compile_optimizer(tool, problem_name),
+        instances=[get_instance_path(problem_name, i)
+                   for i in TUNING_INSTANCES[problem_name]],
+        fixed_params={
+            'omp-threads': shell('nproc'),
+            'generations': MAX_GENERATIONS,
+            'max-time': MAX_TIME_SECONDS,
+            'decoder': 'cpu',
+            'log-step': 0,
+        },
+        tune_params=[
+            IraceParam('threads', 'category', [64, 128, 256]),
+            IraceParam('pop-count', 'int', (3, 8)),
+            IraceParam('pop-size', 'category', [64, 128, 256]),
+            IraceParam('rhoe', 'float', (.70, .90)),
+            IraceParam('elite', 'float', (.02, .20)),
+            IraceParam('mutant', 'float', (.02, .20)),
+            IraceParam('exchange-interval', 'category', [25, 50, 75, 100]),
+            IraceParam('exchange-count', 'int', (1, 3)),
+            IraceParam('pr-interval', 'category', [50, 100, 150, 200]),
+            IraceParam('pr-pairs', 'int', (2, 5)),
+            IraceParam('pr-block-factor', 'float', (.05, .15)),
+            IraceParam('similarity-threshold', 'float', (.90, .98)),
+        ],
+        forbidden_combinations=[
+            'pr_pairs > elite * as.numeric(pop_size)',
+            'exchange_count > elite * as.numeric(pop_size)',
+        ],
+        check=True,
+    )
 
 
 if __name__ == '__main__':
