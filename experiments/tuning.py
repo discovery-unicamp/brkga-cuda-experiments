@@ -178,7 +178,7 @@ def tuning(tool: str, problem: str):
             'pr_pairs > elite * as.numeric(pop_size)',
             'exchange_count > elite * as.numeric(pop_size)',
         ],
-        check=True,
+        check=False,
     )
 
 
