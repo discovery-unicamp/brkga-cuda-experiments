@@ -8,7 +8,7 @@ run: .setup
 
 .setup: experiments/Dockerfile experiments/requirements.txt
 	rm -f core
-	docker build --no-cache --build-arg CUDA_VERSION=$(cuda_version) -t brkga -f experiments/Dockerfile .
+	docker build --build-arg CUDA_VERSION=$(cuda_version) -t brkga -f experiments/Dockerfile .
 	docker rmi --force $(docker images -f "dangling=true" -q) || echo "No images to remove"
 	echo "Setup on: $$(date)" >.setup
 
@@ -17,7 +17,7 @@ tuning: .tuning-setup
 
 .tuning-setup: experiments/Dockerfile.tuning experiments/requirements.txt
 	rm -f core
-	docker build --no-cache --build-arg CUDA_VERSION=$(cuda_version) -t tuning -f experiments/Dockerfile.tuning .
+	docker build --build-arg CUDA_VERSION=$(cuda_version) -t tuning -f experiments/Dockerfile.tuning .
 	docker rmi --force $(docker images -f "dangling=true" -q) || echo "No images to remove"
 	echo "Setup on: $$(date)" >.tuning-setup
 
