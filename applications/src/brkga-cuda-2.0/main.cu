@@ -39,15 +39,12 @@ public:
       : RunnerBase(argc, argv),
         decoder(&instance),
         config(box::BrkgaConfiguration::Builder()
-                   .generations(params.generations)
                    .numberOfPopulations(params.numberOfPopulations)
                    .populationSize(params.populationSize)
                    .chromosomeLength(instance.chromosomeLength())
                    .eliteCount(params.getNumberOfElites())
                    .mutantsCount(params.getNumberOfMutants())
                    .rhoe(params.rhoe)
-                   .exchangeBestInterval(params.exchangeBestInterval)
-                   .exchangeBestCount(params.exchangeBestCount)
                    .seed(params.seed)
                    .decoder(&decoder)
                    .decodeType(box::DecodeType::fromString(params.decoder))
