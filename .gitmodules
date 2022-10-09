@@ -4,3 +4,6 @@
 [submodule "brkga_mp_ipr_cpp"]
 	path = brkga_mp_ipr_cpp
 	url = https://github.com/ceandrade/brkga_mp_ipr_cpp.git
+[submodule "brkgaAPI"]
+	path = brkgaAPI
+	url = https://github.com/rfrancotoso/brkgaAPI.git
