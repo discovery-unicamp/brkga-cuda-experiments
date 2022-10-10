@@ -1,2 +1,7 @@
+.venv
+
 convergence/
 fitness/
+logs/
+
+target-runner

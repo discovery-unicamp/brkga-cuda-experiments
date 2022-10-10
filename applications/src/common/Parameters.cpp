@@ -41,6 +41,8 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
       params.prBlockSize = std::stoi(value);
     } else if (arg == "--pr-block-factor") {
       params.prBlockFactor = std::stof(value);
+    } else if (arg == "--prune-interval") {
+      params.pruneInterval = std::stoi(value);
     } else if (arg == "--pop-count") {
       params.numberOfPopulations = std::stoi(value);
     } else if (arg == "--pop-size") {
