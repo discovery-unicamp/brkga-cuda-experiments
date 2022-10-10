@@ -47,30 +47,65 @@ public:
         decoder(&instance),
         config() {
     box::logger::info("Initializing runner");
-    if (params.decoder != "cpu") {
-      throw std::invalid_argument("Decode type " + params.decoder
-                                  + " is not supported by BRKGA_MP_IPR");
-    }
-    if (params.prInterval != 0 && params.prPairs != 1) {
-      box::logger::warning("BRKGA-MP-IPR requires exactly one pair for the PR",
-                           "-- ignoring the paramater:", params.prPairs);
-    }
+    if (params.decoder != "cpu")
+      throw std::invalid_argument("Unsupported decode type: " + params.decoder);
+    if (params.prInterval != 0 && params.prPairs != 1)
+      throw std::invalid_argument("Number of PR pairs should be 1");
 
+    config.num_independent_populations = params.numberOfPopulations;
     config.population_size = params.populationSize;
     config.elite_percentage = params.getEliteFactor();
     config.mutants_percentage = params.getMutantFactor();
-    config.num_elite_parents = 1;
-    config.total_parents = 2;
-    config.bias_type = BRKGA::BiasFunctionType::CUSTOM;  // use the old rhoe
-    config.num_independent_populations = params.numberOfPopulations;
+    config.num_elite_parents = params.numEliteParents;
+    config.total_parents = params.numParents;
+
+    if (params.rhoeFunction == "rhoe") {
+      config.bias_type = BRKGA::BiasFunctionType::CUSTOM;  // use the old rhoe
+    } else if (params.rhoeFunction == "lin") {
+      config.bias_type = BRKGA::BiasFunctionType::LINEAR;
+    } else if (params.rhoeFunction == "quad") {
+      config.bias_type = BRKGA::BiasFunctionType::QUADRATIC;
+    } else if (params.rhoeFunction == "cub") {
+      config.bias_type = BRKGA::BiasFunctionType::CUBIC;
+    } else if (params.rhoeFunction == "exp") {
+      config.bias_type = BRKGA::BiasFunctionType::EXPONENTIAL;
+    } else if (params.rhoeFunction == "log") {
+      config.bias_type = BRKGA::BiasFunctionType::LOGINVERSE;
+    } else if (params.rhoeFunction == "const") {
+      config.bias_type = BRKGA::BiasFunctionType::CONSTANT;
+    } else {
+      throw std::invalid_argument("Unknown rhoe function: "
+                                  + params.rhoeFunction);
+    }
 
     // PR config is required to be valid even if not used.
-    // In fact, we replace them when calling the PR.
-    config.pr_number_pairs = 1;
-    config.pr_minimum_distance = 1 - params.similarityThreshold;
+    config.pr_number_pairs = 0;  // Test all pairs
     config.pr_type = BRKGA::PathRelinking::Type::DIRECT;
-    config.pr_selection = BRKGA::PathRelinking::Selection::BESTSOLUTION;
-    config.alpha_block_size = .5;  // block-size = alpha * sqrt(pop-size)
+    if (params.prSelect == "best") {
+      config.pr_selection = BRKGA::PathRelinking::Selection::BESTSOLUTION;
+    } else if (params.prSelect == "random") {
+      config.pr_selection = BRKGA::PathRelinking::Selection::RANDOMELITE;
+    } else {
+      throw std::invalid_argument("Unknown selection: " + params.prSelect);
+    }
+
+    const auto n = instance.chromosomeLength();
+
+#if defined(TSP) || defined(CVRP) || defined(CVRP_GREEDY)
+    config.pr_type = BRKGA::PathRelinking::Type::PERMUTATION;
+    dist.reset(new BRKGA::KendallTauDistance);
+    config.pr_minimum_distance =
+        (float)(n * (n - 1) / 2) * (1 - params.similarityThreshold);
+#elif defined(SCP)
+    config.pr_type = BRKGA::PathRelinking::Type::DIRECT;
+    dist.reset(new BRKGA::HammingDistance(instance.acceptThreshold));
+    config.pr_minimum_distance = n * (1 - params.similarityThreshold);
+#else
+#error No problem/instance/decoder defined
+#endif
+
+    // block-size = alpha * sqrt(pop-size)
+    config.alpha_block_size = params.prBlockFactor;
 
     // ipr-max-iterations = pr% * ceil(chromosome-length / block-size)
     config.pr_percentage = 1.0;
@@ -83,14 +118,18 @@ public:
         new BrkgaMPIpr(decoder, BRKGA::Sense::MINIMIZE, params.seed,
                        instance.chromosomeLength(), config, params.ompThreads);
 
-    box::logger::debug("Set rhoe to BRKGA-MP-IPR");
-    algo->setBiasCustomFunction([this](unsigned r) {
-      if (r == 1) return params.rhoe;
-      if (r == 2) return 1 - params.rhoe;
-      std::cerr << __PRETTY_FUNCTION__ << ": unexpected call with r=" << r
-                << std::endl;
-      abort();
-    });
+    if (params.rhoeFunction == "rhoe") {
+      box::logger::debug("Set rhoe to BRKGA-MP-IPR");
+      if (params.rhoe <= .5 || params.rhoe >= 1)
+        throw std::invalid_argument("Rhoe should be in range (0.5, 1.0)");
+      algo->setBiasCustomFunction([this](unsigned r) {
+        if (r == 1) return params.rhoe;
+        if (r == 2) return 1 - params.rhoe;
+        std::cerr << __PRETTY_FUNCTION__ << ": unexpected call with r=" << r
+                  << std::endl;
+        abort();
+      });
+    }
 
     box::logger::debug("Initializing BRKGA-MP-IPR");
     if (!initialPopulation.empty()) {
@@ -117,9 +156,13 @@ public:
     return algo;
   }
 
-  Decoder::Fitness getBestFitness() override { return bestFitness; }
+  Decoder::Fitness getBestFitness() override {
+    return bestFitness;
+  }
 
-  Chromosome getBestChromosome() override { return bestChromosome; }
+  Chromosome getBestChromosome() override {
+    return bestChromosome;
+  }
 
   std::vector<Chromosome> getPopulation(unsigned p) override {
     std::vector<Chromosome> parsedPopulation;
@@ -141,33 +184,8 @@ public:
   }
 
   void pathRelink() override {
-    const auto n = instance.chromosomeLength();
-
-#if defined(TSP) || defined(CVRP) || defined(CVRP_GREEDY)
-    auto prType = BRKGA::PathRelinking::Type::PERMUTATION;
-    std::shared_ptr<BRKGA::DistanceFunctionBase> dist(
-        new BRKGA::KendallTauDistance);
-    const auto minDistance = n * (n - 1) / 2 * (1 - params.similarityThreshold);
-#elif defined(SCP)
-    auto prType = BRKGA::PathRelinking::Type::DIRECT;
-    std::shared_ptr<BRKGA::DistanceFunctionBase> dist(
-        new BRKGA::HammingDistance(instance.acceptThreshold));
-    const auto minDistance = n * (1 - params.similarityThreshold);
-#else
-#error No problem/instance/decoder defined
-#endif
-
-    auto selectMethod = BRKGA::PathRelinking::Selection::RANDOMELITE;
-    unsigned pairs = 0;  // Take the default
-    auto bs = (unsigned)(n * params.getPathRelinkBlockFactor());
-    unsigned maxTime = 10;
-    algorithm->pathRelink(prType, selectMethod, dist, pairs, minDistance, bs,
-                          maxTime);
-
-    const auto previousFitness = getBestFitness();
+    algorithm->pathRelink(dist, params.prMaxTime);
     updateBest();
-    box::logger::debug("Path Relink improved", previousFitness, "to",
-                       getBestFitness());
   }
 
   SortMethod determineSortMethod(const std::string&) const override {
@@ -192,6 +210,7 @@ private:
   Chromosome bestChromosome;
   Decoder decoder;
   BRKGA::BrkgaParams config;
+  std::shared_ptr<BRKGA::DistanceFunctionBase> dist;
 };
 
 void bbSegSortCall(float*, unsigned*, unsigned) {

@@ -41,6 +41,10 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
       params.prBlockSize = std::stoi(value);
     } else if (arg == "--pr-block-factor") {
       params.prBlockFactor = std::stof(value);
+    } else if (arg == "--pr-max-time") {
+      params.prMaxTime = std::stoi(value);
+    } else if (arg == "--pr-select") {
+      params.prSelect = value;
     } else if (arg == "--prune-interval") {
       params.pruneInterval = std::stoi(value);
     } else if (arg == "--pop-count") {
@@ -57,6 +61,12 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
       params.mutantSize = std::stoi(value);
     } else if (arg == "--rhoe") {
       params.rhoe = std::stof(value);
+    } else if (arg == "--rhoe-function") {
+      params.rhoeFunction = value;
+    } else if (arg == "--parents") {
+      params.numParents = std::stoi(value);
+    } else if (arg == "--elite-parents") {
+      params.numEliteParents = std::stoi(value);
     } else if (arg == "--seed") {
       params.seed = std::stoi(value);
     } else if (arg == "--decoder") {

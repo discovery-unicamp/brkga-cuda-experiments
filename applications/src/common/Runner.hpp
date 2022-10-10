@@ -240,7 +240,7 @@ public:
 
     box::logger::info("Validating the solution");
     sortToValidateMethod = determineSortMethod(params.decoder);
-    instance.validate(bestChromosome.data(), bestFitness);
+    instance.validate(bestChromosome.data(), (float)bestFitness);
 
     box::logger::info("Everything looks good!");
     box::logger::info("Exiting");
