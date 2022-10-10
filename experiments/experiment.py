@@ -26,7 +26,6 @@ logging.basicConfig(
 DEVICE = int(os.environ['DEVICE'])
 RESUME_FROM_BACKUP = False
 TEST_COUNT = 20
-TUNE_PARAMS = True
 MAX_GENERATIONS = 10000
 MAX_TIME_SECONDS = 60 * 60
 TIMEOUT_SECONDS = MAX_TIME_SECONDS + 1 * 60
@@ -52,40 +51,40 @@ PROBLEM_NAME = {
 }
 INSTANCES = {
     'cvrp': [
-        # 'X-n219-k73',
-        # 'X-n266-k58',
-        # 'X-n317-k53',
-        # 'X-n336-k84',
-        # 'X-n376-k94',
-        # 'X-n384-k52',
-        # 'X-n420-k130',
-        # 'X-n429-k61',
-        # 'X-n469-k138',
-        # 'X-n480-k70',
-        # 'X-n548-k50',
-        # 'X-n586-k159',
-        # 'X-n599-k92',
-        # 'X-n655-k131',
-        # # The following doesn't work with the original GPU-BRKGA code
-        # 'X-n733-k159',
-        # 'X-n749-k98',
-        # 'X-n819-k171',
-        # 'X-n837-k142',
-        # 'X-n856-k95',
-        # 'X-n916-k207',
-        # 'X-n957-k87',
-        # 'X-n979-k58',
+        'X-n219-k73',
+        'X-n266-k58',
+        'X-n317-k53',
+        'X-n336-k84',
+        'X-n376-k94',
+        'X-n384-k52',
+        'X-n420-k130',
+        'X-n429-k61',
+        'X-n469-k138',
+        'X-n480-k70',
+        'X-n548-k50',
+        'X-n586-k159',
+        'X-n599-k92',
+        'X-n655-k131',
+        # The following doesn't work with the original GPU-BRKGA code
+        'X-n733-k159',
+        'X-n749-k98',
+        'X-n819-k171',
+        'X-n837-k142',
+        'X-n856-k95',
+        'X-n916-k207',
+        'X-n957-k87',
+        'X-n979-k58',
         'X-n1001-k43',
     ],
     'scp': [
         'scp41',
-        # 'scp42',
-        # 'scp43',
-        # 'scp44',
+        'scp42',
+        'scp43',
+        'scp44',
         'scp45',
-        # 'scp46',
-        # 'scp47',
-        # 'scp48',
+        'scp46',
+        'scp47',
+        'scp48',
         'scp49',
         # Missing instances:
         # 'scp51',
@@ -104,28 +103,28 @@ INSTANCES = {
         # 'scp65',
     ],
     'tsp': [
-        # 'zi929',
+        'zi929',
         'lu980',
-        # 'rw1621',
-        # 'mu1979',
-        # 'nu3496',
-        # 'ca4663',
+        'rw1621',
+        'mu1979',
+        'nu3496',
+        'ca4663',
         'tz6117',
-        # 'eg7146',
-        # 'ym7663',
-        # 'pm8079',
-        # 'ei8246',
-        # 'ar9152',
-        # 'ja9847',
-        # 'gr9882',
-        # 'kz9976',
+        'eg7146',
+        'ym7663',
+        'pm8079',
+        'ei8246',
+        'ar9152',
+        'ja9847',
+        'gr9882',
+        'kz9976',
         'fi10639',
-        # 'mo14185',
-        # 'ho14473',
-        # 'it16862',
-        # 'vm22775',
-        # 'sw24978',
-        # 'bm33708',
+        'mo14185',
+        'ho14473',
+        'it16862',
+        'vm22775',
+        'sw24978',
+        'bm33708',
     ]
 }
 
@@ -198,7 +197,7 @@ def main():
         __build_params(
             tool='brkga-cuda-2.0',
             problems=['cvrp'],
-            decoders=['cpu'],
+            decoders=['cpu-permutation'],
             test_count=TEST_COUNT,
         ),
         # __build_params(
@@ -230,103 +229,32 @@ def __build_params(
         decoders: List[str],
         test_count: int,
 ) -> Iterable[Dict[str, Union[str, int, float]]]:
-    if TUNE_PARAMS:
-        yield from __tuning_params(tool, problems, decoders, test_count)
-        return
-
     param_combinations = {
         'tool': tool,
         'problem': problems,
         'decoder': decoders,
         'seed': range(1, test_count + 1),
         'omp-threads': int(shell('nproc')),
-        'threads': [64, 128, 256, 512],
+        'threads': 128,
         'generations': MAX_GENERATIONS,
         'max-time': MAX_TIME_SECONDS,
-        'pop-count': [3, 4, 5, 6],
-        'pop-size': [64, 128, 256, 512],
-        'rhoe': [.70, .75, .80, .85],
-        'elite': [.04, .07, .10, .13],  # % of the population
-        'mutant': [.04, .07, .10, .13],  # % of the population
-        'exchange-interval': [25, 50, 75, 100],
-        'exchange-count': [1, 2, 3, 4],
-        'pr-interval': [50, 100, 150, 200],
-        'pr-pairs': [2, 3, 4, 5],
-        'pr-block-factor': [.04, .07, .10, .13],  # % of the chromosome length
-        'similarity-threshold': [.90, .93, .96, .99],  # % of the chromosome length
+        'pop-count': 3,
+        'pop-size': 256,
+        'rhoe': .80,
+        'elite': .10,  # % of the population
+        'mutant': .10,  # % of the population
+        'exchange-interval': 25,
+        'exchange-count': 3,
+        'pr-interval': 0,
+        'pr-pairs': 3,
+        'pr-block-factor': .10,  # % of the chromosome length
+        'similarity-threshold': .90,  # % of the chromosome length
         'log-step': 1,
     }
     for params in __combinations(param_combinations):
         params['problem-name'] = PROBLEM_NAME[params['problem']]
         params['instance-name'] = INSTANCES[params['problem-name']]
         yield from __combinations(params)
-
-
-def __tuning_params(
-        tool: str,
-        problems: List[str],
-        decoders: List[str],
-        test_count: int,
-) -> Iterable[Dict[str, Union[str, int, float]]]:
-    logging.info(tool)
-    initial_combinations = {
-        'tool': tool,
-        'problem': problems,
-        'decoder': decoders,
-        'omp-threads': int(shell('nproc')),
-        'threads': 256,
-        'generations': MAX_GENERATIONS,
-        'max-time': MAX_TIME_SECONDS,
-        'pop-count': 3,
-        'pop-size': 128,
-        'rhoe': .75,
-        'elite': .10,  # % of the population
-        'mutant': .05,  # % of the population
-        'exchange-interval': 50,
-        'exchange-count': 2,
-        'pr-interval': 100,
-        'pr-pairs': 3,
-        'pr-block-factor': .10,  # % of the chromosome length
-        'similarity-threshold': .95,  # % of the chromosome length
-        'prune-interval': 50,
-        'log-step': 1,
-    }
-    tests = {
-        'threads': [32, 64, 128, 256],
-        'pop-count': [3, 4, 5, 6],
-        'pop-size': [64, 128, 256, 512],
-        'rhoe': [.70, .75, .80, .85],
-        'elite': [.04, .07, .10, .13],
-        'mutant': [.04, .07, .10, .13],
-        'exchange-interval': [25, 50, 75, 100],
-        'exchange-count': [1, 2, 3, 4],
-        'pr-interval': [50, 100, 150, 200],
-        'pr-pairs': [2, 3, 4, 5],
-        'pr-block-factor': [.04, .07, .10, .13],
-        'similarity-threshold': [.90, .93, .96, .99],
-        'prune-interval': [25, 50, 75, 100],
-    }
-    logging.info(initial_combinations)
-    combinations_tested = set()
-    for params in __combinations(initial_combinations):
-        logging.info(params)
-        params['problem-name'] = PROBLEM_NAME[params['problem']]
-        params['instance-name'] = INSTANCES[params['problem-name']]
-        for full_params in __combinations(params):
-            for param_name, values in tests.items():
-                for value in values:
-                    new_params = full_params.copy()
-                    new_params[param_name] = value
-                    new_params['seed'] = range(1, test_count + 1)
-                    new_params['combination_id'] = hash(str(new_params))
-
-                    if new_params['combination_id'] in combinations_tested:
-                        # Matches the parameters from the initial config.
-                        # Ignore it to avoid over testing the same params.
-                        continue
-                    combinations_tested.add(new_params['combination_id'])
-
-                    yield from __combinations(new_params)
 
 
 def __combinations(of: Dict[str, Any]) -> Iterable[Dict[str, Any]]:

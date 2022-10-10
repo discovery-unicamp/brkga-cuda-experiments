@@ -1,3 +1,5 @@
+.venv
+
 convergence/
 fitness/
 logs/

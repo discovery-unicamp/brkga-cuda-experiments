@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
 
   GPUBRKGA<DecoderImpl> brkga(
       instance.chromosomeLength(), params.populationSize,
-      params.getEliteProportion(), params.getMutantProportion(), params.rhoe,
+      params.getEliteFactor(), params.getMutantFactor(), params.rhoe,
       decoder, params.seed, /* decode on gpu? */ params.decoder == "gpu",
       params.numberOfPopulations);
 
