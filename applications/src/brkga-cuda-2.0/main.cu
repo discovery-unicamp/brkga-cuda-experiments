@@ -22,7 +22,7 @@ typedef CvrpDecoder Decoder;
 #include "../common/Runner.hpp"
 #include <brkga-cuda/Brkga.hpp>
 #include <brkga-cuda/BrkgaConfiguration.hpp>
-#include <brkga-cuda/CudaUtils.hpp>
+#include <brkga-cuda/utils/GpuUtils.hpp>
 
 #include <algorithm>
 #include <vector>
@@ -116,7 +116,7 @@ private:
 void bbSegSortCall(float* dChromosome,
                    unsigned* dPermutation,
                    unsigned length) {
-  box::cuda::segSort(nullptr, dChromosome, dPermutation, 1, length);
+  box::gpu::segSort(nullptr, dChromosome, dPermutation, 1, length);
 }
 
 int main(int argc, char** argv) {
