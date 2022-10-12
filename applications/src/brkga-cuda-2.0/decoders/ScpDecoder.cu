@@ -34,7 +34,7 @@ ScpDecoder::~ScpDecoder() {
 }
 
 float ScpDecoder::decode(const box::Chromosome<float>& chromosome) const {
-  return getFitness(chromosome, config->chromosomeLength,
+  return getFitness(chromosome, config->chromosomeLength(),
                     instance->universeSize, instance->acceptThreshold,
                     instance->costs.data(), instance->sets.data(),
                     instance->setsEnd.data());
@@ -59,10 +59,10 @@ void ScpDecoder::decode(cudaStream_t stream,
                         unsigned numberOfChromosomes,
                         const box::Chromosome<float>* dChromosomes,
                         float* dResults) const {
-  const auto threads = config->threadsPerBlock;
+  const auto threads = config->gpuThreads();
   const auto blocks = box::gpu::blocks(numberOfChromosomes, threads);
   deviceDecode<<<blocks, threads, 0, stream>>>(
-      dResults, numberOfChromosomes, dChromosomes, config->chromosomeLength,
+      dResults, numberOfChromosomes, dChromosomes, config->chromosomeLength(),
       instance->universeSize, instance->acceptThreshold, dCosts, dSets,
       dSetEnd);
   CUDA_CHECK_LAST();

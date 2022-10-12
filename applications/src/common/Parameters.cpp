@@ -50,7 +50,7 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
     } else if (arg == "--nelite") {
       params.eliteSize = std::stoi(value);
     } else if (arg == "--elite") {
-      params.eliteFactor = std::stof(value);
+      params.elitePercentage = std::stof(value);
     } else if (arg == "--mutant") {
       params.mutantFactor = std::stof(value);
     } else if (arg == "--nmutant") {

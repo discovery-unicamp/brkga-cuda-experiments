@@ -42,13 +42,13 @@ public:
                    .numberOfPopulations(params.numberOfPopulations)
                    .populationSize(params.populationSize)
                    .chromosomeLength(instance.chromosomeLength())
-                   .eliteCount(params.getNumberOfElites())
-                   .mutantsCount(params.getNumberOfMutants())
+                   .numberOfElites(params.getNumberOfElites())
+                   .numberOfMutants(params.getNumberOfMutants())
                    .rhoe(params.rhoe)
                    .seed(params.seed)
                    .decoder(&decoder)
                    .decodeType(box::DecodeType::fromString(params.decoder))
-                   .threadsPerBlock(params.threadsPerBlock)
+                   .gpuThreads(params.threadsPerBlock)
                    .ompThreads(params.ompThreads)
                    .build()) {}
 
