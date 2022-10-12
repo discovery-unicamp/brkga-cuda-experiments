@@ -39,15 +39,16 @@ public:
       : RunnerBase(argc, argv),
         decoder(&instance),
         config(box::BrkgaConfiguration::Builder()
+                   .decoder(&decoder)
+                   .decodeType(box::DecodeType::fromString(params.decoder))
                    .numberOfPopulations(params.numberOfPopulations)
                    .populationSize(params.populationSize)
                    .chromosomeLength(instance.chromosomeLength())
                    .numberOfElites(params.getNumberOfElites())
                    .numberOfMutants(params.getNumberOfMutants())
                    .rhoe(params.rhoe)
+                   .numberOfElitesToExchange(params.exchangeBestCount)
                    .seed(params.seed)
-                   .decoder(&decoder)
-                   .decodeType(box::DecodeType::fromString(params.decoder))
                    .gpuThreads(params.threadsPerBlock)
                    .ompThreads(params.ompThreads)
                    .build()) {}
@@ -74,9 +75,7 @@ public:
 
   void evolve() override { algorithm->evolve(); }
 
-  void exchangeElites(unsigned count) override {
-    algorithm->exchangeElite(count);
-  }
+  void exchangeElites() override { algorithm->exchangeElites(); }
 
   void pathRelink() override {
     if (params.prPairs < 1)
