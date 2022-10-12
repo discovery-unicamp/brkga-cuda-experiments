@@ -1,7 +1,7 @@
 #include "../../common/instances/ScpInstance.hpp"
 #include "ScpDecoder.hpp"
 #include <brkga-cuda/Chromosome.hpp>
-#include <brkga-cuda/CudaUtils.hpp>
+#include <brkga-cuda/utils/GpuUtils.hpp>
 
 #include <cuda_runtime.h>
 #include <thrust/device_vector.h>
@@ -12,31 +12,32 @@
 
 ScpDecoder::ScpDecoder(ScpInstance* _instance)
     : instance(_instance),
-      dCosts(box::cuda::alloc<float>(nullptr, instance->costs.size())),
+      dCosts(box::gpu::alloc<float>(nullptr, instance->costs.size())),
       dSets(nullptr),
       dSetEnd(nullptr) {
-  box::cuda::copy2d(nullptr, dCosts, instance->costs.data(),
-                    instance->costs.size());
+  box::gpu::copy2d(nullptr, dCosts, instance->costs.data(),
+                   instance->costs.size());
 
   const auto& sets = instance->sets;
-  dSets = box::cuda::alloc<unsigned>(nullptr, sets.size());
-  box::cuda::copy2d(nullptr, dSets, sets.data(), sets.size());
+  dSets = box::gpu::alloc<unsigned>(nullptr, sets.size());
+  box::gpu::copy2d(nullptr, dSets, sets.data(), sets.size());
 
   const auto& setsEnd = instance->setsEnd;
-  dSetEnd = box::cuda::alloc<unsigned>(nullptr, setsEnd.size());
-  box::cuda::copy2d(nullptr, dSetEnd, setsEnd.data(), setsEnd.size());
+  dSetEnd = box::gpu::alloc<unsigned>(nullptr, setsEnd.size());
+  box::gpu::copy2d(nullptr, dSetEnd, setsEnd.data(), setsEnd.size());
 }
 
 ScpDecoder::~ScpDecoder() {
-  box::cuda::free(nullptr, dCosts);
-  box::cuda::free(nullptr, dSets);
-  box::cuda::free(nullptr, dSetEnd);
+  box::gpu::free(nullptr, dCosts);
+  box::gpu::free(nullptr, dSets);
+  box::gpu::free(nullptr, dSetEnd);
 }
 
 float ScpDecoder::decode(const box::Chromosome<float>& chromosome) const {
-  return getFitness(chromosome, config->chromosomeLength, instance->universeSize,
-              instance->acceptThreshold, instance->costs.data(),
-              instance->sets.data(), instance->setsEnd.data());
+  return getFitness(chromosome, config->chromosomeLength,
+                    instance->universeSize, instance->acceptThreshold,
+                    instance->costs.data(), instance->sets.data(),
+                    instance->setsEnd.data());
 }
 
 __global__ void deviceDecode(float* results,
@@ -59,7 +60,7 @@ void ScpDecoder::decode(cudaStream_t stream,
                         const box::Chromosome<float>* dChromosomes,
                         float* dResults) const {
   const auto threads = config->threadsPerBlock;
-  const auto blocks = box::cuda::blocks(numberOfChromosomes, threads);
+  const auto blocks = box::gpu::blocks(numberOfChromosomes, threads);
   deviceDecode<<<blocks, threads, 0, stream>>>(
       dResults, numberOfChromosomes, dChromosomes, config->chromosomeLength,
       instance->universeSize, instance->acceptThreshold, dCosts, dSets,

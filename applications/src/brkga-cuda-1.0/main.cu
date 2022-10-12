@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
   CUDA_CHECK(cudaEventRecord(start));
 
   BRKGA brkga(instance.chromosomeLength(), params.populationSize,
-              params.getEliteProportion(), params.getMutantProportion(),
+              params.getEliteFactor(), params.getMutantFactor(),
               params.rhoe, params.numberOfPopulations, decodeId);
   brkga.setInstanceInfo(&decoderInfo, 1, sizeof(decoderInfo));
 

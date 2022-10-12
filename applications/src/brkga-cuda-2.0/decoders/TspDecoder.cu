@@ -1,6 +1,6 @@
 #include "../../common/instances/TspInstance.hpp"
 #include "TspDecoder.hpp"
-#include <brkga-cuda/CudaUtils.hpp>
+#include <brkga-cuda/utils/GpuUtils.hpp>
 
 #include <cuda_runtime.h>
 
@@ -11,17 +11,17 @@
 TspDecoder::TspDecoder(TspInstance* _instance)
     : box::Decoder(),
       instance(_instance),
-      dDistances(box::cuda::alloc<float>(nullptr, instance->distances.size())) {
-  box::cuda::copy2d(nullptr, dDistances, instance->distances.data(),
-                    instance->distances.size());
+      dDistances(box::gpu::alloc<float>(nullptr, instance->distances.size())) {
+  box::gpu::copy2d(nullptr, dDistances, instance->distances.data(),
+                   instance->distances.size());
 
   // Set CUDA heap limit to 1GB to avoid memory issues with the sort of thrust
   constexpr auto oneGigaByte = (std::size_t)1024 * 1024 * 1024;
-  box::cuda::setMaxHeapSize(oneGigaByte);
+  box::gpu::setMaxHeapSize(oneGigaByte);
 }
 
 TspDecoder::~TspDecoder() {
-  box::cuda::free(nullptr, dDistances);
+  box::gpu::free(nullptr, dDistances);
 }
 
 float TspDecoder::decode(const box::Chromosome<float>& chromosome) const {
@@ -72,21 +72,21 @@ void TspDecoder::decode(cudaStream_t stream,
                         const box::Chromosome<float>* dChromosomes,
                         float* dFitness) const {
   const auto length = numberOfChromosomes * config->chromosomeLength;
-  auto* dChromosomesCopy = box::cuda::alloc<float>(stream, length);
-  auto* dTempMemory = box::cuda::alloc<unsigned>(stream, length);
+  auto* dChromosomesCopy = box::gpu::alloc<float>(stream, length);
+  auto* dTempMemory = box::gpu::alloc<unsigned>(stream, length);
 
   box::Chromosome<float>::copy(stream, dChromosomesCopy, dChromosomes,
                                numberOfChromosomes, config->chromosomeLength);
 
   const auto threads = config->threadsPerBlock;
-  const auto blocks = box::cuda::blocks(numberOfChromosomes, threads);
+  const auto blocks = box::gpu::blocks(numberOfChromosomes, threads);
   deviceDecode<<<blocks, threads, 0, stream>>>(
       numberOfChromosomes, dChromosomesCopy, dTempMemory,
       config->chromosomeLength, dDistances, dFitness);
   CUDA_CHECK_LAST();
 
-  box::cuda::free(stream, dChromosomesCopy);
-  box::cuda::free(stream, dTempMemory);
+  box::gpu::free(stream, dChromosomesCopy);
+  box::gpu::free(stream, dTempMemory);
 }
 
 __global__ void deviceDecode(const unsigned tourCount,
@@ -115,7 +115,7 @@ void TspDecoder::decode(cudaStream_t stream,
                         const box::Chromosome<unsigned>* dPermutations,
                         float* dFitness) const {
   const auto threads = config->threadsPerBlock;
-  const auto blocks = box::cuda::blocks(numberOfPermutations, threads);
+  const auto blocks = box::gpu::blocks(numberOfPermutations, threads);
   deviceDecode<<<blocks, threads, 0, stream>>>(
       numberOfPermutations, dPermutations, config->chromosomeLength, dDistances,
       dFitness);

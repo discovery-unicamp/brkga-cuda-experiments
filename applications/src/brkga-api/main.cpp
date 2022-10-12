@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
   MTRand rng(params.seed);
   BRKGA<DecoderImpl, MTRand> brkga(
       instance.chromosomeLength(), params.populationSize,
-      params.getEliteProportion(), params.getMutantProportion(), params.rhoe,
+      params.getEliteFactor(), params.getMutantFactor(), params.rhoe,
       decoder, rng, params.numberOfPopulations, params.ompThreads);
 
   double bestFitness = brkga.getBestFitness();

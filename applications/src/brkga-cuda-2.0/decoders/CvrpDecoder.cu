@@ -2,7 +2,7 @@
 #include "CvrpDecoder.hpp"
 #include <brkga-cuda/Chromosome.hpp>
 #include <brkga-cuda/CudaError.cuh>
-#include <brkga-cuda/CudaUtils.hpp>
+#include <brkga-cuda/utils/GpuUtils.hpp>
 
 #include <cuda_runtime.h>
 #include <thrust/device_ptr.h>
@@ -14,17 +14,17 @@
 
 CvrpDecoder::CvrpDecoder(CvrpInstance* _instance)
     : instance(_instance),
-      dDemands(box::cuda::alloc<unsigned>(nullptr, instance->demands.size())),
-      dDistances(box::cuda::alloc<float>(nullptr, instance->distances.size())) {
-  box::cuda::copy2d(nullptr, dDemands, instance->demands.data(),
-                    instance->demands.size());
-  box::cuda::copy2d(nullptr, dDistances, instance->distances.data(),
-                    instance->distances.size());
+      dDemands(box::gpu::alloc<unsigned>(nullptr, instance->demands.size())),
+      dDistances(box::gpu::alloc<float>(nullptr, instance->distances.size())) {
+  box::gpu::copy2d(nullptr, dDemands, instance->demands.data(),
+                   instance->demands.size());
+  box::gpu::copy2d(nullptr, dDistances, instance->distances.data(),
+                   instance->distances.size());
 }
 
 CvrpDecoder::~CvrpDecoder() {
-  box::cuda::free(nullptr, dDemands);
-  box::cuda::free(nullptr, dDistances);
+  box::gpu::free(nullptr, dDemands);
+  box::gpu::free(nullptr, dDistances);
 }
 
 float CvrpDecoder::decode(const box::Chromosome<float>& chromosome) const {
@@ -72,21 +72,21 @@ void CvrpDecoder::decode(cudaStream_t stream,
                          const box::Chromosome<float>* dChromosomes,
                          float* dFitness) const {
   const auto length = numberOfChromosomes * config->chromosomeLength;
-  auto* dChromosomesCopy = box::cuda::alloc<float>(stream, length);
-  auto* dTempMemory = box::cuda::alloc<unsigned>(stream, length);
+  auto* dChromosomesCopy = box::gpu::alloc<float>(stream, length);
+  auto* dTempMemory = box::gpu::alloc<unsigned>(stream, length);
 
   box::Chromosome<float>::copy(stream, dChromosomesCopy, dChromosomes,
                                numberOfChromosomes, config->chromosomeLength);
 
   const auto threads = config->threadsPerBlock;
-  const auto blocks = box::cuda::blocks(numberOfChromosomes, threads);
+  const auto blocks = box::gpu::blocks(numberOfChromosomes, threads);
   deviceDecode<<<blocks, threads, 0, stream>>>(
       dFitness, numberOfChromosomes, dChromosomesCopy, dTempMemory,
       config->chromosomeLength, instance->capacity, dDemands, dDistances);
   CUDA_CHECK_LAST();
 
-  box::cuda::free(stream, dChromosomesCopy);
-  box::cuda::free(stream, dTempMemory);
+  box::gpu::free(stream, dChromosomesCopy);
+  box::gpu::free(stream, dTempMemory);
 }
 
 __global__ void deviceDecode(float* dFitness,
@@ -109,7 +109,7 @@ void CvrpDecoder::decode(cudaStream_t stream,
                          const box::Chromosome<unsigned>* dPermutations,
                          float* dFitness) const {
   const auto threads = config->threadsPerBlock;
-  const auto blocks = box::cuda::blocks(numberOfPermutations, threads);
+  const auto blocks = box::gpu::blocks(numberOfPermutations, threads);
   deviceDecode<<<blocks, threads, 0, stream>>>(
       dFitness, numberOfPermutations, dPermutations, config->chromosomeLength,
       instance->capacity, dDemands, dDistances);
