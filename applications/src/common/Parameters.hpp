@@ -37,8 +37,9 @@ struct Parameters {
   }
 
   [[nodiscard]] inline unsigned getNumberOfElites() const {
-    return (eliteSize != 0 ? eliteSize
-                           : (unsigned)(elitePercentage * (float)populationSize));
+    return (eliteSize != 0
+                ? eliteSize
+                : (unsigned)(elitePercentage * (float)populationSize));
   }
 
   [[nodiscard]] inline float getMutantFactor() const {

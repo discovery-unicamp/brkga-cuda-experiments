@@ -88,7 +88,6 @@ public:
 
     algorithm->runPathRelink(bs, box::PathRelinkPair::bestElites,
                              params.prPairs);
-    // FIXME filter similar
   }
 
   void prunePopulation() override {
