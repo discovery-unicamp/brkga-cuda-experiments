@@ -7,3 +7,6 @@
 [submodule "brkgaAPI"]
 	path = brkgaAPI
 	url = https://github.com/rfrancotoso/brkgaAPI.git
+[submodule "brkga-cuda-1.0"]
+	path = brkga-cuda-1.0
+	url = https://github.com/eduardocandidoxavier/brkga-cuda.git
