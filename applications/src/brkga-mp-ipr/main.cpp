@@ -67,7 +67,7 @@ public:
     // PR config is required to be valid even if not used.
     // In fact, we replace them when calling the PR.
     config.pr_number_pairs = 1;
-    config.pr_minimum_distance = 1 - params.similarityThreshold;
+    config.pr_minimum_distance = 1 - params.prMinDiffPercentage;
     config.pr_type = BRKGA::PathRelinking::Type::DIRECT;
     config.pr_selection = BRKGA::PathRelinking::Selection::BESTSOLUTION;
     config.alpha_block_size = .5;  // block-size = alpha * sqrt(pop-size)
@@ -147,12 +147,12 @@ public:
     auto prType = BRKGA::PathRelinking::Type::PERMUTATION;
     std::shared_ptr<BRKGA::DistanceFunctionBase> dist(
         new BRKGA::KendallTauDistance);
-    const auto minDistance = n * (n - 1) / 2 * (1 - params.similarityThreshold);
+    const auto minDistance = n * (n - 1) / 2 * (1 - params.prMinDiffPercentage);
 #elif defined(SCP)
     auto prType = BRKGA::PathRelinking::Type::DIRECT;
     std::shared_ptr<BRKGA::DistanceFunctionBase> dist(
         new BRKGA::HammingDistance(instance.acceptThreshold));
-    const auto minDistance = n * (1 - params.similarityThreshold);
+    const auto minDistance = n * (1 - params.prMinDiffPercentage);
 #else
 #error No problem/instance/decoder defined
 #endif

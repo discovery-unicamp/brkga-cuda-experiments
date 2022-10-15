@@ -22,6 +22,7 @@ typedef CvrpDecoder Decoder;
 #include "../common/Runner.hpp"
 #include <brkga-cuda/Brkga.hpp>
 #include <brkga-cuda/BrkgaConfiguration.hpp>
+#include <brkga-cuda/Comparator.hpp>
 #include <brkga-cuda/utils/GpuUtils.hpp>
 
 #include <algorithm>
@@ -86,13 +87,24 @@ public:
     const auto bs = (unsigned)(factor * (double)instance.chromosomeLength());
     box::logger::debug("Path Relink block size:", bs);
 
+#if defined(TSP) || defined(CVRP) || defined(CVRP_GREEDY)
+    const auto comparator = box::EpsilonComparator(instance.chromosomeLength(),
+                                                   params.prMinDiffPercentage);
+#elif defined(SCP)
+    const auto comparator = box::ThresholdComparator(
+        instance.chromosomeLength(), params.prMinDiffPercentage,
+        instance.acceptThreshold);
+#else
+#error Missing to update this code block
+#endif
+
     algorithm->runPathRelink(bs, box::PathRelinkPair::bestElites,
-                             params.prPairs);
+                             params.prPairs, comparator);
   }
 
   void prunePopulation() override {
-    algorithm->removeSimilarElites(box::EpsilonFilter(
-        instance.chromosomeLength(), params.similarityThreshold, 1e-7f));
+    algorithm->removeSimilarElites(box::EpsilonComparator(
+        instance.chromosomeLength(), params.pruneThreshold, 1e-7f));
   }
 
   SortMethod determineSortMethod(const std::string& decodeType) const override {

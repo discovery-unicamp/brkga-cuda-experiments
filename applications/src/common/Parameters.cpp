@@ -41,8 +41,12 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
       params.prBlockSize = std::stoi(value);
     } else if (arg == "--pr-block-factor") {
       params.prBlockFactor = std::stof(value);
+    } else if (arg == "--pr-min-diff") {
+      params.prMinDiffPercentage = std::stof(value);
     } else if (arg == "--prune-interval") {
       params.pruneInterval = std::stoi(value);
+    } else if (arg == "--prune-threshold") {
+      params.pruneThreshold = std::stof(value);
     } else if (arg == "--pop-count") {
       params.numberOfPopulations = std::stoi(value);
     } else if (arg == "--pop-size") {
@@ -61,8 +65,6 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
       params.seed = std::stoi(value);
     } else if (arg == "--decoder") {
       params.decoder = value;
-    } else if (arg == "--similarity-threshold") {
-      params.similarityThreshold = std::stof(value);
     } else if (arg == "--threads") {
       params.threadsPerBlock = std::stoi(value);
     } else if (arg == "--omp-threads") {
