@@ -23,7 +23,7 @@ struct Parameters {
   unsigned exchangeBestInterval = 0;
   unsigned exchangeBestCount = 0;
   unsigned prInterval = 0;
-  unsigned prPairs = 0;
+  unsigned prPairs = 1;
   unsigned prBlockSize = 0;
   float prBlockFactor = 0;
   unsigned prMaxTime = 0;

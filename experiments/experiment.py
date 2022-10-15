@@ -29,10 +29,12 @@ TEST_COUNT = 20
 MAX_GENERATIONS = 10000
 MAX_TIME_SECONDS = 60 * 60
 TIMEOUT_SECONDS = MAX_TIME_SECONDS + 1 * 60
+OMP_THREADS = int(shell('nproc'))
 BUILD_TYPE = 'release'
 TWEAKS_FILE_PATH = Path('applications', 'src', 'Tweaks.hpp')
 SOURCE_PATH = Path('applications')
 OUTPUT_PATH = Path('experiments', 'results')
+PARAMS_PATH = Path('experiments', 'parameters')
 
 GENE_TYPE = {
     'brkga-api': 'double',
@@ -176,48 +178,18 @@ def main():
         #     ],
         #     test_count=TEST_COUNT,
         # ),
-        # __build_params(
-        #     tool='brkga-mp-ipr',
-        #     problems=['tsp'],
-        #     decoders=['cpu'],
-        #     test_count=TEST_COUNT,
-        # ),
-        # __build_params(
-        #     tool='brkga-cuda-2.0',
-        #     problems=['tsp'],
-        #     decoders=['cpu'],
-        #     test_count=TEST_COUNT,
-        # ),
-        # __build_params(
-        #     tool='brkga-mp-ipr',
-        #     problems=['cvrp'],
-        #     decoders=['cpu'],
-        #     test_count=TEST_COUNT,
-        # ),
         __build_params(
             tool='brkga-cuda-2.0',
             problems=['cvrp'],
-            decoders=['cpu-permutation'],
+            decoders=['cpu'],
             test_count=TEST_COUNT,
         ),
-        # __build_params(
-        #     tool='brkga-mp-ipr',
-        #     problems=['scp'],
-        #     decoders=['cpu'],
-        #     test_count=TEST_COUNT,
-        # ),
-        # __build_params(
-        #     tool='brkga-cuda-2.0',
-        #     problems=['scp'],
-        #     decoders=['cpu'],
-        #     test_count=TEST_COUNT,
-        # ),
-        # __build_params(
-        #     tool='brkga-cuda-2.0',
-        #     problems=['tsp', 'cvrp'],
-        #     decoders=['cpu-permutation', 'gpu-permutation'],
-        #     test_count=TEST_COUNT,
-        # ),
+        __build_params(
+            tool='brkga-mp-ipr',
+            problems=['cvrp'],
+            decoders=['cpu'],
+            test_count=TEST_COUNT,
+        ),
     ))
 
     __save_results(results)
@@ -229,32 +201,41 @@ def __build_params(
         decoders: List[str],
         test_count: int,
 ) -> Iterable[Dict[str, Union[str, int, float]]]:
-    param_combinations = {
-        'tool': tool,
-        'problem': problems,
-        'decoder': decoders,
-        'seed': range(1, test_count + 1),
-        'omp-threads': int(shell('nproc')),
-        'threads': 128,
-        'generations': MAX_GENERATIONS,
-        'max-time': MAX_TIME_SECONDS,
-        'pop-count': 3,
-        'pop-size': 256,
-        'rhoe': .80,
-        'elite': .10,  # % of the population
-        'mutant': .10,  # % of the population
-        'exchange-interval': 25,
-        'exchange-count': 3,
-        'pr-interval': 0,
-        'pr-pairs': 3,
-        'pr-block-factor': .10,  # % of the chromosome length
-        'similarity-threshold': .90,  # % of the chromosome length
-        'log-step': 1,
-    }
-    for params in __combinations(param_combinations):
-        params['problem-name'] = PROBLEM_NAME[params['problem']]
-        params['instance-name'] = INSTANCES[params['problem-name']]
-        yield from __combinations(params)
+    if test_count == 0:
+        logging.warning(f"Test count is 0; ignoring build params")
+        return []
+    for problem in problems:
+        problem_name = PROBLEM_NAME[problem]
+        for decoder in decoders:
+            tuned_params = (
+                PARAMS_PATH
+                .joinpath(f'{tool}_{problem}_{decoder}.txt')
+                .read_text()
+                .split('\n')
+            )
+            tuned_params = [line.split() for line in tuned_params if line]
+            param_names = [name.replace('_', '-') for name in tuned_params[0]]
+            param_values = tuned_params[1]
+            tuned_params = {
+                name: value
+                for name, value in zip(param_names, param_values)
+                if value != 'NA'
+            }
+            tuned_params = {
+                **tuned_params,
+                'tool': tool,
+                'problem': problem,
+                'problem-name': problem_name,
+                'instance-name': INSTANCES[problem_name],
+                'decoder': decoder,
+                'seed': range(1, test_count + 1),
+                'omp-threads': OMP_THREADS,
+                'generations': MAX_GENERATIONS,
+                'max-time': MAX_TIME_SECONDS,
+                'log-step': 25,
+            }
+
+            yield from __combinations(tuned_params)
 
 
 def __combinations(of: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
