@@ -1,0 +1,3 @@
+/experiment/experiments/instances/cvrp/set-x/X-n219-k73.vrp
+/experiment/experiments/instances/cvrp/set-x/X-n599-k92.vrp
+/experiment/experiments/instances/cvrp/set-x/X-n1001-k43.vrp
