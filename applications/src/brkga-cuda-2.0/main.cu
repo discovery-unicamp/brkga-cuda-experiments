@@ -52,7 +52,18 @@ public:
                    .seed(params.seed)
                    .gpuThreads(params.threadsPerBlock)
                    .ompThreads(params.ompThreads)
-                   .build()) {}
+                   .build()) {
+    if (params.rhoeFunction != "rhoe")
+      throw std::invalid_argument("Rhoe function can only be of type `rhoe`");
+    if (params.numParents != 2)
+      throw std::invalid_argument("Number of parents should be 2");
+    if (params.numEliteParents != 1)
+      throw std::invalid_argument("Number of elite parents should be 1");
+    if (params.prMaxTime != 0)
+      throw std::invalid_argument("PR has no time limit; it should be 0");
+    if (params.prSelect != "best")
+      throw std::invalid_argument("PR only works with `best`");
+  }
 
   box::Brkga* getAlgorithm(const std::vector<std::vector<std::vector<Gene>>>&
                                initialPopulation) override {

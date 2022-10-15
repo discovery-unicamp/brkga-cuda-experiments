@@ -27,7 +27,7 @@ open-terminal:
 
 .PHONY: update-submodules
 update-submodules:
-	git submodule update --init
+	git submodule update --init --recursive
 
 .PHONY: fix-git
 fix-git: # Rule created due the errors on dl-1
@@ -37,5 +37,5 @@ fix-git: # Rule created due the errors on dl-1
 .PHONY: clean
 clean:
 	docker run -it -v $(project_path)/:/experiment/ --rm ubuntu /bin/bash -c 'cd experiment; rm -f .setup .tuning-setup core; rm -rf build*'
-	docker rmi $$(docker images 'brkga' -a -q) || exit 0
-	docker rmi $$(docker images 'tuning' -a -q) || exit 0
+	docker rmi $$(docker images 'brkga' -a -q) || (echo "Ignoring 'docker rmi'" && exit 0)
+	docker rmi $$(docker images 'tuning' -a -q) || (echo "Ignoring 'docker rmi'" && exit 0)

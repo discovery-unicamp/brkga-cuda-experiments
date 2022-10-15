@@ -1,0 +1,5 @@
+trainInstancesDir = ""
+trainInstancesFile = "/experiment/experiments/tuning/cvrp/brkga-cuda-2.0/instances-list.txt"
+parameterFile = "/experiment/experiments/tuning/cvrp/brkga-cuda-2.0/parameters.txt"
+forbiddenFile = "/experiment/experiments/tuning/cvrp/brkga-cuda-2.0/forbidden.txt"
+digits = 2
