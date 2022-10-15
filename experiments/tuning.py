@@ -156,11 +156,11 @@ fi
     shell(f'cd {str(results_path.absolute())} && {irace_cmd}', get=False)
 
 
-def tune_box_2(problem: str):
+def tune_box_2(problem: str, decoder: str):
     tool = 'brkga-cuda-2.0'
     problem_name = PROBLEM_NAME[problem]
     irace(
-        results_path=TUNING_PATH.joinpath(problem, tool),
+        results_path=TUNING_PATH.joinpath(f'{tool}_{problem}_{decoder}'),
         executable=compile_optimizer(tool, problem_name),
         instances=[get_instance_path(problem_name, i)
                    for i in TUNING_INSTANCES[problem_name]],
@@ -172,18 +172,19 @@ def tune_box_2(problem: str):
             'log-step': 0,
         },
         tune_params=[
-            IraceParam('threads', 'category', [64, 128, 256]),
-            IraceParam('pop-count', 'int', (3, 8)),
-            IraceParam('pop-size', 'category', [64, 128, 256]),
+            IraceParam('threads', 'category', [64, 128, 256, 512, 1024]),
+            IraceParam('pop-count', 'int', (1, 8)),
+            IraceParam('pop-size', 'category', [64, 128, 256, 512, 1024]),
             IraceParam('rhoe', 'float', (.70, .90)),
             IraceParam('elite', 'float', (.02, .20)),
             IraceParam('mutant', 'float', (.02, .20)),
             IraceParam('exchange-interval', 'category', [25, 50, 75, 100]),
-            IraceParam('exchange-count', 'int', (1, 3)),
+            IraceParam('exchange-count', 'int', (1, 10)),
             IraceParam('pr-interval', 'category', [50, 100, 150, 200]),
-            IraceParam('pr-pairs', 'int', (2, 5)),
+            IraceParam('pr-pairs', 'int', (1, 5)),
             IraceParam('pr-block-factor', 'float', (.05, .15)),
-            IraceParam('similarity-threshold', 'float', (.90, .98)),
+            IraceParam('pr-min-diff', 'float', (.50, .90)),
+            IraceParam('prune-threshold', 'float', (.90, .98)),
         ],
         forbidden_combinations=[
             'elite * as.numeric(pop_size) < pr_pairs',
@@ -195,9 +196,10 @@ def tune_box_2(problem: str):
 
 def tune_brkga_mp_ipr(problem: str):
     tool = 'brkga-mp-ipr'
+    decoder = 'cpu'
     problem_name = PROBLEM_NAME[problem]
     irace(
-        results_path=TUNING_PATH.joinpath(problem, tool),
+        results_path=TUNING_PATH.joinpath(f'{tool}_{problem}_{decoder}'),
         executable=compile_optimizer(tool, problem_name),
         instances=[get_instance_path(problem_name, i)
                    for i in TUNING_INSTANCES[problem_name]],
@@ -205,13 +207,13 @@ def tune_brkga_mp_ipr(problem: str):
             'omp-threads': shell('nproc'),
             'generations': MAX_GENERATIONS,
             'max-time': MAX_TIME_SECONDS,
-            'decoder': 'cpu',
+            'decoder': decoder,
             'log-step': 0,
             'pr-pairs': 1,
         },
         tune_params=[
             IraceParam('pop-count', 'int', (1, 8)),
-            IraceParam('pop-size', 'int', (64, 256)),
+            IraceParam('pop-size', 'int', (64, 1024)),
             IraceParam('rhoe-function', 'category',
                        ['lin', 'quad', 'cub', 'exp', 'log', 'const', 'rhoe']),
             IraceParam('rhoe', 'float', (.70, .90),
@@ -221,12 +223,12 @@ def tune_brkga_mp_ipr(problem: str):
             IraceParam('parents', 'int', (2, 10)),
             IraceParam('elite-parents', 'int', (1, 9)),
             IraceParam('exchange-interval', 'category', [25, 50, 75, 100]),
-            IraceParam('exchange-count', 'int', (1, 3)),
+            IraceParam('exchange-count', 'int', (1, 10)),
             IraceParam('pr-interval', 'category', [50, 100, 150, 200]),
             IraceParam('pr-block-factor', 'float', (.05, 1.0)),
             IraceParam('pr-max-time', 'int', (1, 30)),
             IraceParam('pr-select', 'category', ['best', 'random']),
-            IraceParam('similarity-threshold', 'float', (.90, .98)),
+            IraceParam('pr-min-diff', 'float', (.50, .90)),
         ],
         forbidden_combinations=[
             '(elite * pop_size < elite_parents)',
@@ -239,5 +241,5 @@ def tune_brkga_mp_ipr(problem: str):
 
 
 if __name__ == '__main__':
-    # tune_box_2('cvrp')
+    # tune_box_2('cvrp', 'cpu')
     tune_brkga_mp_ipr('cvrp')

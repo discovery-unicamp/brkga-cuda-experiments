@@ -1,2 +1,2 @@
-threads pop_count pop_size rhoe elite mutant exchange_interval exchange_count pr_interval pr_pairs pr_block_factor similarity_threshold
-    256         8      256 0.75  0.04   0.09                25              3          50        3            0.09                 0.93
+threads pop_count pop_size rhoe elite mutant exchange_interval exchange_count pr_interval pr_pairs pr_block_factor prune_threshold
+    256         8      256 0.75  0.04   0.09                25              3          50        3            0.09            0.93
