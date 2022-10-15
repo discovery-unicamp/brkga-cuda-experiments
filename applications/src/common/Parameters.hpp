@@ -13,7 +13,7 @@ struct Parameters {
   unsigned numberOfPopulations = 0;
   unsigned populationSize = 0;
   unsigned eliteSize = 0;
-  float eliteFactor = 0;
+  float elitePercentage = 0;
   unsigned mutantSize = 0;
   float mutantFactor = 0;
   float rhoe = 0;
@@ -38,12 +38,12 @@ struct Parameters {
 
   [[nodiscard]] inline float getEliteFactor() const {
     return (eliteSize != 0 ? (float)eliteSize / (float)populationSize
-                           : eliteFactor);
+                           : elitePercentage);
   }
 
   [[nodiscard]] inline unsigned getNumberOfElites() const {
     return (eliteSize != 0 ? eliteSize
-                           : (unsigned)(eliteFactor * (float)populationSize));
+                           : (unsigned)(elitePercentage * (float)populationSize));
   }
 
   [[nodiscard]] inline float getMutantFactor() const {

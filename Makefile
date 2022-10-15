@@ -25,6 +25,10 @@ tuning: .tuning-setup
 open-terminal:
 	docker run -it -v $(project_path)/:/experiment/ --rm ubuntu
 
+.PHONY: update-submodules
+update-submodules:
+	git submodule update --init
+
 .PHONY: fix-git
 fix-git: # Rule created due the errors on dl-1
 	find .git/objects/ -size 0 -exec rm -f {} \;

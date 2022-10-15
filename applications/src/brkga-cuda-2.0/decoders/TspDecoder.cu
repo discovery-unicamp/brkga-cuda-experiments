@@ -25,19 +25,19 @@ TspDecoder::~TspDecoder() {
 }
 
 float TspDecoder::decode(const box::Chromosome<float>& chromosome) const {
-  std::vector<unsigned> permutation(config->chromosomeLength);
+  std::vector<unsigned> permutation(config->chromosomeLength());
   std::iota(permutation.begin(), permutation.end(), 0);
   std::sort(permutation.begin(), permutation.end(),
             [&chromosome](unsigned a, unsigned b) {
               return chromosome[a] < chromosome[b];
             });
-  return getFitness(permutation.data(), config->chromosomeLength,
+  return getFitness(permutation.data(), config->chromosomeLength(),
                     instance->distances.data());
 }
 
 float TspDecoder::decode(const box::Chromosome<unsigned>& permutation) const {
   const auto& tour = permutation;
-  const auto n = config->chromosomeLength;
+  const auto n = config->chromosomeLength();
   const auto& distances = instance->distances;
 
   float fitness = distances[tour[0] * n + tour[n - 1]];
@@ -71,18 +71,18 @@ void TspDecoder::decode(cudaStream_t stream,
                         unsigned numberOfChromosomes,
                         const box::Chromosome<float>* dChromosomes,
                         float* dFitness) const {
-  const auto length = numberOfChromosomes * config->chromosomeLength;
+  const auto length = numberOfChromosomes * config->chromosomeLength();
   auto* dChromosomesCopy = box::gpu::alloc<float>(stream, length);
   auto* dTempMemory = box::gpu::alloc<unsigned>(stream, length);
 
   box::Chromosome<float>::copy(stream, dChromosomesCopy, dChromosomes,
-                               numberOfChromosomes, config->chromosomeLength);
+                               numberOfChromosomes, config->chromosomeLength());
 
-  const auto threads = config->threadsPerBlock;
+  const auto threads = config->gpuThreads();
   const auto blocks = box::gpu::blocks(numberOfChromosomes, threads);
   deviceDecode<<<blocks, threads, 0, stream>>>(
       numberOfChromosomes, dChromosomesCopy, dTempMemory,
-      config->chromosomeLength, dDistances, dFitness);
+      config->chromosomeLength(), dDistances, dFitness);
   CUDA_CHECK_LAST();
 
   box::gpu::free(stream, dChromosomesCopy);
@@ -114,10 +114,10 @@ void TspDecoder::decode(cudaStream_t stream,
                         unsigned numberOfPermutations,
                         const box::Chromosome<unsigned>* dPermutations,
                         float* dFitness) const {
-  const auto threads = config->threadsPerBlock;
+  const auto threads = config->gpuThreads();
   const auto blocks = box::gpu::blocks(numberOfPermutations, threads);
   deviceDecode<<<blocks, threads, 0, stream>>>(
-      numberOfPermutations, dPermutations, config->chromosomeLength, dDistances,
-      dFitness);
+      numberOfPermutations, dPermutations, config->chromosomeLength(),
+      dDistances, dFitness);
   CUDA_CHECK_LAST();
 }

@@ -199,7 +199,7 @@ public:
           && generation != params.generations) {
         box::logger::debug("Exchange", params.exchangeBestCount,
                            "elites between populations");
-        exchangeElites(params.exchangeBestCount);
+        exchangeElites();
       }
       if (params.pruneInterval != 0 && generation % params.pruneInterval == 0
           && generation != params.generations) {
@@ -261,7 +261,7 @@ protected:
 
   virtual void evolve() = 0;
 
-  virtual void exchangeElites(unsigned count) = 0;
+  virtual void exchangeElites() = 0;
 
   // FIXME what are the parameters?
   virtual void pathRelink() {

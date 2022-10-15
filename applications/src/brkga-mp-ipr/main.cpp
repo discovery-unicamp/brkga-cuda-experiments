@@ -178,8 +178,8 @@ public:
     updateBest();
   }
 
-  void exchangeElites(unsigned count) override {
-    algorithm->exchangeElite(count);
+  void exchangeElites() override {
+    algorithm->exchangeElite(params.exchangeBestCount);
     updateBest();
   }
 
