@@ -95,11 +95,11 @@ public:
     config.pr_type = BRKGA::PathRelinking::Type::PERMUTATION;
     dist.reset(new BRKGA::KendallTauDistance);
     config.pr_minimum_distance =
-        (float)(n * (n - 1) / 2) * (1 - params.similarityThreshold);
+        (float)((long)n * (n - 1) / 2) * params.prMinDiffPercentage;
 #elif defined(SCP)
     config.pr_type = BRKGA::PathRelinking::Type::DIRECT;
     dist.reset(new BRKGA::HammingDistance(instance.acceptThreshold));
-    config.pr_minimum_distance = n * (1 - params.similarityThreshold);
+    config.pr_minimum_distance = n * params.prMinDiffPercentage;
 #else
 #error No problem/instance/decoder defined
 #endif

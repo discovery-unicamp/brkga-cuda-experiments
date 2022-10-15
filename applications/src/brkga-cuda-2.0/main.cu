@@ -49,6 +49,9 @@ public:
                    .numberOfMutants(params.getNumberOfMutants())
                    .rhoe(params.rhoe)
                    .numberOfElitesToExchange(params.exchangeBestCount)
+                   .pathRelinkBlockSize(
+                       (unsigned)(params.getPathRelinkBlockFactor()
+                                  * (float)instance.chromosomeLength()))
                    .seed(params.seed)
                    .gpuThreads(params.threadsPerBlock)
                    .ompThreads(params.ompThreads)
@@ -94,10 +97,6 @@ public:
       throw std::runtime_error(
           "Pairs for Path Relinking should be at least one");
 
-    const auto factor = params.getPathRelinkBlockFactor();
-    const auto bs = (unsigned)(factor * (double)instance.chromosomeLength());
-    box::logger::debug("Path Relink block size:", bs);
-
 #if defined(TSP) || defined(CVRP) || defined(CVRP_GREEDY)
     const auto comparator = box::EpsilonComparator(instance.chromosomeLength(),
                                                    params.prMinDiffPercentage);
@@ -106,11 +105,11 @@ public:
         instance.chromosomeLength(), params.prMinDiffPercentage,
         instance.acceptThreshold);
 #else
-#error Missing to update this code block
+#error Missing to update this block of code for the new problem
 #endif
 
-    algorithm->runPathRelink(bs, box::PathRelinkPair::bestElites,
-                             params.prPairs, comparator);
+    algorithm->runPathRelink(box::PathRelinkPair::bestElites, params.prPairs,
+                             comparator);
   }
 
   void prunePopulation() override {

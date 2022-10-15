@@ -183,7 +183,7 @@ def tune_box_2(problem: str, decoder: str):
             IraceParam('pr-interval', 'category', [50, 100, 150, 200]),
             IraceParam('pr-pairs', 'int', (1, 5)),
             IraceParam('pr-block-factor', 'float', (.05, .15)),
-            IraceParam('pr-min-diff', 'float', (.50, .90)),
+            IraceParam('pr-min-diff', 'float', (.20, .90)),
             IraceParam('prune-threshold', 'float', (.90, .98)),
         ],
         forbidden_combinations=[
