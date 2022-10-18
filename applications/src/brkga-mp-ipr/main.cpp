@@ -184,34 +184,7 @@ public:
   }
 
   void pathRelink() override {
-<<<<<<< HEAD
-    const auto n = instance.chromosomeLength();
-
-#if defined(TSP) || defined(CVRP) || defined(CVRP_GREEDY)
-    auto prType = BRKGA::PathRelinking::Type::PERMUTATION;
-    std::shared_ptr<BRKGA::DistanceFunctionBase> dist(
-        new BRKGA::KendallTauDistance);
-    const auto minDistance = n * (n - 1) / 2 * (1 - params.prMinDiffPercentage);
-#elif defined(SCP)
-    auto prType = BRKGA::PathRelinking::Type::DIRECT;
-    std::shared_ptr<BRKGA::DistanceFunctionBase> dist(
-        new BRKGA::HammingDistance(instance.acceptThreshold));
-    const auto minDistance = n * (1 - params.prMinDiffPercentage);
-#else
-#error No problem/instance/decoder defined
-#endif
-
-    auto selectMethod = BRKGA::PathRelinking::Selection::RANDOMELITE;
-    unsigned pairs = 0;  // Take the default
-    auto bs = (unsigned)(n * params.getPathRelinkBlockFactor());
-    unsigned maxTime = 10;
-    algorithm->pathRelink(prType, selectMethod, dist, pairs, minDistance, bs,
-                          maxTime);
-
-    const auto previousFitness = getBestFitness();
-=======
     algorithm->pathRelink(dist, params.prMaxTime);
->>>>>>> 2b18fa96c671085edddbc3cd113944e666f0bbab
     updateBest();
   }
 
