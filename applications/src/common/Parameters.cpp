@@ -23,6 +23,8 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
           "Argument value for %s starts with --: %s", arg.c_str(),
           value.c_str());
 
+    box::logger::debug("Received:", arg, value);
+
     if (arg == "--instance") {
       params.instanceFileName = value;
     } else if (arg == "--generations") {

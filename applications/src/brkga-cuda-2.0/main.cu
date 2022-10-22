@@ -39,23 +39,24 @@ public:
   BrkgaCuda2Runner(int argc, char** argv)
       : RunnerBase(argc, argv),
         decoder(&instance),
-        config(box::BrkgaConfiguration::Builder()
-                   .decoder(&decoder)
-                   .decodeType(box::DecodeType::fromString(params.decoder))
-                   .numberOfPopulations(params.numberOfPopulations)
-                   .populationSize(params.populationSize)
-                   .chromosomeLength(instance.chromosomeLength())
-                   .numberOfElites(params.getNumberOfElites())
-                   .numberOfMutants(params.getNumberOfMutants())
-                   .rhoe(params.rhoe)
-                   .numberOfElitesToExchange(params.exchangeBestCount)
-                   .pathRelinkBlockSize(
-                       (unsigned)(params.getPathRelinkBlockFactor()
-                                  * (float)instance.chromosomeLength()))
-                   .seed(params.seed)
-                   .gpuThreads(params.threadsPerBlock)
-                   .ompThreads(params.ompThreads)
-                   .build()) {
+        config(
+            box::BrkgaConfiguration::Builder()
+                .decoder(&decoder)
+                .decodeType(box::DecodeType::fromString(params.decoder))
+                .numberOfPopulations(params.numberOfPopulations)
+                .populationSize(params.populationSize)
+                .chromosomeLength(instance.chromosomeLength())
+                .numberOfElites(params.getNumberOfElites())
+                .numberOfMutants(params.getNumberOfMutants())
+                .parents({params.rhoe, 1 - params.rhoe}, params.numEliteParents)
+                .numberOfElitesToExchange(params.exchangeBestCount)
+                .pathRelinkBlockSize(
+                    (unsigned)(params.getPathRelinkBlockFactor()
+                               * (float)instance.chromosomeLength()))
+                .seed(params.seed)
+                .gpuThreads(params.threadsPerBlock)
+                .ompThreads(params.ompThreads)
+                .build()) {
     if (params.rhoeFunction != "rhoe")
       throw std::invalid_argument("Rhoe function can only be of type `rhoe`");
     if (params.numParents != 2)
@@ -98,6 +99,7 @@ public:
           "Pairs for Path Relinking should be at least one");
 
 #if defined(TSP) || defined(CVRP) || defined(CVRP_GREEDY)
+    box::logger::debug(instance.chromosomeLength(), params.prMinDiffPercentage);
     const auto comparator = box::EpsilonComparator(instance.chromosomeLength(),
                                                    params.prMinDiffPercentage);
 #elif defined(SCP)
