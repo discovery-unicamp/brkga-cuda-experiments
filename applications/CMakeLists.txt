@@ -8,6 +8,7 @@ ADD_COMPILE_OPTIONS(
   -Wall -Wextra -Wshadow -Wformat=2 -Wformat-truncation -Wfloat-equal
   -Wshift-overflow -Wconversion -Wno-sign-conversion -Wundef -fno-common
 )
+#ADD_COMPILE_OPTIONS("$<$<CONFIG:DEBUG>:-D_GLIBCXX_DEBUG>")
 ADD_COMPILE_DEFINITIONS(LOG_LEVEL=3)
 
 SET(BRKGA_API_ROOT "${CMAKE_CURRENT_LIST_DIR}/../brkgaAPI")
