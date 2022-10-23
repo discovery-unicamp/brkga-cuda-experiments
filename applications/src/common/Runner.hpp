@@ -195,7 +195,8 @@ public:
         box::logger::debug("Run path relink heuristic");
         pathRelink();
       }
-      if (generation % params.exchangeBestInterval == 0
+      if (params.exchangeBestInterval != 0
+          && generation % params.exchangeBestInterval == 0
           && generation != params.generations) {
         box::logger::debug("Exchange", params.exchangeBestCount,
                            "elites between populations");

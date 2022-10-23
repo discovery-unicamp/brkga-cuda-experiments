@@ -89,30 +89,28 @@ public:
   void exchangeElites() override { algorithm->exchangeElites(); }
 
   void pathRelink() override {
-    if (params.prPairs < 1)
-      throw std::runtime_error(
-          "Pairs for Path Relinking should be at least one");
-
-#if defined(TSP) || defined(CVRP) || defined(CVRP_GREEDY)
-    box::logger::debug(instance.chromosomeLength(), params.prMinDiffPercentage);
-    const auto comparator = box::EpsilonComparator(instance.chromosomeLength(),
-                                                   params.prMinDiffPercentage);
-#elif defined(SCP)
-    const auto comparator = box::ThresholdComparator(
-        instance.chromosomeLength(), params.prMinDiffPercentage,
-        instance.acceptThreshold);
-#else
-#error Missing to update this block of code for the new problem
-#endif
-
     algorithm->runPathRelink(box::PathRelinkPair::bestElites, params.prPairs,
-                             comparator);
+                             comparator(params.prMinDiffPercentage));
   }
 
   void prunePopulation() override {
-    algorithm->removeSimilarElites(box::EpsilonComparator(
-        instance.chromosomeLength(), params.pruneThreshold, 1e-7f));
+    algorithm->removeSimilarElites(comparator(params.pruneThreshold));
   }
+
+#if defined(TSP) || defined(CVRP) || defined(CVRP_GREEDY)
+  box::EpsilonComparator comparator(float similarity) const {
+    return box::EpsilonComparator(instance.chromosomeLength(), similarity);
+    // return box::InversionsComparator(instance.chromosomeLength(),
+    // similarity);
+  }
+#elif defined(SCP)
+  box::ThresholdComparator comparator(float similarity) const {
+    return box::ThresholdComparator(instance.chromosomeLength(), similarity,
+                                    instance.acceptThreshold);
+  }
+#else
+#error Missing to update this block of code for the new problem
+#endif
 
   SortMethod determineSortMethod(const std::string& decodeType) const override {
     if (contains(decodeType, "permutation")) return SortMethod::bbSegSort;
