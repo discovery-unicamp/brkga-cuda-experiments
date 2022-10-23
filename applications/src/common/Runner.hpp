@@ -187,6 +187,17 @@ public:
 #endif  // SHOW_PROGRESS
       }
 
+      if (params.exchangeBestInterval != 0
+          && generation % params.exchangeBestInterval == 0) {
+        box::logger::debug("Exchange", params.exchangeBestCount,
+                           "elites between populations");
+        exchangeElites();
+      }
+      if (params.pruneInterval != 0 && generation % params.pruneInterval == 0) {
+        box::logger::debug("Prune the population to remove duplicates");
+        prunePopulation();
+      }
+
       box::logger::debug("Evolve to the next generation");
       evolve();
       ++generation;
@@ -194,18 +205,6 @@ public:
       if (params.prInterval != 0 && generation % params.prInterval == 0) {
         box::logger::debug("Run path relink heuristic");
         pathRelink();
-      }
-      if (params.exchangeBestInterval != 0
-          && generation % params.exchangeBestInterval == 0
-          && generation != params.generations) {
-        box::logger::debug("Exchange", params.exchangeBestCount,
-                           "elites between populations");
-        exchangeElites();
-      }
-      if (params.pruneInterval != 0 && generation % params.pruneInterval == 0
-          && generation != params.generations) {
-        box::logger::debug("Prune the population to remove duplicates");
-        prunePopulation();
       }
     }
 
