@@ -17,4 +17,5 @@ logs.txt
 perf.*
 prof.txt
 Tweaks.hpp
+*.out
 *.qdrep
