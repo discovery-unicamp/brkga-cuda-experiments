@@ -138,7 +138,7 @@ fi
     runner_path.chmod(777)
 
     irace_params = {
-        'max-experiments': 300,
+        'max-experiments': 1000,
         'log-file': str(results_path.joinpath('results.Rdata').absolute()),
         'deterministic': 0,
         'parallel': 1,
@@ -174,7 +174,7 @@ def tune_box_2(problem: str, decoder: str):
         tune_params=[
             IraceParam('threads', 'category', [64, 128, 256, 512, 1024]),
             IraceParam('pop-count', 'int', (1, 8)),
-            IraceParam('pop-size', 'category', [64, 128, 256, 512, 1024]),
+            IraceParam('pop-size', 'int', (64, 1024)),
             IraceParam('rhoe-function', 'category',
                        ['LINEAR', 'QUADRATIC', 'CUBIC', 'EXPONENTIAL',
                         'LOGARITHM', 'CONSTANT']),
@@ -182,14 +182,14 @@ def tune_box_2(problem: str, decoder: str):
             IraceParam('elite-parents', 'int', (1, 9)),
             IraceParam('elite', 'float', (.02, .20)),
             IraceParam('mutant', 'float', (.02, .20)),
-            IraceParam('exchange-interval', 'category', [25, 50, 75, 100]),
+            IraceParam('exchange-interval', 'int', (0, 200)),
             IraceParam('exchange-count', 'int', (1, 10)),
-            IraceParam('pr-interval', 'category', [50, 100, 150, 200]),
+            IraceParam('pr-interval', 'int', (0, 200)),
             IraceParam('pr-pairs', 'int', (1, 5)),
             IraceParam('pr-block-factor', 'float', (.05, .15)),
             IraceParam('pr-min-diff', 'float', (.20, .90)),
-            IraceParam('prune-interval', 'category', [50, 100, 150, 200]),
-            IraceParam('prune-threshold', 'float', (.90, .98)),
+            IraceParam('prune-interval', 'int', (0, 200)),
+            IraceParam('prune-threshold', 'float', (.90, .99)),
         ],
         forbidden_combinations=[
             'elite * as.numeric(pop_size) < pr_pairs',
@@ -246,5 +246,5 @@ def tune_brkga_mp_ipr(problem: str):
 
 
 if __name__ == '__main__':
-    # tune_box_2('cvrp', 'cpu')
-    tune_brkga_mp_ipr('cvrp')
+    tune_box_2('cvrp', 'cpu')
+    # tune_brkga_mp_ipr('cvrp')
