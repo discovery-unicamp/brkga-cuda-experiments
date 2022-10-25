@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 
-#define SHOW_PROGRESS
+// #define SHOW_PROGRESS
 
 extern SortMethod sortToValidateMethod;  // Defined on `BaseInstance.cpp`
 constexpr auto TERMINAL_LENGTH = 50;
