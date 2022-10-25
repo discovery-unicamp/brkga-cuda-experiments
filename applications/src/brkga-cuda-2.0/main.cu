@@ -90,7 +90,7 @@ public:
 
   void pathRelink() override {
     algorithm->runPathRelink(box::PathRelinkPair::bestElites, params.prPairs,
-                             comparator(params.prMinDiffPercentage));
+                             comparator(1 - params.prMinDiffPercentage));
   }
 
   void prunePopulation() override {
@@ -98,10 +98,11 @@ public:
   }
 
 #if defined(TSP) || defined(CVRP) || defined(CVRP_GREEDY)
-  box::EpsilonComparator comparator(float similarity) const {
-    return box::EpsilonComparator(instance.chromosomeLength(), similarity);
-    // return box::InversionsComparator(instance.chromosomeLength(),
-    // similarity);
+  // box::EpsilonComparator comparator(float similarity) const {
+  //   return box::EpsilonComparator(instance.chromosomeLength(), similarity);
+  // }
+  box::KendallTauComparator comparator(float similarity) const {
+    return box::KendallTauComparator(instance.chromosomeLength(), similarity);
   }
 #elif defined(SCP)
   box::ThresholdComparator comparator(float similarity) const {
