@@ -32,12 +32,13 @@ inline bool contains(const std::string& str, const std::string& pattern) {
   return str.find(pattern) != std::string::npos;
 }
 
-class BrkgaCuda2Runner
-    : public RunnerBase<Decoder::Fitness, box::Brkga, Instance> {
+typedef RunnerBase<Decoder::Fitness, box::Brkga, Instance> Runner;
+
+class BrkgaCuda2Runner : public Runner {
 public:
   // TODO add option to set import/export flags
   BrkgaCuda2Runner(int argc, char** argv)
-      : RunnerBase(argc, argv),
+      : Runner(argc, argv),
         decoder(&instance),
         config(box::BrkgaConfiguration::Builder()
                    .decoder(&decoder)
@@ -136,6 +137,7 @@ void bbSegSortCall(float* dChromosome,
 }
 
 int main(int argc, char** argv) {
+  Runner::showParams(argc, argv);
   BrkgaCuda2Runner(argc, argv).run();
   return 0;
 }

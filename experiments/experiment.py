@@ -332,6 +332,8 @@ def __run_test(
 
     start_time = __now()
     output = shell(cmd)
+    output = output.split('\n')[-1]  # Read only the last line
+    assert output
     result = dict(tuple(r.split('=')) for r in output.split())
     assert 'convergence' in result
     assert result['convergence'] != '[]'

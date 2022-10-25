@@ -67,6 +67,12 @@ public:
 
   virtual ~RunnerBase() {}
 
+  static inline void showParams(unsigned argc, char** argv) {
+    std::cout << argv[0];
+    for (unsigned i = 1; i < argc; ++i) std::cout << ' ' << argv[i];
+    std::cout << '\n';
+  }
+
   std::vector<std::vector<Chromosome>> importPopulation(std::istream& in) {
     unsigned p = 0;  // Population id
     std::vector<Chromosome> population;

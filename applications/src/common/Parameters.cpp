@@ -3,11 +3,6 @@
 #include "Checker.hpp"
 #include "Logger.hpp"
 
-#include <iostream>
-
-static const char* RESET = "\033[0m";
-static const char* YELLOW = "\033[33m";
-
 Parameters Parameters::parse(unsigned argc, char** argv) {
   box::logger::info("Reading parameters");
 
@@ -84,8 +79,7 @@ Parameters Parameters::parse(unsigned argc, char** argv) {
     } else if (arg == "--log-step") {
       params.logStep = std::stoi(value);
     } else {
-      std::cerr << YELLOW << "[WARNING] Unknown argument was ignored: " << arg
-                << ' ' << value << RESET << '\n';
+      box::logger::warning("Unknown argument was ignored:", arg, value);
     }
   }
 

@@ -127,7 +127,6 @@ if [ -s "$STDOUT" ]; then
     cost=$(tail -n 1 "$STDOUT" | grep -o 'ans=[0-9.]*' | grep -o '[0-9.]*')
     time=$(tail -n 1 "$STDOUT" | grep -o 'elapsed=[0-9.]*' | grep -o '[0-9.]*')
     echo $cost $time
-    rm -f "$STDOUT" "$STDERR"
     exit 0
 else
     error "$STDOUT: No such file or directory"
