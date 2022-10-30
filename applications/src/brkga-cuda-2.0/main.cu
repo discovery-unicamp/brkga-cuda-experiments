@@ -32,12 +32,13 @@ inline bool contains(const std::string& str, const std::string& pattern) {
   return str.find(pattern) != std::string::npos;
 }
 
-class BrkgaCuda2Runner
-    : public RunnerBase<Decoder::Fitness, box::Brkga, Instance> {
+typedef RunnerBase<Decoder::Fitness, box::Brkga, Instance> Runner;
+
+class BrkgaCuda2Runner : public Runner {
 public:
   // TODO add option to set import/export flags
   BrkgaCuda2Runner(int argc, char** argv)
-      : RunnerBase(argc, argv),
+      : Runner(argc, argv),
         decoder(&instance),
         config(box::BrkgaConfiguration::Builder()
                    .decoder(&decoder)
@@ -45,9 +46,11 @@ public:
                    .numberOfPopulations(params.numberOfPopulations)
                    .populationSize(params.populationSize)
                    .chromosomeLength(instance.chromosomeLength())
+                   .parents(params.numParents,
+                            box::biasFromString(params.rhoeFunction),
+                            params.numEliteParents)
                    .numberOfElites(params.getNumberOfElites())
                    .numberOfMutants(params.getNumberOfMutants())
-                   .rhoe(params.rhoe)
                    .numberOfElitesToExchange(params.exchangeBestCount)
                    .pathRelinkBlockSize(
                        (unsigned)(params.getPathRelinkBlockFactor()
@@ -56,12 +59,6 @@ public:
                    .gpuThreads(params.threadsPerBlock)
                    .ompThreads(params.ompThreads)
                    .build()) {
-    if (params.rhoeFunction != "rhoe")
-      throw std::invalid_argument("Rhoe function can only be of type `rhoe`");
-    if (params.numParents != 2)
-      throw std::invalid_argument("Number of parents should be 2");
-    if (params.numEliteParents != 1)
-      throw std::invalid_argument("Number of elite parents should be 1");
     if (params.prMaxTime != 0)
       throw std::invalid_argument("PR has no time limit; it should be 0");
     if (params.prSelect != "best")
@@ -93,29 +90,29 @@ public:
   void exchangeElites() override { algorithm->exchangeElites(); }
 
   void pathRelink() override {
-    if (params.prPairs < 1)
-      throw std::runtime_error(
-          "Pairs for Path Relinking should be at least one");
-
-#if defined(TSP) || defined(CVRP) || defined(CVRP_GREEDY)
-    const auto comparator = box::EpsilonComparator(instance.chromosomeLength(),
-                                                   params.prMinDiffPercentage);
-#elif defined(SCP)
-    const auto comparator = box::ThresholdComparator(
-        instance.chromosomeLength(), params.prMinDiffPercentage,
-        instance.acceptThreshold);
-#else
-#error Missing to update this block of code for the new problem
-#endif
-
     algorithm->runPathRelink(box::PathRelinkPair::bestElites, params.prPairs,
-                             comparator);
+                             comparator(1 - params.prMinDiffPercentage));
   }
 
   void prunePopulation() override {
-    algorithm->removeSimilarElites(box::EpsilonComparator(
-        instance.chromosomeLength(), params.pruneThreshold, 1e-7f));
+    algorithm->removeSimilarElites(comparator(params.pruneThreshold));
   }
+
+#if defined(TSP) || defined(CVRP) || defined(CVRP_GREEDY)
+  // box::EpsilonComparator comparator(float similarity) const {
+  //   return box::EpsilonComparator(instance.chromosomeLength(), similarity);
+  // }
+  box::KendallTauComparator comparator(float similarity) const {
+    return box::KendallTauComparator(instance.chromosomeLength(), similarity);
+  }
+#elif defined(SCP)
+  box::ThresholdComparator comparator(float similarity) const {
+    return box::ThresholdComparator(instance.chromosomeLength(), similarity,
+                                    instance.acceptThreshold);
+  }
+#else
+#error Missing to update this block of code for the new problem
+#endif
 
   SortMethod determineSortMethod(const std::string& decodeType) const override {
     if (contains(decodeType, "permutation")) return SortMethod::bbSegSort;
@@ -140,6 +137,7 @@ void bbSegSortCall(float* dChromosome,
 }
 
 int main(int argc, char** argv) {
+  Runner::showParams(argc, argv);
   BrkgaCuda2Runner(argc, argv).run();
   return 0;
 }

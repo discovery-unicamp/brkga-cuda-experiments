@@ -59,19 +59,19 @@ public:
     config.num_elite_parents = params.numEliteParents;
     config.total_parents = params.numParents;
 
-    if (params.rhoeFunction == "rhoe") {
+    if (params.rhoeFunction == "RHOE") {
       config.bias_type = BRKGA::BiasFunctionType::CUSTOM;  // use the old rhoe
-    } else if (params.rhoeFunction == "lin") {
+    } else if (params.rhoeFunction == "LINEAR") {
       config.bias_type = BRKGA::BiasFunctionType::LINEAR;
-    } else if (params.rhoeFunction == "quad") {
+    } else if (params.rhoeFunction == "QUADRATIC") {
       config.bias_type = BRKGA::BiasFunctionType::QUADRATIC;
-    } else if (params.rhoeFunction == "cub") {
+    } else if (params.rhoeFunction == "CUBIC") {
       config.bias_type = BRKGA::BiasFunctionType::CUBIC;
-    } else if (params.rhoeFunction == "exp") {
+    } else if (params.rhoeFunction == "EXPONENTIAL") {
       config.bias_type = BRKGA::BiasFunctionType::EXPONENTIAL;
-    } else if (params.rhoeFunction == "log") {
+    } else if (params.rhoeFunction == "LOGARITHM") {
       config.bias_type = BRKGA::BiasFunctionType::LOGINVERSE;
-    } else if (params.rhoeFunction == "const") {
+    } else if (params.rhoeFunction == "CONSTANT") {
       config.bias_type = BRKGA::BiasFunctionType::CONSTANT;
     } else {
       throw std::invalid_argument("Unknown rhoe function: "
@@ -105,7 +105,9 @@ public:
 #endif
 
     // block-size = alpha * sqrt(pop-size)
-    config.alpha_block_size = params.prBlockFactor;
+    config.alpha_block_size = params.prBlockFactor
+                              * (float)instance.chromosomeLength()
+                              / sqrt(params.populationSize);
 
     // ipr-max-iterations = pr% * ceil(chromosome-length / block-size)
     config.pr_percentage = 1.0;

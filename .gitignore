@@ -7,7 +7,7 @@
 
 # generated
 .backup*
-.setup
+.setup*
 .tuning-setup
 __pycache__
 build*
@@ -17,4 +17,5 @@ logs.txt
 perf.*
 prof.txt
 Tweaks.hpp
+*.out
 *.qdrep

@@ -127,7 +127,6 @@ if [ -s "$STDOUT" ]; then
     cost=$(tail -n 1 "$STDOUT" | grep -o 'ans=[0-9.]*' | grep -o '[0-9.]*')
     time=$(tail -n 1 "$STDOUT" | grep -o 'elapsed=[0-9.]*' | grep -o '[0-9.]*')
     echo $cost $time
-    rm -f "$STDOUT" "$STDERR"
     exit 0
 else
     error "$STDOUT: No such file or directory"
@@ -138,7 +137,7 @@ fi
     runner_path.chmod(777)
 
     irace_params = {
-        'max-experiments': 300,
+        'max-experiments': 1000,
         'log-file': str(results_path.joinpath('results.Rdata').absolute()),
         'deterministic': 0,
         'parallel': 1,
@@ -174,21 +173,28 @@ def tune_box_2(problem: str, decoder: str):
         tune_params=[
             IraceParam('threads', 'category', [64, 128, 256, 512, 1024]),
             IraceParam('pop-count', 'int', (1, 8)),
-            IraceParam('pop-size', 'category', [64, 128, 256, 512, 1024]),
-            IraceParam('rhoe', 'float', (.70, .90)),
+            IraceParam('pop-size', 'int', (64, 1024)),
+            IraceParam('rhoe-function', 'category',
+                       ['LINEAR', 'QUADRATIC', 'CUBIC', 'EXPONENTIAL',
+                        'LOGARITHM', 'CONSTANT']),
+            IraceParam('parents', 'int', (2, 10)),
+            IraceParam('elite-parents', 'int', (1, 9)),
             IraceParam('elite', 'float', (.02, .20)),
             IraceParam('mutant', 'float', (.02, .20)),
-            IraceParam('exchange-interval', 'category', [25, 50, 75, 100]),
+            IraceParam('exchange-interval', 'int', (0, 200)),
             IraceParam('exchange-count', 'int', (1, 10)),
-            IraceParam('pr-interval', 'category', [50, 100, 150, 200]),
+            IraceParam('pr-interval', 'int', (0, 200)),
             IraceParam('pr-pairs', 'int', (1, 5)),
             IraceParam('pr-block-factor', 'float', (.05, .15)),
             IraceParam('pr-min-diff', 'float', (.20, .90)),
-            IraceParam('prune-threshold', 'float', (.90, .98)),
+            IraceParam('prune-interval', 'int', (0, 200)),
+            IraceParam('prune-threshold', 'float', (.90, .99)),
         ],
         forbidden_combinations=[
             'elite * as.numeric(pop_size) < pr_pairs',
+            'elite * as.numeric(pop_size) < elite_parents',
             'elite * as.numeric(pop_size) < exchange_count',
+            'parents <= elite_parents',
         ],
         check=False,
     )
@@ -214,14 +220,13 @@ def tune_brkga_mp_ipr(problem: str):
         tune_params=[
             IraceParam('pop-count', 'int', (1, 8)),
             IraceParam('pop-size', 'int', (64, 1024)),
-            IraceParam('rhoe-function', 'category',
-                       ['lin', 'quad', 'cub', 'exp', 'log', 'const', 'rhoe']),
-            IraceParam('rhoe', 'float', (.70, .90),
-                       condition='rhoe_function == "rhoe"'),
-            IraceParam('elite', 'float', (.02, .20)),
-            IraceParam('mutant', 'float', (.02, .20)),
             IraceParam('parents', 'int', (2, 10)),
             IraceParam('elite-parents', 'int', (1, 9)),
+            IraceParam('rhoe-function', 'category',
+                       ['LINEAR', 'QUADRATIC', 'CUBIC', 'EXPONENTIAL',
+                        'LOGARITHM', 'CONSTANT']),
+            IraceParam('elite', 'float', (.02, .20)),
+            IraceParam('mutant', 'float', (.02, .20)),
             IraceParam('exchange-interval', 'category', [25, 50, 75, 100]),
             IraceParam('exchange-count', 'int', (1, 10)),
             IraceParam('pr-interval', 'category', [50, 100, 150, 200]),
@@ -231,15 +236,14 @@ def tune_brkga_mp_ipr(problem: str):
             IraceParam('pr-min-diff', 'float', (.50, .90)),
         ],
         forbidden_combinations=[
-            '(elite * pop_size < elite_parents)',
-            '(elite * pop_size < exchange_count)',
-            '(parents <= elite_parents)',
-            '(rhoe_function == "rhoe") & (parents > 2)',
+            'elite * pop_size < elite_parents',
+            'elite * pop_size < exchange_count',
+            'parents <= elite_parents',
         ],
         check=False,
     )
 
 
 if __name__ == '__main__':
-    # tune_box_2('cvrp', 'cpu')
-    tune_brkga_mp_ipr('cvrp')
+    tune_box_2('cvrp', 'cpu')
+    # tune_brkga_mp_ipr('cvrp')

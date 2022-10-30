@@ -1,0 +1,8 @@
+**/.git
+**/.vscode
+**/__pycache__
+**/build*
+**/core
+**/target-runner
+**/*.tsv
+**/*.zip
