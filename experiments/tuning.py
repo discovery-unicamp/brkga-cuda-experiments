@@ -174,11 +174,11 @@ def tune_box_2(problem: str, decoder: str):
             IraceParam('threads', 'category', [64, 128, 256, 512, 1024]),
             IraceParam('pop-count', 'int', (1, 8)),
             IraceParam('pop-size', 'int', (64, 1024)),
+            IraceParam('parents', 'int', (2, 10)),
+            IraceParam('elite-parents', 'int', (1, 9)),
             IraceParam('rhoe-function', 'category',
                        ['LINEAR', 'QUADRATIC', 'CUBIC', 'EXPONENTIAL',
                         'LOGARITHM', 'CONSTANT']),
-            IraceParam('parents', 'int', (2, 10)),
-            IraceParam('elite-parents', 'int', (1, 9)),
             IraceParam('elite', 'float', (.02, .20)),
             IraceParam('mutant', 'float', (.02, .20)),
             IraceParam('exchange-interval', 'int', (0, 200)),
@@ -227,13 +227,13 @@ def tune_brkga_mp_ipr(problem: str):
                         'LOGARITHM', 'CONSTANT']),
             IraceParam('elite', 'float', (.02, .20)),
             IraceParam('mutant', 'float', (.02, .20)),
-            IraceParam('exchange-interval', 'category', [25, 50, 75, 100]),
+            IraceParam('exchange-interval', 'int', (0, 200)),
             IraceParam('exchange-count', 'int', (1, 10)),
-            IraceParam('pr-interval', 'category', [50, 100, 150, 200]),
+            IraceParam('pr-interval', 'int', (0, 200)),
             IraceParam('pr-block-factor', 'float', (.05, 1.0)),
             IraceParam('pr-max-time', 'int', (1, 30)),
             IraceParam('pr-select', 'category', ['best', 'random']),
-            IraceParam('pr-min-diff', 'float', (.50, .90)),
+            IraceParam('pr-min-diff', 'float', (.20, .90)),
         ],
         forbidden_combinations=[
             'elite * pop_size < elite_parents',
@@ -245,5 +245,5 @@ def tune_brkga_mp_ipr(problem: str):
 
 
 if __name__ == '__main__':
-    tune_box_2('cvrp', 'cpu')
-    # tune_brkga_mp_ipr('cvrp')
+    # tune_box_2('cvrp', 'cpu')
+    tune_brkga_mp_ipr('cvrp')
