@@ -31,10 +31,11 @@ MAX_TIME_SECONDS = 60 * 60
 TIMEOUT_SECONDS = MAX_TIME_SECONDS + 1 * 60
 OMP_THREADS = int(shell('nproc'))
 BUILD_TYPE = 'release'
-TWEAKS_FILE_PATH = Path('applications', 'src', 'Tweaks.hpp')
+TWEAKS_FILE = Path('applications', 'src', 'Tweaks.hpp')
 SOURCE_PATH = Path('applications')
 OUTPUT_PATH = Path('experiments', 'results')
 PARAMS_PATH = Path('experiments', 'parameters')
+BACKUP_FILE = OUTPUT_PATH.joinpath('.backup.tsv')
 
 GENE_TYPE = {
     'brkga-api': 'double',
@@ -178,12 +179,12 @@ def main():
         #     ],
         #     test_count=TEST_COUNT,
         # ),
-        __build_params(
-            tool='brkga-cuda-2.0',
-            problems=['cvrp'],
-            decoders=['cpu'],
-            test_count=TEST_COUNT,
-        ),
+        # __build_params(
+        #     tool='brkga-cuda-2.0',
+        #     problems=['cvrp'],
+        #     decoders=['cpu'],
+        #     test_count=TEST_COUNT,
+        # ),
         __build_params(
             tool='brkga-mp-ipr',
             problems=['cvrp'],
@@ -298,7 +299,7 @@ def __cmake(
         + ''.join(f"#define {tweak}\n" for tweak in tweaks)
     )
     try:
-        with open(TWEAKS_FILE_PATH, 'r') as tweak_file:
+        with open(TWEAKS_FILE, 'r') as tweak_file:
             existing_tweaks_content = tweak_file.read()
     except FileNotFoundError:
         logging.warning("Tweaks file not found; generating one")
@@ -308,7 +309,7 @@ def __cmake(
         # Doesn't rewrite to avoid make thinking it should recompile the code
         logging.info("Tweaks file hasn't changed")
     else:
-        with open(TWEAKS_FILE_PATH, 'w') as tweak_file:
+        with open(TWEAKS_FILE, 'w') as tweak_file:
             tweak_file.write(tweaks_content)
 
     folder = f'build-{build}'
@@ -349,18 +350,16 @@ def __run_test(
 
 def __save_results(iter_results: Iterable[Dict[str, str]]):
     OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
-
-    backup_file = OUTPUT_PATH.joinpath('.backup.tsv')
-    if RESUME_FROM_BACKUP and backup_file.is_file():
+    if RESUME_FROM_BACKUP and BACKUP_FILE.is_file():
         logging.warning("Using results from past backup file")
-        results = pd.read_csv(backup_file, sep='\t')
+        results = pd.read_csv(BACKUP_FILE, sep='\t')
     else:
         results = pd.DataFrame()
 
     start_time = __now()
     for res in iter_results:
         results = pd.concat((results, pd.DataFrame([res])))
-        results.to_csv(backup_file, index=False, sep='\t')
+        results.to_csv(BACKUP_FILE, index=False, sep='\t')
 
     assert not results.empty
 
