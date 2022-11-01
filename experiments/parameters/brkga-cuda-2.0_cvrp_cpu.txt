@@ -1,2 +1,2 @@
-threads pop_count pop_size rhoe elite mutant exchange_interval exchange_count pr_interval pr_pairs pr_block_factor prune_threshold pr_min_diff
-    256         8      256 0.75  0.04   0.09                 2              3           5        3            0.09            0.93        0.70
+threads pop_count pop_size rhoe_function parents elite_parents elite mutant exchange_interval exchange_count pr_interval pr_pairs pr_block_factor pr_min_diff prune_interval prune_threshold
+   1024         6      860     LOGARITHM       6             4  0.13   0.05                50              4          56        1            0.10        0.78             85            0.98
