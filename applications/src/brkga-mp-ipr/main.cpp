@@ -111,8 +111,9 @@ public:
     config.pr_percentage = 1.0;
   }
 
-  BrkgaMPIpr* getAlgorithm(const std::vector<std::vector<std::vector<Gene>>>&
-                               initialPopulation) override {
+  BrkgaMPIpr* getAlgorithm(
+      const std::vector<std::vector<std::vector<FrameworkGeneType>>>&
+          initialPopulation) override {
     box::logger::info("Building the algorithm");
     auto* algo =
         new BrkgaMPIpr(decoder, BRKGA::Sense::MINIMIZE, params.seed,

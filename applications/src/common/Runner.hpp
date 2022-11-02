@@ -57,7 +57,7 @@ inline ostream& operator<<(ostream& out, const vector<T>& v) {
 template <class Fitness, class Algorithm, class Instance>
 class RunnerBase {
 public:
-  typedef std::vector<Gene> Chromosome;
+  typedef std::vector<FrameworkGeneType> Chromosome;
 
   RunnerBase(int argc, char** argv)
       : params(Parameters::parse(argc, argv)),
@@ -88,7 +88,7 @@ public:
         std::istringstream ss(line);
 
         Chromosome chromosome;
-        Gene gene = -1;
+        FrameworkGeneType gene = -1;
         while (ss >> gene) chromosome.push_back(gene);
 
         if (chromosome.size() != instance.chromosomeLength())
@@ -253,7 +253,7 @@ public:
   }
 
 protected:
-  typedef std::vector<std::vector<Gene>> Population;
+  typedef std::vector<std::vector<FrameworkGeneType>> Population;
 
   virtual Algorithm* getAlgorithm(
       const std::vector<Population>& initialPopulation =

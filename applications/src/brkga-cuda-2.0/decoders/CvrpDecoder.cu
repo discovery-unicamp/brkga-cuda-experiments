@@ -26,7 +26,8 @@ CvrpDecoder::~CvrpDecoder() {
   box::gpu::free(nullptr, dDistances);
 }
 
-float CvrpDecoder::decode(const box::Chromosome<float>& chromosome) const {
+box::Fitness CvrpDecoder::decode(
+    const box::Chromosome<box::Gene>& chromosome) const {
   std::vector<unsigned> permutation(config->chromosomeLength());
   std::iota(permutation.begin(), permutation.end(), 0);
   std::sort(permutation.begin(), permutation.end(),
@@ -38,14 +39,15 @@ float CvrpDecoder::decode(const box::Chromosome<float>& chromosome) const {
                     instance->distances.data());
 }
 
-float CvrpDecoder::decode(const box::Chromosome<unsigned>& permutation) const {
+box::Fitness CvrpDecoder::decode(
+    const box::Chromosome<box::GeneIndex>& permutation) const {
   return getFitness(permutation, config->chromosomeLength(), instance->capacity,
                     instance->demands.data(), instance->distances.data());
 }
 
-__global__ void deviceDecode(float* dFitness,
-                             unsigned numberOfChromosomes,
-                             float* dChromosomes,
+__global__ void deviceDecode(box::Fitness* dFitness,
+                             box::uint numberOfChromosomes,
+                             box::Gene* dChromosomes,
                              unsigned* dTempMemory,
                              unsigned chromosomeLength,
                              unsigned capacity,
@@ -54,11 +56,11 @@ __global__ void deviceDecode(float* dFitness,
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= numberOfChromosomes) return;
 
-  float* chromosome = dChromosomes + tid * chromosomeLength;
-  unsigned* tour = dTempMemory + tid * chromosomeLength;
+  auto* chromosome = dChromosomes + tid * chromosomeLength;
+  auto* tour = dTempMemory + tid * chromosomeLength;
   for (unsigned i = 0; i < chromosomeLength; ++i) tour[i] = i;
 
-  thrust::device_ptr<float> keys(chromosome);
+  thrust::device_ptr<box::Gene> keys(chromosome);
   thrust::device_ptr<unsigned> vals(tour);
   thrust::sort_by_key(thrust::device, keys, keys + chromosomeLength, vals);
 
@@ -67,15 +69,16 @@ __global__ void deviceDecode(float* dFitness,
 }
 
 void CvrpDecoder::decode(cudaStream_t stream,
-                         unsigned numberOfChromosomes,
-                         const box::Chromosome<float>* dChromosomes,
-                         float* dFitness) const {
+                         box::uint numberOfChromosomes,
+                         const box::Chromosome<box::Gene>* dChromosomes,
+                         box::Fitness* dFitness) const {
   const auto length = numberOfChromosomes * config->chromosomeLength();
-  auto* dChromosomesCopy = box::gpu::alloc<float>(stream, length);
+  auto* dChromosomesCopy = box::gpu::alloc<box::Gene>(stream, length);
   auto* dTempMemory = box::gpu::alloc<unsigned>(stream, length);
 
-  box::Chromosome<float>::copy(stream, dChromosomesCopy, dChromosomes,
-                               numberOfChromosomes, config->chromosomeLength());
+  box::Chromosome<box::Gene>::copy(stream, dChromosomesCopy, dChromosomes,
+                                   numberOfChromosomes,
+                                   config->chromosomeLength());
 
   const auto threads = config->gpuThreads();
   const auto blocks = box::gpu::blocks(numberOfChromosomes, threads);
@@ -88,9 +91,9 @@ void CvrpDecoder::decode(cudaStream_t stream,
   box::gpu::free(stream, dTempMemory);
 }
 
-__global__ void deviceDecode(float* dFitness,
-                             unsigned tourCount,
-                             const box::Chromosome<unsigned>* tourList,
+__global__ void deviceDecode(box::Fitness* dFitness,
+                             box::uint tourCount,
+                             const box::Chromosome<box::GeneIndex>* tourList,
                              unsigned chromosomeLength,
                              unsigned capacity,
                              const unsigned* dDemands,
@@ -104,9 +107,9 @@ __global__ void deviceDecode(float* dFitness,
 }
 
 void CvrpDecoder::decode(cudaStream_t stream,
-                         unsigned numberOfPermutations,
-                         const box::Chromosome<unsigned>* dPermutations,
-                         float* dFitness) const {
+                         box::uint numberOfPermutations,
+                         const box::Chromosome<box::GeneIndex>* dPermutations,
+                         box::Fitness* dFitness) const {
   const auto threads = config->gpuThreads();
   const auto blocks = box::gpu::blocks(numberOfPermutations, threads);
   deviceDecode<<<blocks, threads, 0, stream>>>(

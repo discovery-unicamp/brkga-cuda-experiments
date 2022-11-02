@@ -17,19 +17,21 @@ public:
 
   ~CvrpDecoder();
 
-  float decode(const box::Chromosome<float>& chromosome) const override;
+  box::Fitness decode(
+      const box::Chromosome<box::Gene>& chromosome) const override;
 
-  float decode(const box::Chromosome<unsigned>& permutation) const override;
-
-  void decode(cudaStream_t stream,
-              unsigned numberOfChromosomes,
-              const box::Chromosome<float>* dChromosomes,
-              float* dFitness) const override;
+  box::Fitness decode(
+      const box::Chromosome<box::GeneIndex>& permutation) const override;
 
   void decode(cudaStream_t stream,
-              unsigned numberOfPermutations,
-              const box::Chromosome<unsigned>* dPermutations,
-              float* dFitness) const override;
+              box::uint numberOfChromosomes,
+              const box::Chromosome<box::Gene>* dChromosomes,
+              box::Fitness* dFitness) const override;
+
+  void decode(cudaStream_t stream,
+              box::uint numberOfPermutations,
+              const box::Chromosome<box::GeneIndex>* dPermutations,
+              box::Fitness* dFitness) const override;
 
 private:
   CvrpInstance* instance;

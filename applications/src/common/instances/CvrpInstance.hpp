@@ -32,7 +32,8 @@ public:
     return numberOfClients;
   }
 
-  void validate(const Gene* chromosome, const float fitness) const override {
+  void validate(const FrameworkGeneType* chromosome,
+                const float fitness) const override {
     validate(getSortedChromosome(chromosome).data(), fitness);
   }
 

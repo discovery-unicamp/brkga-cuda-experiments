@@ -16,9 +16,11 @@
 
 SortMethod sortToValidateMethod;
 
-void bbSegSortCall(float* dChromosome, unsigned* dPermutation, unsigned length);
+void bbSegSortCall(FrameworkGeneType* dChromosome,
+                   unsigned* dPermutation,
+                   unsigned length);
 
-void sortChromosomeToValidate(const Gene* chromosome,
+void sortChromosomeToValidate(const FrameworkGeneType* chromosome,
                               unsigned* permutation,
                               unsigned length) {
   auto method = sortToValidateMethod;
@@ -38,9 +40,9 @@ void sortChromosomeToValidate(const Gene* chromosome,
             << ") not allowed with flag USE_CPP_ONLY" << std::endl;
   abort();
 #else
-  Gene* dChromosome = nullptr;
-  cudaMalloc(&dChromosome, length * sizeof(Gene));
-  cudaMemcpy(dChromosome, chromosome, length * sizeof(Gene),
+  FrameworkGeneType* dChromosome = nullptr;
+  cudaMalloc(&dChromosome, length * sizeof(FrameworkGeneType));
+  cudaMemcpy(dChromosome, chromosome, length * sizeof(FrameworkGeneType),
              cudaMemcpyHostToDevice);
 
   unsigned* dPermutation = nullptr;
@@ -49,8 +51,7 @@ void sortChromosomeToValidate(const Gene* chromosome,
              cudaMemcpyHostToDevice);
 
   if (method == SortMethod::bbSegSort) {
-    assert(sizeof(Gene) == sizeof(float));
-    bbSegSortCall((float*)dChromosome, dPermutation, length);
+    bbSegSortCall((FrameworkGeneType*)dChromosome, dPermutation, length);
   } else if (method == SortMethod::thrustHost) {
     thrustSort(dChromosome, dPermutation, length);
   } else if (method == SortMethod::thrustKernel) {

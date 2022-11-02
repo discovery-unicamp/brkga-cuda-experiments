@@ -8,19 +8,23 @@
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 
-#define THRUST_SORT_IMPL                         \
-  thrust::device_ptr<Gene> keysPtr(dKeys);       \
-  thrust::device_ptr<unsigned> valsPtr(dValues); \
+#define THRUST_SORT_IMPL                                \
+  thrust::device_ptr<FrameworkGeneType> keysPtr(dKeys); \
+  thrust::device_ptr<unsigned> valsPtr(dValues);        \
   thrust::sort_by_key(thrust::device, keysPtr, keysPtr + length, valsPtr)
 
-void thrustSort(Gene* dKeys, unsigned* dValues, unsigned length) {
+void thrustSort(FrameworkGeneType* dKeys, unsigned* dValues, unsigned length) {
   THRUST_SORT_IMPL;
 }
 
-__global__ void thrustSortKernelImpl(Gene* dKeys, unsigned* dValues, unsigned length) {
+__global__ void thrustSortKernelImpl(FrameworkGeneType* dKeys,
+                                     unsigned* dValues,
+                                     unsigned length) {
   THRUST_SORT_IMPL;
 }
 
-void thrustSortKernel(Gene* dKeys, unsigned* dValues, unsigned length) {
+void thrustSortKernel(FrameworkGeneType* dKeys,
+                      unsigned* dValues,
+                      unsigned length) {
   thrustSortKernelImpl<<<1, 1>>>(dKeys, dValues, length);
 }

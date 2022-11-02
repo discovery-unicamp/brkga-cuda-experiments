@@ -55,7 +55,8 @@ ScpInstance ScpInstance::fromFile(const std::string& fileName) {
   return instance;
 }
 
-void ScpInstance::validate(const Gene* chromosome, float fitness) const {
+void ScpInstance::validate(const FrameworkGeneType* chromosome,
+                           float fitness) const {
   float expectedFitness = 0;
   std::vector<bool> covered(universeSize);
   for (unsigned i = 0; i < chromosomeLength(); ++i) {

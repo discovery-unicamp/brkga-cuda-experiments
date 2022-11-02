@@ -7,7 +7,9 @@
 
 #include "../../Tweaks.hpp"
 
-void thrustSort(Gene* dKeys, unsigned* dValues, unsigned length);
-void thrustSortKernel(Gene* dKeys, unsigned* dValues, unsigned length);
+void thrustSort(FrameworkGeneType* dKeys, unsigned* dValues, unsigned length);
+void thrustSortKernel(FrameworkGeneType* dKeys,
+                      unsigned* dValues,
+                      unsigned length);
 
 #endif  // THRUST_SORT_HPP

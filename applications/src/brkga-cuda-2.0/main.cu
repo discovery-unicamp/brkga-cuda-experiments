@@ -65,8 +65,9 @@ public:
       throw std::invalid_argument("PR only works with `best`");
   }
 
-  box::Brkga* getAlgorithm(const std::vector<std::vector<std::vector<Gene>>>&
-                               initialPopulation) override {
+  box::Brkga* getAlgorithm(
+      const std::vector<std::vector<std::vector<FrameworkGeneType>>>&
+          initialPopulation) override {
     return new box::Brkga(config, initialPopulation);
   }
 
@@ -130,9 +131,9 @@ private:
   box::BrkgaConfiguration config;
 };
 
-void bbSegSortCall(float* dChromosome,
+void bbSegSortCall(box::Gene* dChromosome,
                    unsigned* dPermutation,
-                   unsigned length) {
+                   box::uint length) {
   box::gpu::segSort(nullptr, dChromosome, dPermutation, 1, length);
 }
 

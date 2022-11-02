@@ -20,7 +20,8 @@ public:
     return getNumberOfSets();
   }
 
-  void validate(const Gene* chromosome, float fitness) const override;
+  void validate(const FrameworkGeneType* chromosome,
+                float fitness) const override;
 
   void validate(const unsigned*, float) const override {
     throw std::runtime_error("SCP doesn't support permutations");
