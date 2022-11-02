@@ -105,9 +105,7 @@ public:
 #endif
 
     // block-size = alpha * sqrt(pop-size)
-    config.alpha_block_size = params.prBlockFactor
-                              * (float)instance.chromosomeLength()
-                              / sqrt(params.populationSize);
+    config.alpha_block_size = params.prBlockFactor;
 
     // ipr-max-iterations = pr% * ceil(chromosome-length / block-size)
     config.pr_percentage = 1.0;
