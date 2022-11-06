@@ -284,7 +284,10 @@ def __experiment(
 
 def compile_optimizer(target: str, problem: str) -> Path:
     return __cmake(str(SOURCE_PATH.absolute()), BUILD_TYPE, target,
-                   tweaks=[problem.upper(), f"Gene {GENE_TYPE[target]}"])
+                   tweaks=[
+                       problem.upper(),
+                       f"FrameworkGeneType {GENE_TYPE[target]}",
+                   ])
 
 
 def __cmake(
