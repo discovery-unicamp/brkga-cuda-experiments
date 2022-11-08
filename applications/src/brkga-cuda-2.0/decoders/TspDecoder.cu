@@ -9,8 +9,7 @@
 #include <vector>
 
 TspDecoder::TspDecoder(TspInstance* _instance)
-    : box::Decoder(),
-      instance(_instance),
+    : instance(_instance),
       dDistances(box::gpu::alloc<float>(nullptr, instance->distances.size())) {
   box::gpu::copy2d(nullptr, dDistances, instance->distances.data(),
                    instance->distances.size());
