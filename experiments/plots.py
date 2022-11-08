@@ -1,4 +1,5 @@
 from bisect import bisect_right
+from datetime import datetime
 import logging
 from pathlib import Path
 from typing import List, Tuple
@@ -13,30 +14,46 @@ FILES = [
     # 'remove-duplicated-dl3.zip',
     # 'remove-duplicated-dl4.zip',
     # 'brkga-mp-ipr.zip',
-    'pr-test-v1.zip',
+    # 'pr-test-v1.zip',
+    '2022-10-18T11:23:30.zip',
+    # '2022-11-02T15:51:17.zip',
+    '.backup2.tsv.zip',
 ]
 DATA = {file: read_results(Path(f'results/{file}')) for file in FILES}
 
-logging.info("Converting convergence to lists...")
-for file in FILES:
-    DATA[file].loc[:, 'convergence'] = DATA[file]['convergence'].apply(eval)
-logging.info("Done.")
+TOOL_COLOR = {
+    'brkga-cuda-2.0': 'green',
+    'brkga-mp-ipr': 'red',
+}
 
 PARAMS = [
-    'tool',
-    'decoder',
     'threads',
-    'generations',
-    'seed',
     'pop-count',
     'pop-size',
-    'rhoe',
+    'rhoe-function',
+    'parents',
+    'elite-parents',
     'elite',
     'mutant',
     'exchange-interval',
     'exchange-count',
-    'similarity-threshold',
+    'pr-interval',
+    'pr-pairs',
+    'pr-block-factor',
+    'pr-min-diff',
+    'prune-interval',
+    'prune-threshold',
 ]
+
+logging.info("Converting convergence to lists...")
+for file in FILES:
+    DATA[file].loc[:, 'convergence'] = DATA[file]['convergence'].apply(eval)
+    DATA[file] = DATA[file].loc[DATA[file]['start_time'] > '2022-10-16T03:09:51']
+    for p in PARAMS:
+        if p not in DATA[file].columns:
+            DATA[file].loc[:, p] = None
+
+logging.info("Done.")
 
 FITNESS_ELAPSED = [1, 2, 3, 5, 15, 30, 60, 120, 180]
 FITNESS_VAR = [
@@ -50,6 +67,7 @@ PLOT_GENERATIONS = False
 def convergence():
     df = DATA[FILES[0]]
     instances = df[['problem', 'instance']].drop_duplicates()
+    # instances = instances[instances['instance'].isin(['X-n219-k73'])]
 
     for _, inst in instances.iterrows():
         plt.figure(figsize=(10.80, 7.20))
@@ -74,10 +92,16 @@ def convergence():
                 generation = [y
                               for i, x in enumerate(generation)
                               for y in (1 if i == 0 else 2) * [x]]
+
+                if elapsed[-1] < row['max-time'] and not PLOT_GENERATIONS:
+                    elapsed.append(row['max-time'])
+                    fitness.append(fitness[-1])
+
                 plt.plot(
                     (generation if PLOT_GENERATIONS else elapsed),
                     fitness,
                     label='_'.join(map(str, row[PARAMS])),
+                    color=TOOL_COLOR[row['tool']],
                 )
 
         name = f"{problem}-{instance}"
@@ -97,6 +121,7 @@ def convergence():
         outfile = Path('convergence', name + ".png")
         outfile.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(outfile, bbox_extra_artists=(legend,), bbox_inches='tight')
+        plt.close()
 
 
 def fitness():
