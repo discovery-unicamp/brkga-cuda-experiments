@@ -21,7 +21,7 @@ tuning: .setup-tuning
 
 .PHONY: open-terminal
 open-terminal:
-	docker run -it -u $$(id -u):$$(id -g) -v $(project_path)/:/experiment/ --rm ubuntu
+	docker run -it -v $(project_path)/:/experiment/ --rm ubuntu
 
 .PHONY: open-nvidia
 open-nvidia: .setup-nvidia
