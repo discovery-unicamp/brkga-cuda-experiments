@@ -72,6 +72,8 @@ def compress_convergence(convergence: str) -> str:
     compressed = []
     previous = ''
     begin = None
+    ignored = False
+    fitness, elapsed, generation = None, None, None
     for i, symbol in enumerate(convergence):
         if symbol == '(':
             begin = i + 1
@@ -81,7 +83,17 @@ def compress_convergence(convergence: str) -> str:
             if fitness != previous:
                 comp = f"({float(fitness):g},{float(elapsed):g},{generation})"
                 compressed.append(comp)
+                ignored = False
                 previous = fitness
+            else:
+                ignored = True
+
+    if ignored:
+        assert fitness is not None
+        assert elapsed is not None
+        assert generation is not None
+        comp = f"({float(fitness):g},{float(elapsed):g},{generation})"
+        compressed.append(comp)
 
     return f"[{','.join(compressed)}]"
 
