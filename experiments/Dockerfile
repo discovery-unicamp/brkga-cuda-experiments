@@ -11,7 +11,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC \
     && apt-get update \
     && apt-get install -y wget \
     && apt-get install --no-install-recommends -y libssl-dev \
-    && apt-get install --no-install-recommends -y git pciutils lshw \
+    && apt-get install --no-install-recommends -y pciutils lshw \
     && apt-get install --no-install-recommends -y libgomp1 \
     && apt-get install --no-install-recommends -y python3 python3-pip \
     && pip3 install -r requirements.txt \

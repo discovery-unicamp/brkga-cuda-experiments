@@ -18,9 +18,9 @@ logging.Formatter.converter = time.gmtime
 
 CATEGORIES = ['test_time', 'commit', 'tool', 'problem', 'instance',
               'decoder', 'system', 'cpu', 'gpu', 'nvcc', 'g++']
+COMMIT_FILE = Path('.commit')
 
 INFO_SCRIPTS = {
-    'commit': 'git log --format="%H" -n 1',
     'system': 'uname -v',
     'cpu': 'cat /proc/cpuinfo | grep "model name" | uniq | cut -d" " -f 3-',
     'cpu-memory': "grep MemTotal /proc/meminfo | awk '{print $2 / 1024}'",
@@ -47,8 +47,12 @@ def save_results(
 
     logging.debug("Add system info")
     for info in system:
-        script = INFO_SCRIPTS[info].replace('[DEVICE]', str(device))
-        df.loc[:, info] = shell(script)
+        if info == 'commit':
+            # FIXME this was applied due to permission error on git
+            df.loc[:, info] = COMMIT_FILE.read_text().split('\n')[0]
+        else:
+            script = INFO_SCRIPTS[info].replace('[DEVICE]', str(device))
+            df.loc[:, info] = shell(script)
 
     logging.debug("Sort values and columns to ease view")
     df = df.sort_values(by=['tool', 'problem', 'instance'])

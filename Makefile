@@ -4,6 +4,7 @@ cuda_version := $(shell nvidia-smi | grep "CUDA Version" | cut -d: -f 3 | cut -d
 device := 0
 
 run: .setup
+	git log --format="%H" -n 1 >.commit
 	docker run -it -u $$(id -u):$$(id -g) --env DEVICE=$(device) -v $(project_path)/:/experiment/ --rm --gpus device=$(device) brkga
 
 .setup: experiments/Dockerfile experiments/requirements.txt

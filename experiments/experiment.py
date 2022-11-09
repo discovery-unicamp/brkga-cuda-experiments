@@ -366,9 +366,6 @@ def __save_results(iter_results: Iterable[Dict[str, str]]):
 
     assert not results.empty
 
-    # Tell to git on docker that this is safe.
-    shell("git config --global"
-          f" --add safe.directory {str(Path('.').absolute())}")
     save_results(
         results,
         OUTPUT_PATH.joinpath(f'{start_time}.tsv'),
