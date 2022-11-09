@@ -1,5 +1,4 @@
 from bisect import bisect_right
-from datetime import datetime
 import logging
 from pathlib import Path
 from typing import List, Tuple
@@ -15,9 +14,9 @@ FILES = [
     # 'remove-duplicated-dl4.zip',
     # 'brkga-mp-ipr.zip',
     # 'pr-test-v1.zip',
-    '2022-10-18T11:23:30.zip',
+    # '2022-10-18T11:23:30.zip',
     # '2022-11-02T15:51:17.zip',
-    '.backup2.tsv.zip',
+    '2022-11-09T21:05:28.zip',
 ]
 DATA = {file: read_results(Path(f'results/{file}')) for file in FILES}
 
@@ -27,31 +26,32 @@ TOOL_COLOR = {
 }
 
 PARAMS = [
-    'threads',
-    'pop-count',
-    'pop-size',
-    'rhoe-function',
-    'parents',
-    'elite-parents',
-    'elite',
-    'mutant',
-    'exchange-interval',
-    'exchange-count',
-    'pr-interval',
-    'pr-pairs',
-    'pr-block-factor',
-    'pr-min-diff',
-    'prune-interval',
-    'prune-threshold',
+    'tool',
+    'seed',
 ]
+# PARAMS = [
+#     'threads',
+#     'pop-count',
+#     'pop-size',
+#     'rhoe-function',
+#     'parents',
+#     'elite-parents',
+#     'elite',
+#     'mutant',
+#     'exchange-interval',
+#     'exchange-count',
+#     'pr-interval',
+#     'pr-pairs',
+#     'pr-block-factor',
+#     'pr-min-diff',
+#     'prune-interval',
+#     'prune-threshold',
+# ]
 
 logging.info("Converting convergence to lists...")
 for file in FILES:
     DATA[file].loc[:, 'convergence'] = DATA[file]['convergence'].apply(eval)
     DATA[file] = DATA[file].loc[DATA[file]['start_time'] > '2022-10-16T03:09:51']
-    for p in PARAMS:
-        if p not in DATA[file].columns:
-            DATA[file].loc[:, p] = None
 
 logging.info("Done.")
 
@@ -93,7 +93,7 @@ def convergence():
                               for i, x in enumerate(generation)
                               for y in (1 if i == 0 else 2) * [x]]
 
-                if elapsed[-1] < row['max-time'] and not PLOT_GENERATIONS:
+                if not PLOT_GENERATIONS and elapsed[-1] < row['max-time']:
                     elapsed.append(row['max-time'])
                     fitness.append(fitness[-1])
 
