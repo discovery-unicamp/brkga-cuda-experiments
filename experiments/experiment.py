@@ -25,8 +25,8 @@ logging.basicConfig(
 
 DEVICE = int(os.environ['DEVICE'])
 RESUME_FROM_BACKUP = False
-TEST_COUNT = 10
-MAX_GENERATIONS = 1000000000
+TEST_COUNT = 20
+MAX_GENERATIONS = 10000
 MAX_TIME_SECONDS = 60 * 60
 TIMEOUT_SECONDS = MAX_TIME_SECONDS + 3 * 60
 OMP_THREADS = int(shell('nproc'))
@@ -55,28 +55,28 @@ PROBLEM_NAME = {
 INSTANCES = {
     'cvrp': [
         'X-n219-k73',
-        # 'X-n266-k58',
-        # 'X-n317-k53',
-        # 'X-n336-k84',
-        # 'X-n376-k94',
-        # 'X-n384-k52',
-        # 'X-n420-k130',
-        # 'X-n429-k61',
-        # 'X-n469-k138',
-        # 'X-n480-k70',
-        # 'X-n548-k50',
-        # 'X-n586-k159',
+        'X-n266-k58',
+        'X-n317-k53',
+        'X-n336-k84',
+        'X-n376-k94',
+        'X-n384-k52',
+        'X-n420-k130',
+        'X-n429-k61',
+        'X-n469-k138',
+        'X-n480-k70',
+        'X-n548-k50',
+        'X-n586-k159',
         'X-n599-k92',
-        # 'X-n655-k131',
-        # # The following doesn't work with the original GPU-BRKGA code
-        # 'X-n733-k159',
-        # 'X-n749-k98',
-        # 'X-n819-k171',
-        # 'X-n837-k142',
-        # 'X-n856-k95',
-        # 'X-n916-k207',
-        # 'X-n957-k87',
-        # 'X-n979-k58',
+        'X-n655-k131',
+        # The following doesn't work with the original GPU-BRKGA code
+        'X-n733-k159',
+        'X-n749-k98',
+        'X-n819-k171',
+        'X-n837-k142',
+        'X-n856-k95',
+        'X-n916-k207',
+        'X-n957-k87',
+        'X-n979-k58',
         'X-n1001-k43',
     ],
     'scp': [
@@ -185,12 +185,12 @@ def main():
             decoders=['cpu'],
             test_count=TEST_COUNT,
         ),
-        __build_params(
-            tool='brkga-mp-ipr',
-            problems=['cvrp'],
-            decoders=['cpu'],
-            test_count=TEST_COUNT,
-        ),
+        # __build_params(
+        #     tool='brkga-mp-ipr',
+        #     problems=['cvrp'],
+        #     decoders=['cpu'],
+        #     test_count=TEST_COUNT,
+        # ),
     ))
 
     __save_results(results)
