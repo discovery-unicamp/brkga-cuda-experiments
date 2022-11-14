@@ -53,7 +53,7 @@ PROBLEM_NAME = {
     'tsp': 'tsp',
 }
 INSTANCES = {
-    'cvrp': [
+    'cvrp': list(reversed([
         'X-n219-k73',
         'X-n266-k58',
         'X-n317-k53',
@@ -78,7 +78,7 @@ INSTANCES = {
         'X-n957-k87',
         'X-n979-k58',
         'X-n1001-k43',
-    ],
+    ])),
     'scp': [
         'scp41',
         'scp42',
