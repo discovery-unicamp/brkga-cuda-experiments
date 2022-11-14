@@ -15,38 +15,37 @@ FILES = [
     # 'brkga-mp-ipr.zip',
     # 'pr-test-v1.zip',
     # '2022-10-18T11:23:30.zip',
-    # '2022-11-02T15:51:17.zip',
-    '2022-11-09T21:05:28.zip',
+    '2022-11-02T15:51:17.zip',
+    # '2022-11-09T21:05:28.zip',
+    '2022-11-09T21:31:37.zip',
 ]
 DATA = {file: read_results(Path(f'results/{file}')) for file in FILES}
 
-TOOL_COLOR = {
-    'brkga-cuda-2.0': 'green',
-    'brkga-mp-ipr': 'red',
-}
+COLORS = ['red', 'green', 'blue']
 
+# PARAMS = [
+#     'tool',
+#     'seed',
+# ]
 PARAMS = [
     'tool',
-    'seed',
+    'threads',
+    'pop-count',
+    'pop-size',
+    'rhoe-function',
+    'parents',
+    'elite-parents',
+    'elite',
+    'mutant',
+    'exchange-interval',
+    'exchange-count',
+    'pr-interval',
+    'pr-pairs',
+    'pr-block-factor',
+    'pr-min-diff',
+    'prune-interval',
+    'prune-threshold',
 ]
-# PARAMS = [
-#     'threads',
-#     'pop-count',
-#     'pop-size',
-#     'rhoe-function',
-#     'parents',
-#     'elite-parents',
-#     'elite',
-#     'mutant',
-#     'exchange-interval',
-#     'exchange-count',
-#     'pr-interval',
-#     'pr-pairs',
-#     'pr-block-factor',
-#     'pr-min-diff',
-#     'prune-interval',
-#     'prune-threshold',
-# ]
 
 logging.info("Converting convergence to lists...")
 for file in FILES:
@@ -61,13 +60,14 @@ FITNESS_VAR = [
     'elite',
     'similarity-threshold',
 ]
-PLOT_GENERATIONS = False
+PLOT_GENERATIONS = True
 
 
 def convergence():
     df = DATA[FILES[0]]
     instances = df[['problem', 'instance']].drop_duplicates()
     # instances = instances[instances['instance'].isin(['X-n219-k73'])]
+    color_label = {}
 
     for _, inst in instances.iterrows():
         plt.figure(figsize=(10.80, 7.20))
@@ -93,15 +93,20 @@ def convergence():
                               for i, x in enumerate(generation)
                               for y in (1 if i == 0 else 2) * [x]]
 
-                if not PLOT_GENERATIONS and elapsed[-1] < row['max-time']:
-                    elapsed.append(row['max-time'])
-                    fitness.append(fitness[-1])
+                # if not PLOT_GENERATIONS and elapsed[-1] < row['max-time']:
+                #     elapsed.append(row['max-time'])
+                #     fitness.append(fitness[-1])
+
+                label = '_'.join(map(str, row[PARAMS]))
+                if label not in color_label:
+                    assert COLORS
+                    color_label[label] = COLORS.pop()
 
                 plt.plot(
                     (generation if PLOT_GENERATIONS else elapsed),
                     fitness,
-                    label='_'.join(map(str, row[PARAMS])),
-                    color=TOOL_COLOR[row['tool']],
+                    label=label,
+                    color=color_label[label],
                 )
 
         name = f"{problem}-{instance}"
