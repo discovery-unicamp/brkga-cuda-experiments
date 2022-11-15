@@ -122,6 +122,7 @@ public:
     box::logger::debug("Local search results:", prev, "=>", curr);
     assert(curr <= prev);
 #else
+    Runner::localSearch();
 #endif
   }
 
