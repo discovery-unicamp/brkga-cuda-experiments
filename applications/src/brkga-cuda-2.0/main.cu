@@ -72,30 +72,61 @@ public:
   }
 
   Decoder::Fitness getBestFitness() override {
+    assert(algorithm);
     return algorithm->getBestFitness();
   }
 
   Chromosome getBestChromosome() override {
+    assert(algorithm);
     return algorithm->getBestChromosome();
   }
 
   std::vector<Chromosome> getPopulation(unsigned p) override {
+    assert(algorithm);
     std::vector<Chromosome> population;
     const auto pop = algorithm->getPopulation(p);
     for (const auto& ch : pop) population.emplace_back(ch.genes);
     return population;
   }
 
-  void evolve() override { algorithm->evolve(); }
+  void evolve() override {
+    assert(algorithm);
+    algorithm->evolve();
+  }
 
-  void exchangeElites() override { algorithm->exchangeElites(); }
+  void exchangeElites() override {
+    assert(algorithm);
+    algorithm->exchangeElites();
+  }
 
   void pathRelink() override {
     algorithm->runPathRelink(box::PathRelinkPair::bestElites, params.prPairs,
                              comparator(1 - params.prMinDiffPercentage));
   }
 
+  void localSearch() override {
+#if defined(TSP)
+    const auto n = config.chromosomeLength();
+    const auto* distances = instance.distances.data();
+    auto method = [n, distances](box::GeneIndex* permutation) {
+      localSearch(permutation, n, distances);
+    };
+
+    const auto prev = getBestFitness();
+    box::logger::debug("Starting local search with", prev);
+
+    assert(algorithm);
+    algorithm->localSearch(method);
+
+    const auto curr = getBestFitness();
+    box::logger::debug("Local search results:", prev, "=>", curr);
+    assert(curr <= prev);
+#else
+#endif
+  }
+
   void prunePopulation() override {
+    assert(algorithm);
     algorithm->removeSimilarElites(comparator(params.pruneThreshold));
   }
 
