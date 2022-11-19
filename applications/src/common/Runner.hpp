@@ -73,6 +73,11 @@ public:
     std::cout << '\n';
   }
 
+  inline virtual bool stop() const {
+    return generation >= params.generations
+           || getTimeElapsed() >= params.maxTimeSeconds;
+  }
+
   std::vector<std::vector<Chromosome>> importPopulation(std::istream& in) {
     unsigned p = 0;  // Population id
     std::vector<Chromosome> population;
@@ -83,7 +88,7 @@ public:
     bool flag = true;
     while (flag) {
       flag = (bool)std::getline(in, line);
-      lineCount += 1;
+      ++lineCount;
       if (flag && line[0] == '\t') {
         std::istringstream ss(line);
 
@@ -141,6 +146,8 @@ public:
     }
   }
 
+  virtual std::vector<Chromosome> getPopulation(unsigned p) = 0;
+
   inline void run() {
     const auto filename = "pop.txt";
     if (importPop) {
@@ -170,8 +177,7 @@ public:
 
     box::logger::info("Optimizing");
     std::vector<std::tuple<Fitness, float, unsigned>> convergence;
-    while (generation < params.generations
-           && getTimeElapsed() < params.maxTimeSeconds) {
+    while (!stop()) {
       if (params.logStep != 0 && generation % params.logStep == 0) {
         box::logger::debug("Save convergence log");
 
@@ -262,8 +268,6 @@ protected:
   virtual Fitness getBestFitness() = 0;
 
   virtual Chromosome getBestChromosome() = 0;
-
-  virtual std::vector<Chromosome> getPopulation(unsigned p) = 0;
 
   virtual void evolve() = 0;
 
