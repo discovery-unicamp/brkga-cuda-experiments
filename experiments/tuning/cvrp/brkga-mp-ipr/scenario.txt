@@ -1,5 +1,0 @@
-trainInstancesDir = ""
-trainInstancesFile = "/experiment/experiments/tuning/cvrp/brkga-mp-ipr/instances-list.txt"
-parameterFile = "/experiment/experiments/tuning/cvrp/brkga-mp-ipr/parameters.txt"
-forbiddenFile = "/experiment/experiments/tuning/cvrp/brkga-mp-ipr/forbidden.txt"
-digits = 2

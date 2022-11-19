@@ -1,0 +1,5 @@
+trainInstancesDir = ""
+trainInstancesFile = "/experiment/experiments/tuning/brkga-mp-ipr_cvrp_cpu/instances-list.txt"
+parameterFile = "/experiment/experiments/tuning/brkga-mp-ipr_cvrp_cpu/parameters.txt"
+forbiddenFile = "/experiment/experiments/tuning/brkga-mp-ipr_cvrp_cpu/forbidden.txt"
+digits = 2

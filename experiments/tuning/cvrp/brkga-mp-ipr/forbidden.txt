@@ -1,4 +1,0 @@
-(elite * pop_size < elite_parents)
-(elite * pop_size < exchange_count)
-(parents <= elite_parents)
-(rhoe_function == "rhoe") & (parents > 2)
