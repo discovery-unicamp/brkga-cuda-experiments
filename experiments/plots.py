@@ -1,12 +1,15 @@
 from bisect import bisect_right
 import logging
 from pathlib import Path
-from typing import List, Tuple
+from typing import Iterable, List, Tuple, TypeVar
 import matplotlib.pyplot as plt
 
 import pandas as pd
 
 from result import read_results
+
+
+T = TypeVar('T')
 
 
 FILES = [
@@ -15,18 +18,15 @@ FILES = [
     # 'brkga-mp-ipr.zip',
     # 'pr-test-v1.zip',
     # '2022-10-18T11:23:30.zip',
-    '2022-11-02T15:51:17.zip',
-    # '2022-11-09T21:05:28.zip',
-    '2022-11-09T21:31:37.zip',
+    'BRKGA-CUDA+PR+pruning.zip',
+    # 'BRKGA-MP-IPR+PR.zip',
+    'BRKGA-CUDA+pruning.zip',
+    'BRKGA-CUDA.zip',
 ]
 DATA = {file: read_results(Path(f'results/{file}')) for file in FILES}
 
 COLORS = ['red', 'green', 'blue']
 
-# PARAMS = [
-#     'tool',
-#     'seed',
-# ]
 PARAMS = [
     'tool',
     'threads',
@@ -60,10 +60,10 @@ FITNESS_VAR = [
     'elite',
     'similarity-threshold',
 ]
-PLOT_GENERATIONS = True
+PLOT_GENERATIONS = False
 
 
-def convergence():
+def plot_convergence():
     df = DATA[FILES[0]]
     instances = df[['problem', 'instance']].drop_duplicates()
     # instances = instances[instances['instance'].isin(['X-n219-k73'])]
@@ -78,8 +78,7 @@ def convergence():
             df = DATA[input_file]
             df = df.loc[(df['instance'] == instance)]
             df = df.loc[(df['problem'] == problem)]
-            # df = df.loc[(df['similarity-threshold'] == .9)]
-            # df = df.loc[(df['elite'] == .1)]
+            df = build_apc(df)
 
             for _, row in df.iterrows():
                 fitness, elapsed, generation = zip(*row['convergence'])
@@ -129,42 +128,46 @@ def convergence():
         plt.close()
 
 
-def fitness():
-    def bb(conv: List[Tuple[float, float, float]], elapsed: float):
-        assert len(conv) > 0
-        k = bisect_right(conv, elapsed, key=lambda c: c[1])
-        assert k > 0
-        assert conv[k - 1][1] <= elapsed
-        assert k == len(conv) or conv[k][1] > elapsed
-        return conv[k - 1][0]
-
-    instances = DATA[FILES[0]][['problem', 'instance']].drop_duplicates()
-    for _, ins in instances.iterrows():
-        instance = ins['instance']
-        problem = ins['problem']
-        for var in FITNESS_VAR:
-            logging.info("Creating figure for %s:%s with var %s",
-                         problem, instance, var)
-            df = pd.concat((
-                df[(df['instance'] == instance) & (df['problem'] == problem)]
-                for df in DATA.values()
+def build_apc(df: pd.DataFrame) -> pd.DataFrame:
+    def eval_apc(df: pd.DataFrame):
+        last_result = df['convergence'].apply(lambda conv: conv[-1])
+        max_elapsed = float(max(x[1] for x in last_result))
+        max_generation = int(max(x[2] for x in last_result))
+        step = max_elapsed / min(400, max_generation)
+        apc = []
+        i = 0
+        while i <= max_elapsed + 1e-7:
+            convergence = [find_conv(conv, i) for conv in df['convergence']]
+            apc.append((
+                mean(c[0] for c in convergence),  # fitness
+                i,  # elapsed
+                mean(c[2] for c in convergence),  # generation
             ))
+            i += step
 
-            fig, ax = plt.subplots(3, 3, figsize=(2*10.80, 2*7.20))
-            axes = [ax[i, j] for i in range(3) for j in range(3)]
-            for k, elapsed in enumerate(FITNESS_ELAPSED):
-                df['y'] = df['convergence'].map(lambda conv: bb(conv, elapsed))
-                df.boxplot('y', by=var, ax=axes[k])
-                axes[k].set_title(f"elapsed={elapsed}s")
-                axes[k].grid()
+        return apc
 
-            name = f"{problem}-{instance}-{var}"
-            outfile = Path('fitness', name + ".png")
-            outfile.parent.mkdir(parents=True, exist_ok=True)
-            fig.savefig(str(outfile.absolute()))
-            plt.close(fig)
+    df = df.groupby(PARAMS).apply(eval_apc).reset_index()
+    df = df.rename(columns={0: 'convergence'})
+    return df
+
+
+def find_conv(conv: List[Tuple[float, float, int]], elapsed: float):
+    assert len(conv) > 0
+    k = bisect_right(conv, elapsed, key=lambda c: c[1])
+    if k == 0:
+        # No value found before elapsed
+        return float('inf'), float(0), int(0)
+    assert conv[k - 1][1] <= elapsed
+    assert k == len(conv) or conv[k][1] > elapsed
+    return conv[k - 1]
+
+
+def mean(iterable: Iterable[T]) -> T:
+    lst = list(iterable)
+    return sum(lst) / len(lst)
 
 
 if __name__ == '__main__':
-    convergence()
+    plot_convergence()
     # fitness()

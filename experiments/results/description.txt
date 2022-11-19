@@ -1,4 +1,0 @@
-2022-10-18T11:23:30.zip => Path relink with experimental parameters
-2022-11-02T15:51:17.zip => Path relink with new parameters for BRKGA-CUDA
-2022-11-09T21:05:28.zip => Running for 1h 10x on three instances of CVRP
-2022-11-09T21:31:37.zip => New parameters for BRKGA-CUDA without path relink
