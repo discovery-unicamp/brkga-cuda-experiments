@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 
-// #define SHOW_PROGRESS
+#define SHOW_PROGRESS
 
 extern SortMethod sortToValidateMethod;  // Defined on `BaseInstance.cpp`
 constexpr auto TERMINAL_LENGTH = 50;
@@ -276,6 +276,10 @@ protected:
   // FIXME what are the parameters?
   virtual void pathRelink() {
     box::logger::warning("Path Relink wasn't implemented");
+  }
+
+  virtual void localSearch() {
+    box::logger::warning("Local search wasn't implemented");
   }
 
   virtual void prunePopulation() {
