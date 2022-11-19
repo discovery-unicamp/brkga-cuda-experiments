@@ -179,18 +179,18 @@ def main():
         #     ],
         #     test_count=TEST_COUNT,
         # ),
-        __build_params(
-            tool='brkga-cuda-2.0',
-            problems=['cvrp'],
-            decoders=['cpu'],
-            test_count=TEST_COUNT,
-        ),
         # __build_params(
-        #     tool='brkga-mp-ipr',
+        #     tool='brkga-cuda-2.0',
         #     problems=['cvrp'],
         #     decoders=['cpu'],
         #     test_count=TEST_COUNT,
         # ),
+        __build_params(
+            tool='brkga-mp-ipr',
+            problems=['cvrp'],
+            decoders=['cpu'],
+            test_count=TEST_COUNT,
+        ),
     ))
 
     __save_results(results)

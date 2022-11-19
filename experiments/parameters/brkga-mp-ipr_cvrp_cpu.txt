@@ -1,2 +1,2 @@
-pop_count pop_size rhoe_function elite mutant parents elite_parents exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff rhoe
-        7      171      CONSTANT  0.18   0.11       8             1                25              3          50            0.07          24    random        0.09   NA
+pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff
+        8      886       8             1   EXPONENTIAL  0.08   0.13               176              7          24            0.63           3      best        0.87
