@@ -3,6 +3,7 @@
 convergence/
 fitness/
 logs/
+tuning-convergence/
 
 *.Rdata
 target-runner
