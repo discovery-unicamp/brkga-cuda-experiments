@@ -60,7 +60,8 @@ FITNESS_VAR = [
     'elite',
     'similarity-threshold',
 ]
-PLOT_GENERATIONS = False
+SMOOTH_PLOT = True
+PLOT_GENERATIONS = True
 
 
 def plot_convergence():
@@ -82,15 +83,16 @@ def plot_convergence():
 
             for _, row in df.iterrows():
                 fitness, elapsed, generation = zip(*row['convergence'])
-                fitness = [y
-                           for i, x in enumerate(fitness)
-                           for y in (1 if i == len(fitness) - 1 else 2) * [x]]
-                elapsed = [y
-                           for i, x in enumerate(elapsed)
-                           for y in (1 if i == 0 else 2) * [x]]
-                generation = [y
-                              for i, x in enumerate(generation)
-                              for y in (1 if i == 0 else 2) * [x]]
+                if not SMOOTH_PLOT:
+                    fitness = [y
+                            for i, x in enumerate(fitness)
+                            for y in (1 if i == len(fitness) - 1 else 2) * [x]]
+                    elapsed = [y
+                            for i, x in enumerate(elapsed)
+                            for y in (1 if i == 0 else 2) * [x]]
+                    generation = [y
+                                for i, x in enumerate(generation)
+                                for y in (1 if i == 0 else 2) * [x]]
 
                 # if not PLOT_GENERATIONS and elapsed[-1] < row['max-time']:
                 #     elapsed.append(row['max-time'])
