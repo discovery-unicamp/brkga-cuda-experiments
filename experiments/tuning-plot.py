@@ -15,6 +15,12 @@ def main():
 
 
 def __read_output():
+    instance_fix = {
+        'i1': 'X-n219-k73',
+        'i2': 'X-n599-k92',
+        'i3': 'X-n1001-k43',
+    }
+
     for tool in TOOLS:
         problem = 'cvrp'
         decoder = 'cpu'
@@ -35,6 +41,8 @@ def __read_output():
 
             assert instance_re is not None
             instance = instance_re.group(1)
+            instance = instance_fix.get(instance, instance)
+
             output = dict(tuple(r.split('='))
                           for r in lines[output_line].split(' '))
 
@@ -67,16 +75,18 @@ def __plot_tuning_convergence(result_df: pd.DataFrame):
     def plot(df: pd.DataFrame):
         df = df.sort_values(by=['ans'], ascending=False)
 
-        tool = df.iloc[0]['tool']
         problem = df.iloc[0]['problem']
-        decoder = df.iloc[0]['decoder']
         instance = df.iloc[0]['instance']
-        label = f"{tool}_{problem}_{decoder}_{instance}"
+        label = f"{problem}_{instance}"
 
-        x = list(range(len(df)))
-        y = list(df['ans'])
         plt.figure(figsize=(10.80, 7.20))
-        plt.plot(x, y, label=label)
+        for tool, decoder in (df[['tool', 'decoder']]
+                              .drop_duplicates()
+                              .itertuples(index=False, name=None)):
+            df2 = df[(df['tool'] == tool) & (df['decoder'] == decoder)]
+            x = list(range(len(df2)))
+            y = list(df2['ans'])
+            plt.plot(x, y, label=f"{tool}_{decoder}")
 
         plt.title("Tuning convergence")
         plt.xlabel("Configuration")
@@ -92,7 +102,7 @@ def __plot_tuning_convergence(result_df: pd.DataFrame):
         plt.savefig(outfile, bbox_extra_artists=(legend,), bbox_inches='tight')
         plt.close()
 
-    result_df.groupby(['tool', 'problem', 'decoder', 'instance']).apply(plot)
+    result_df.groupby(['problem', 'instance']).apply(plot)
 
 
 if __name__ == '__main__':
