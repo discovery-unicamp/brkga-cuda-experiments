@@ -32,6 +32,31 @@ INFO_SCRIPTS = {
     'g++': 'g++ --version | grep "g++"',
 }
 
+PARAMS = {
+    'tool',
+    'problem',
+    'instance',
+    'seed',
+    'threads',
+    'pop-count',
+    'pop-size',
+    'rhoe-function',
+    'parents',
+    'elite-parents',
+    'elite',
+    'mutant',
+    'exchange-interval',
+    'exchange-count',
+    'pr-interval',
+    'pr-pairs',
+    'pr-block-factor',
+    'pr-min-diff',
+    'pr-max-time',
+    'pr-select',
+    'prune-interval',
+    'prune-threshold',
+}
+
 
 def save_results(
         df: pd.DataFrame,
@@ -78,22 +103,22 @@ def compress_convergence(convergence: str) -> str:
         if symbol == '(':
             begin = i + 1
         elif symbol == ')':
-            fitness, elapsed, generation = convergence[begin: i].split(',')
+            data = convergence[begin: i].split(',')
+            assert len(data) == 2
+
+            fitness = float(data[0])
+            elapsed = float(data[1])
+            generation = int(data[2])
+
             begin = None
-            if fitness != previous:
-                comp = f"({float(fitness):g},{float(elapsed):g},{generation})"
-                compressed.append(comp)
-                ignored = False
+            ignored = fitness == previous
+            if not ignored:
+                compressed.append(f"({fitness:g},{elapsed:g},{generation})")
                 previous = fitness
-            else:
-                ignored = True
 
     if ignored:
-        assert fitness is not None
-        assert elapsed is not None
-        assert generation is not None
-        comp = f"({float(fitness):g},{float(elapsed):g},{generation})"
-        compressed.append(comp)
+        # Save the last result to keep the time elapsed/last generation
+        compressed.append(f"({fitness:g},{elapsed:g},{generation})")
 
     return f"[{','.join(compressed)}]"
 
@@ -111,7 +136,12 @@ def read_results(path: Path) -> pd.DataFrame:
         results_df['convergence']
         .str
         .replace('inf', "float('inf')")
+        .apply(eval)
     )
+
+    missing_params = PARAMS - set(results_df.columns)
+    for p in missing_params:
+        results_df[p] = 0
     return results_df
 
 

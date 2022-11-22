@@ -1,23 +1,18 @@
 from bisect import bisect_right
-import logging
 from pathlib import Path
 from typing import Iterable, List, Tuple, TypeVar
 import matplotlib.pyplot as plt
 
 import pandas as pd
 
-from result import read_results
+from result import PARAMS, read_results
 
 
 T = TypeVar('T')
 
 
 FILES = [
-    # 'remove-duplicated-dl3.zip',
-    # 'remove-duplicated-dl4.zip',
-    # 'brkga-mp-ipr.zip',
-    # 'pr-test-v1.zip',
-    # '2022-10-18T11:23:30.zip',
+    'BRKGA-MP-IPR-old.zip',
     'BRKGA-CUDA+PR+pruning.zip',
     # 'BRKGA-MP-IPR+PR.zip',
     'BRKGA-CUDA+pruning.zip',
@@ -25,34 +20,7 @@ FILES = [
 ]
 DATA = {file: read_results(Path(f'results/{file}')) for file in FILES}
 
-COLORS = ['red', 'green', 'blue']
-
-PARAMS = [
-    'tool',
-    'threads',
-    'pop-count',
-    'pop-size',
-    'rhoe-function',
-    'parents',
-    'elite-parents',
-    'elite',
-    'mutant',
-    'exchange-interval',
-    'exchange-count',
-    'pr-interval',
-    'pr-pairs',
-    'pr-block-factor',
-    'pr-min-diff',
-    'prune-interval',
-    'prune-threshold',
-]
-
-logging.info("Converting convergence to lists...")
-for file in FILES:
-    DATA[file].loc[:, 'convergence'] = DATA[file]['convergence'].apply(eval)
-    DATA[file] = DATA[file].loc[DATA[file]['start_time'] > '2022-10-16T03:09:51']
-
-logging.info("Done.")
+COLORS = ['red', 'green', 'blue', 'purple']
 
 FITNESS_ELAPSED = [1, 2, 3, 5, 15, 30, 60, 120, 180]
 FITNESS_VAR = [
@@ -61,7 +29,7 @@ FITNESS_VAR = [
     'similarity-threshold',
 ]
 SMOOTH_PLOT = True
-PLOT_GENERATIONS = True
+PLOT_GENERATIONS = False
 
 
 def plot_convergence():
@@ -69,6 +37,8 @@ def plot_convergence():
     instances = df[['problem', 'instance']].drop_duplicates()
     # instances = instances[instances['instance'].isin(['X-n219-k73'])]
     color_label = {}
+
+    plot_params = list(PARAMS - {'problem', 'instance', 'seed'})
 
     for _, inst in instances.iterrows():
         plt.figure(figsize=(10.80, 7.20))
@@ -85,20 +55,21 @@ def plot_convergence():
                 fitness, elapsed, generation = zip(*row['convergence'])
                 if not SMOOTH_PLOT:
                     fitness = [y
-                            for i, x in enumerate(fitness)
-                            for y in (1 if i == len(fitness) - 1 else 2) * [x]]
+                               for i, x in enumerate(fitness)
+                               for y in (1 if i == len(fitness) - 1 else 2)
+                                        * [x]]
                     elapsed = [y
-                            for i, x in enumerate(elapsed)
-                            for y in (1 if i == 0 else 2) * [x]]
+                               for i, x in enumerate(elapsed)
+                               for y in (1 if i == 0 else 2) * [x]]
                     generation = [y
-                                for i, x in enumerate(generation)
-                                for y in (1 if i == 0 else 2) * [x]]
+                                  for i, x in enumerate(generation)
+                                  for y in (1 if i == 0 else 2) * [x]]
 
                 # if not PLOT_GENERATIONS and elapsed[-1] < row['max-time']:
                 #     elapsed.append(row['max-time'])
                 #     fitness.append(fitness[-1])
 
-                label = '_'.join(map(str, row[PARAMS]))
+                label = '_'.join(map(str, row[plot_params]))
                 if label not in color_label:
                     assert COLORS
                     color_label[label] = COLORS.pop()
@@ -149,7 +120,7 @@ def build_apc(df: pd.DataFrame) -> pd.DataFrame:
 
         return apc
 
-    df = df.groupby(PARAMS).apply(eval_apc).reset_index()
+    df = df.groupby(list(PARAMS - {'seed'})).apply(eval_apc).reset_index()
     df = df.rename(columns={0: 'convergence'})
     return df
 
