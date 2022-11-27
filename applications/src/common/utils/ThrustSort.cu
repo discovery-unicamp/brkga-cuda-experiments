@@ -9,21 +9,21 @@
 #include <thrust/sort.h>
 
 #define THRUST_SORT_IMPL                                \
-  thrust::device_ptr<FrameworkGeneType> keysPtr(dKeys); \
+  thrust::device_ptr<float> keysPtr(dKeys); \
   thrust::device_ptr<unsigned> valsPtr(dValues);        \
   thrust::sort_by_key(thrust::device, keysPtr, keysPtr + length, valsPtr)
 
-void thrustSort(FrameworkGeneType* dKeys, unsigned* dValues, unsigned length) {
+void thrustSort(float* dKeys, unsigned* dValues, unsigned length) {
   THRUST_SORT_IMPL;
 }
 
-__global__ void thrustSortKernelImpl(FrameworkGeneType* dKeys,
+__global__ void thrustSortKernelImpl(float* dKeys,
                                      unsigned* dValues,
                                      unsigned length) {
   THRUST_SORT_IMPL;
 }
 
-void thrustSortKernel(FrameworkGeneType* dKeys,
+void thrustSortKernel(float* dKeys,
                       unsigned* dValues,
                       unsigned length) {
   thrustSortKernelImpl<<<1, 1>>>(dKeys, dValues, length);

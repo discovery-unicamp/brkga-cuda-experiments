@@ -1,5 +1,6 @@
 #include "../../common/instances/CvrpInstance.hpp"
 #include "CvrpDecoder.hpp"
+#include <brkga-cuda/BrkgaConfiguration.hpp>
 #include <brkga-cuda/Chromosome.hpp>
 #include <brkga-cuda/utils/GpuUtils.hpp>
 

@@ -1,5 +1,6 @@
 #include "../../common/instances/ScpInstance.hpp"
 #include "ScpDecoder.hpp"
+#include <brkga-cuda/BrkgaConfiguration.hpp>
 #include <brkga-cuda/Chromosome.hpp>
 #include <brkga-cuda/utils/GpuUtils.hpp>
 

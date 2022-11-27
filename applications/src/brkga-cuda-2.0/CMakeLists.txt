@@ -17,6 +17,8 @@ add_executable(brkga-cuda-2.0
   ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.hpp
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cu
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/BoxBrkga.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/BoxBrkga.hpp
   ${CMAKE_CURRENT_LIST_DIR}/main.cu
 )
 

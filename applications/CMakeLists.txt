@@ -8,7 +8,7 @@ ADD_COMPILE_OPTIONS(
   -Wall -Wextra -Wshadow -Wformat=2 -Wformat-truncation -Wfloat-equal
   -Wshift-overflow -Wconversion -Wno-sign-conversion -Wundef -fno-common
 )
-#ADD_COMPILE_OPTIONS("$<$<CONFIG:DEBUG>:-D_GLIBCXX_DEBUG>")
+ADD_COMPILE_OPTIONS("$<$<CONFIG:DEBUG>:-D_GLIBCXX_DEBUG>")
 ADD_COMPILE_DEFINITIONS(LOG_LEVEL=3)
 
 SET(BRKGA_API_ROOT "${CMAKE_CURRENT_LIST_DIR}/../brkgaAPI")
@@ -29,6 +29,8 @@ SET(COMMON_SRC
   ${CMAKE_CURRENT_LIST_DIR}/src/common/utils/ThrustSort.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/utils/StringUtils.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/utils/StringUtils.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/common/BrkgaInterface.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/common/BrkgaInterface.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/Checker.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/MinQueue.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/Parameters.cpp

@@ -57,7 +57,7 @@ inline ostream& operator<<(ostream& out, const vector<T>& v) {
 template <class Fitness, class Algorithm, class Instance>
 class RunnerBase {
 public:
-  typedef std::vector<FrameworkGeneType> Chromosome;
+  typedef std::vector<float> Chromosome;
 
   RunnerBase(int argc, char** argv)
       : params(Parameters::parse(argc, argv)),
@@ -93,7 +93,7 @@ public:
         std::istringstream ss(line);
 
         Chromosome chromosome;
-        FrameworkGeneType gene = -1;
+        float gene = -1;
         while (ss >> gene) chromosome.push_back(gene);
 
         if (chromosome.size() != instance.chromosomeLength())
@@ -199,13 +199,14 @@ public:
 #endif  // SHOW_PROGRESS
       }
 
-      if (params.exchangeBestInterval != 0
+      if (params.exchangeBestInterval != 0 && generation > 0
           && generation % params.exchangeBestInterval == 0) {
         box::logger::debug("Exchange", params.exchangeBestCount,
                            "elites between populations");
         exchangeElites();
       }
-      if (params.pruneInterval != 0 && generation % params.pruneInterval == 0) {
+      if (params.pruneInterval != 0 && generation > 0
+          && generation % params.pruneInterval == 0) {
         box::logger::debug("Prune the population to remove duplicates");
         prunePopulation();
       }
@@ -259,7 +260,7 @@ public:
   }
 
 protected:
-  typedef std::vector<std::vector<FrameworkGeneType>> Population;
+  typedef std::vector<std::vector<float>> Population;
 
   virtual Algorithm* getAlgorithm(
       const std::vector<Population>& initialPopulation =

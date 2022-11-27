@@ -1,5 +1,6 @@
 #include "../../common/instances/TspInstance.hpp"
 #include "TspDecoder.hpp"
+#include <brkga-cuda/BrkgaConfiguration.hpp>
 #include <brkga-cuda/utils/GpuUtils.hpp>
 
 #include <cuda_runtime.h>

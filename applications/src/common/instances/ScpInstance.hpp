@@ -20,7 +20,7 @@ public:
     return getNumberOfSets();
   }
 
-  void validate(const FrameworkGeneType* chromosome,
+  void validate(const float* chromosome,
                 float fitness) const override;
 
   void validate(const unsigned*, float) const override {

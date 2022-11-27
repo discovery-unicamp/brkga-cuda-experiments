@@ -1,14 +1,16 @@
 #ifndef DECODERS_SCPDECODER_HPP
 #define DECODERS_SCPDECODER_HPP
 
-#include "BaseDecoder.hpp"
+#include "../BrkgaMPIpr.hpp"
 
 class ScpInstance;
 
-class ScpDecoder : public BaseDecoder {
+class ScpDecoder : public BrkgaMPIpr::Decoder {
 public:
-  ScpDecoder(ScpInstance* _instance) : instance(_instance) {}
+  typedef BrkgaMPIpr::Fitness Fitness;
+  typedef BrkgaMPIpr::Decoder::ChromosomeD Chromosome;
 
+  ScpDecoder(ScpInstance* _instance) : instance(_instance) {}
   ~ScpDecoder() = default;
 
   Fitness decode(Chromosome& chromosome, bool) const override;

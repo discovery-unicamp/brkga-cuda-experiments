@@ -1,14 +1,16 @@
 #ifndef DECODERS_CVRPDECODER_HPP
 #define DECODERS_CVRPDECODER_HPP
 
-#include "BaseDecoder.hpp"
+#include "../BrkgaMPIpr.hpp"
 
 class CvrpInstance;
 
-class CvrpDecoder : public BaseDecoder {
+class CvrpDecoder : public BrkgaMPIpr::Decoder {
 public:
-  CvrpDecoder(CvrpInstance* _instance = nullptr) : instance(_instance) {}
+  typedef BrkgaMPIpr::Fitness Fitness;
+  typedef BrkgaMPIpr::Decoder::ChromosomeD Chromosome;
 
+  CvrpDecoder(CvrpInstance* _instance = nullptr) : instance(_instance) {}
   ~CvrpDecoder() = default;
 
   Fitness decode(Chromosome& chromosome, bool) const override;
