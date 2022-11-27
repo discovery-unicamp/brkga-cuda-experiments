@@ -104,7 +104,7 @@ def compress_convergence(convergence: str) -> str:
             begin = i + 1
         elif symbol == ')':
             data = convergence[begin: i].split(',')
-            assert len(data) == 2
+            assert len(data) == 3
 
             fitness = float(data[0])
             elapsed = float(data[1])
@@ -143,19 +143,3 @@ def read_results(path: Path) -> pd.DataFrame:
     for p in missing_params:
         results_df[p] = 0
     return results_df
-
-
-def __compress_tsv(path: Path):
-    if path.suffix != '.tsv':
-        raise ValueError("Only `.tsv` results can be compressed")
-
-    results_df = read_results(path)
-    results_df.loc[:, 'convergence'] = (
-        results_df['convergence'].apply(compress_convergence)
-    )
-    save_results(results_df, path)
-
-
-if __name__ == '__main__':
-    assert len(sys.argv) == 2
-    __compress_tsv(Path(sys.argv[1]))
