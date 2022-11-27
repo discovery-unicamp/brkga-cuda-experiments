@@ -33,38 +33,19 @@ typedef CvrpDecoder Decoder;
 #include <string>
 #include <vector>
 
-class BrkgaMPIprRunner
-    : public RunnerBase<Decoder::Fitness, BrkgaMPIpr, Instance> {
+class BrkgaMPIprRunner : public RunnerBase<Decoder::Fitness, Instance> {
 public:
   // TODO add option to set import/export flags
 
   BrkgaMPIprRunner(int argc, char** argv)
       : RunnerBase(argc, argv), decoder(&instance) {}
 
-  BrkgaMPIpr* getAlgorithm(const std::vector<std::vector<std::vector<float>>>&
+  BrkgaInterface* getBrkga(const std::vector<std::vector<std::vector<float>>>&
                                initialPopulation) override {
-    auto algo = new BrkgaMPIpr(instance.chromosomeLength(), &decoder);
-    algo->init(params, initialPopulation);
-    return algo;
+    brkga = new BrkgaMPIpr(instance.chromosomeLength(), &decoder);
+    brkga->init(params, initialPopulation);
+    return brkga;
   }
-
-  Decoder::Fitness getBestFitness() override {
-    return algorithm->getBestFitness();
-  }
-
-  Chromosome getBestChromosome() override {
-    return algorithm->getBestChromosome();
-  }
-
-  std::vector<Chromosome> getPopulation(unsigned p) override {
-    return algorithm->getPopulations()[p];
-  }
-
-  void evolve() override { algorithm->evolve(); }
-
-  void exchangeElites() override { algorithm->exchangeElites(); }
-
-  void pathRelink() override { algorithm->pathRelink(); }
 
   SortMethod determineSortMethod(const std::string&) const override {
     return SortMethod::stdSort;
