@@ -21,13 +21,14 @@ public:
 
   ~TspInstance() = default;
 
+  inline bool validatePermutations() const override { return true; }
+
   [[nodiscard]] inline unsigned chromosomeLength() const override {
     return numberOfClients;
   }
 
-  inline void validate(const float* chromosome,
-                       float fitness) const override {
-    validate(getSortedChromosome(chromosome).data(), fitness);
+  inline void validate(const float* chromosome, float fitness) const override {
+    BaseInstance::validate(chromosome, fitness);
   }
 
   void validate(const unsigned* permutation, float fitness) const override;

@@ -9,35 +9,27 @@
 #define IS_CUDA_ENABLED
 #endif  // USE_CPP_ONLY
 
-#include "../../Tweaks.hpp"
-#include "../SortMethod.hpp"
-
-#include <numeric>
-#include <vector>
-
-void sortChromosomeToValidate(const float* chromosome,
-                              unsigned* permutation,
-                              unsigned size);
+#include <stdexcept>
 
 template <class Fitness>
 class BaseInstance {
 public:
   virtual ~BaseInstance() = default;
 
+  virtual bool validatePermutations() const = 0;
+
   virtual unsigned chromosomeLength() const = 0;
 
-  virtual void validate(const float* chromosome,
-                        Fitness fitness) const = 0;
+  virtual void validate(const float*, Fitness) const {
+    throw std::runtime_error(validatePermutations()
+                                 ? "Instance can only validate permutations"
+                                 : "Validation not implemented");
+  }
 
-  virtual void validate(const unsigned* permutation, Fitness fitness) const = 0;
-
-  std::vector<unsigned> getSortedChromosome(
-      const float* chromosome) const {
-    std::vector<unsigned> permutation(chromosomeLength());
-    std::iota(permutation.begin(), permutation.end(), 0);
-    sortChromosomeToValidate(chromosome, permutation.data(),
-                             chromosomeLength());
-    return permutation;
+  virtual void validate(const unsigned*, Fitness) const {
+    throw std::runtime_error(!validatePermutations()
+                                 ? "Instance can only validate genes"
+                                 : "Validation not implemented");
   }
 };
 

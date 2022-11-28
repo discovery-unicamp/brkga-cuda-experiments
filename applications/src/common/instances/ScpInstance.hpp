@@ -12,6 +12,8 @@ class ScpInstance : public BaseInstance<float> {
 public:
   static ScpInstance fromFile(const std::string& fileName);
 
+  inline bool validatePermutations() const override { return false; }
+
   [[nodiscard]] inline unsigned getNumberOfSets() const {
     return (unsigned)setsEnd.size();
   }
@@ -20,11 +22,11 @@ public:
     return getNumberOfSets();
   }
 
-  void validate(const float* chromosome,
-                float fitness) const override;
+  void validate(const float* chromosome, float fitness) const override;
 
-  void validate(const unsigned*, float) const override {
-    throw std::runtime_error("SCP doesn't support permutations");
+  inline void validate(const unsigned* permutation,
+                       float fitness) const override {
+    BaseInstance::validate(permutation, fitness);
   }
 
   float acceptThreshold;

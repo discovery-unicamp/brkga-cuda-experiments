@@ -40,28 +40,16 @@ public:
   BrkgaMPIprRunner(int argc, char** argv)
       : RunnerBase(argc, argv), decoder(&instance) {}
 
-  BrkgaInterface* getBrkga(const std::vector<std::vector<std::vector<float>>>&
-                               initialPopulation) override {
-    brkga = new BrkgaMPIpr(instance.chromosomeLength(), &decoder);
-    brkga->init(params, initialPopulation);
-    return brkga;
-  }
-
-  SortMethod determineSortMethod(const std::string&) const override {
-    return SortMethod::stdSort;
+  BrkgaInterface* getBrkga() override {
+    return new BrkgaMPIpr(instance.chromosomeLength(), &decoder);
   }
 
 private:
   Decoder decoder;
 };
 
-void bbSegSortCall(float*, unsigned*, unsigned) {
-  box::logger::error("No bb-segsort for BRKGA-MP-IPR");
-  abort();
-}
-
 int main(int argc, char** argv) {
-  box::logger::info("Using BRKGA-MP-IPR to optimize");
+  RunnerBase<Decoder::Fitness, Instance>::showParams(argc, argv);
   BrkgaMPIprRunner(argc, argv).run();
   return 0;
 }

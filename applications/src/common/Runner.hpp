@@ -23,7 +23,6 @@
 
 #define SHOW_PROGRESS
 
-extern SortMethod sortToValidateMethod;  // Defined on `BaseInstance.cpp`
 constexpr auto TERMINAL_LENGTH = 50;
 
 /// Outputs a pair/tuple/vector with no spaces
@@ -127,8 +126,9 @@ public:
   }
 
   void exportPopulation(std::ostream& out) {
+    const auto populations = brkga->getPopulations();
     for (unsigned p = 0; p < params.numberOfPopulations; ++p) {
-      const auto population = getPopulation(p);
+      const auto population = populations[p];
 
       out << "Population " << p + 1 << ":\n";
       for (const auto& ch : population) {
@@ -149,29 +149,27 @@ public:
 
   inline void run() {
     const auto filename = "pop.txt";
+    std::vector<Population> initialPopulation;
     if (importPop) {
       box::logger::info("Importing initial population from", filename);
       std::ifstream population(filename);
-      const auto initialPopulation = importPopulation(population);
-      population.close();
-
-      box::logger::info("Starting to measure time now");
-      startTime = now();
-
-      box::logger::info("Building the brkga with the given population");
-      brkga = getBrkga(initialPopulation);
-    } else {
-      box::logger::info("Starting to measure time now");
-      startTime = now();
-
-      box::logger::info("Building the brkga with a generated population");
-      brkga = getBrkga();
+      initialPopulation = importPopulation(population);
     }
 
+    box::logger::info("Starting to measure time now");
+    startTime = now();
+
+    box::logger::info("Building the BRKGA object");
+    brkga = getBrkga();
+
+    box::logger::info("Initializing the BRKGA object with",
+                      initialPopulation.size(), "population(s) provided");
+    brkga->init(params, initialPopulation);
+
     if (exportPop) {
-      box::logger::info("Exporting initial population to", filename);
-      std::ofstream population(filename);
-      exportPopulation(population);
+      box::logger::info("Exporting the initial population to", filename);
+      std::ofstream populationFile(filename);
+      exportPopulation(populationFile);
     }
 
     box::logger::info("Optimizing");
@@ -180,7 +178,7 @@ public:
       if (params.logStep != 0 && generation % params.logStep == 0) {
         box::logger::debug("Save convergence log");
 
-        const auto curFitness = getBestFitness();
+        const auto curFitness = brkga->getBestFitness();
         const auto curElapsed = getTimeElapsed();
         convergence.emplace_back(curFitness, curElapsed, generation);
 
@@ -200,9 +198,8 @@ public:
 
       if (params.exchangeBestInterval != 0 && generation > 0
           && generation % params.exchangeBestInterval == 0) {
-        box::logger::debug("Exchange", params.exchangeBestCount,
-                           "elites between populations");
-        exchangeElites();
+        box::logger::debug("Exchange the best chromosomes between populations");
+        brkga->exchangeElites();
       }
       if (params.pruneInterval != 0 && generation > 0
           && generation % params.pruneInterval == 0) {
@@ -216,12 +213,12 @@ public:
 
       if (params.prInterval != 0 && generation % params.prInterval == 0) {
         box::logger::debug("Run path relink heuristic");
-        pathRelink();
+        brkga->pathRelink();
       }
     }
 
     box::logger::debug("Get the best result");
-    auto bestFitness = getBestFitness();
+    auto bestFitness = brkga->getBestFitness();
     auto timeElapsed = getTimeElapsed();
 
 #ifdef SHOW_PROGRESS
@@ -230,16 +227,27 @@ public:
       snprintf(sec, sizeof(sec), "%.1fs", timeElapsed);
       box::logger::pbar((double)generation / (double)params.generations,
                         TERMINAL_LENGTH,
-                        /* begin? */ generation == 0,
-                        "Generation " + std::to_string(generation) + ":",
-                        bestFitness, "in", sec, "       ");
+                        /* begin? */ generation == 0, "Generation",
+                        box::format(box::Separator(""), generation, ":"),
+                        box::format(box::Separator(""), std::fixed,
+                                    std::setprecision(1), bestFitness),
+                        "in",
+                        box::format(box::Separator(""), std::fixed,
+                                    std::setprecision(1), sec, "s"),
+                        "       ");
     }
 #endif  // SHOW_PROGRESS
 
-    if (generation < params.generations)
-      box::logger::info("Time limit reached!");
-    box::logger::info("Optimization has finished after", timeElapsed,
-                      "seconds with fitness", bestFitness);
+    box::logger::info(
+        "Optimization finished after",
+        box::format(box::Separator(""), std::fixed, std::setprecision(1),
+                    timeElapsed, "s"),
+        "due to reaching the",
+        (generation < params.generations ? "time limit"
+                                         : "maximum number of generations"),
+        "with fitness",
+        box::format(box::Separator(""), std::fixed, std::setprecision(3),
+                    bestFitness));
 
     convergence.emplace_back(bestFitness, timeElapsed, generation);
 
@@ -251,8 +259,12 @@ public:
     auto bestChromosome = brkga->getBestChromosome();
 
     box::logger::info("Validating the solution");
-    sortToValidateMethod = determineSortMethod(params.decoder);
-    instance.validate(bestChromosome.data(), (float)bestFitness);
+    if (instance.validatePermutations()) {
+      const auto permutation = brkga->sorted(bestChromosome);
+      instance.validate(permutation.data(), bestFitness);
+    } else {
+      instance.validate(bestChromosome.data(), bestFitness);
+    }
 
     box::logger::info("Deleting the BRKGA object");
     delete brkga;
@@ -265,32 +277,7 @@ public:
 protected:
   typedef std::vector<std::vector<float>> Population;
 
-  virtual BrkgaInterface* getBrkga(
-      const std::vector<Population>& initialPopulation = {}) = 0;
-
-  Decoder::Fitness getBestFitness() {
-    box::logger::debug("Get the best fitness found by BoxBrkga");
-    assert(brkga);
-    return brkga->getBestFitness();
-  }
-
-  std::vector<Chromosome> getPopulation(unsigned p) {
-    box::logger::debug("Get the current population of BoxBrkga");
-    assert(brkga);
-    return brkga->getPopulations()[p];
-  }
-
-  void exchangeElites() {
-    box::logger::debug("Exchange the best chromosomes in BoxBrkga");
-    assert(brkga);
-    brkga->exchangeElites();
-  }
-
-  void pathRelink() {
-    box::logger::debug("Run Path Relink with BoxBrkga");
-    assert(brkga);
-    brkga->pathRelink();
-  }
+  virtual BrkgaInterface* getBrkga() = 0;
 
   void localSearch() {
 #if defined(TSP)
@@ -300,21 +287,18 @@ protected:
     //   localSearch(permutation, n, distances);
     // };
 
-    // const auto prev = getBestFitness();
+    // const auto prev = brkga->getBestFitness();
     // box::logger::debug("Starting local search with", prev);
 
     // assert(brkga);
     // brkga->localSearch(method);
 
-    // const auto curr = getBestFitness();
+    // const auto curr = brkga->getBestFitness();
     // box::logger::debug("Local search results:", prev, "=>", curr);
     // assert(curr <= prev);
 #else
 #endif
   }
-
-  virtual SortMethod determineSortMethod(
-      const std::string& decodeType) const = 0;
 
   inline float getTimeElapsed() const {
     return RunnerBase::timeDiff(startTime, RunnerBase::now());
@@ -336,8 +320,7 @@ private:
   }
 
   static inline float timeDiff(const Elapsed& start, const Elapsed& end) {
-    std::chrono::duration<float> diff = end - start;
-    return diff.count();
+    return std::chrono::duration<float>(end - start).count();
   }
 
   Elapsed startTime;

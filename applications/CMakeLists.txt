@@ -18,7 +18,6 @@ SET(BRKGA_MP_IPR_ROOT "${CMAKE_CURRENT_LIST_DIR}/../brkga_mp_ipr_cpp")
 SET(GPU_BRKGA_ROOT "${CMAKE_CURRENT_LIST_DIR}/../GPU-BRKGA")
 
 SET(COMMON_SRC
-  ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/BaseInstance.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/BaseInstance.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/CvrpInstance.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/CvrpInstance.hpp
