@@ -14,7 +14,7 @@ typedef ScpDecoder Decoder;
 #include "decoders/CvrpDecoder.hpp"
 typedef CvrpDecoder Decoder;
 #else
-#error No problem/instance/decoder defined
+#error No known problem defined
 #endif
 
 #include "../common/Runner.hpp"

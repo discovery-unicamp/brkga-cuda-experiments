@@ -1,9 +1,15 @@
 #include "Runner.hpp"
 
+#include "BrkgaInterface.hpp"
+#include "Logger.hpp"
+
+#include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <vector>
 
 void RunnerBase::showParams(unsigned argc, char** argv) {
@@ -84,7 +90,7 @@ void RunnerBase::exportPopulation(std::ostream& out) {
 
 void RunnerBase::run() {
   const auto filename = "pop.txt";
-  std::vector<Population> initialPopulation;
+  std::vector<BrkgaInterface::Population> initialPopulation;
   if (importPop) {
     box::logger::info("Importing initial population from", filename);
     std::ifstream population(filename);

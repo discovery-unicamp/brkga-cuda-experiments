@@ -13,23 +13,15 @@ typedef ScpInstance Instance;
 #include "instances/CvrpInstance.hpp"
 typedef CvrpInstance Instance;
 #else
-#error No knwown problem defined
+#error No known problem defined
 #endif
 
 #include "BrkgaInterface.hpp"
-#include "Logger.hpp"
 #include "Parameters.hpp"
 
-#include <algorithm>
 #include <cassert>
 #include <chrono>
-#include <fstream>
-#include <functional>
-#include <iomanip>
 #include <iostream>
-#include <sstream>
-#include <stdexcept>
-#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -82,8 +74,6 @@ public:
   void run();
 
 protected:
-  typedef std::vector<std::vector<float>> Population;
-
   virtual BrkgaInterface* getBrkga() = 0;
 
   inline virtual bool stop() const {
