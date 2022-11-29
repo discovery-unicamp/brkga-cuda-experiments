@@ -5,35 +5,22 @@
 #include "../Tweaks.hpp"  // Must be generated
 
 #if defined(TSP)
-#include "../common/instances/TspInstance.hpp"
 #include "decoders/TspDecoder.hpp"
-typedef TspInstance Instance;
 typedef TspDecoder Decoder;
 #elif defined(SCP)
-#include "../common/instances/ScpInstance.hpp"
 #include "decoders/ScpDecoder.hpp"
-typedef ScpInstance Instance;
 typedef ScpDecoder Decoder;
 #elif defined(CVRP) || defined(CVRP_GREEDY)
-#include "../common/instances/CvrpInstance.hpp"
 #include "decoders/CvrpDecoder.hpp"
-typedef CvrpInstance Instance;
 typedef CvrpDecoder Decoder;
 #else
 #error No problem/instance/decoder defined
 #endif
 
 #include "../common/Runner.hpp"
-#include "../common/utils/StringUtils.hpp"
 #include "BrkgaMPIpr.hpp"
 
-#include <algorithm>
-#include <cassert>
-#include <stdexcept>
-#include <string>
-#include <vector>
-
-class BrkgaMPIprRunner : public RunnerBase<Decoder::Fitness, Instance> {
+class BrkgaMPIprRunner : public RunnerBase {
 public:
   // TODO add option to set import/export flags
 
@@ -49,7 +36,7 @@ private:
 };
 
 int main(int argc, char** argv) {
-  RunnerBase<Decoder::Fitness, Instance>::showParams(argc, argv);
+  RunnerBase::showParams(argc, argv);
   BrkgaMPIprRunner(argc, argv).run();
   return 0;
 }
