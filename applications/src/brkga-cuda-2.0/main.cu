@@ -16,11 +16,10 @@ typedef CvrpDecoder Decoder;
 #include "../common/Runner.hpp"
 #include "BoxBrkga.hpp"
 
-class BrkgaCuda2Runner : public RunnerBase {
+class BrkgaCuda2Runner : public BrkgaRunner {
 public:
-  // TODO add option to set import/export flags
   BrkgaCuda2Runner(int argc, char** argv)
-      : RunnerBase(argc, argv), decoder(&instance) {}
+      : BrkgaRunner(argc, argv), decoder(&instance) {}
 
   BrkgaInterface* getBrkga() override {
     return new BoxBrkga(instance.chromosomeLength(), &decoder);
@@ -31,7 +30,7 @@ private:
 };
 
 int main(int argc, char** argv) {
-  RunnerBase::showParams(argc, argv);
+  BrkgaRunner::showParams(argc, argv);
   BrkgaCuda2Runner(argc, argv).run();
   return 0;
 }

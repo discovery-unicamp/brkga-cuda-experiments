@@ -59,15 +59,15 @@ inline ostream& operator<<(ostream& out, const vector<T>& v) {
 }
 }  // namespace std
 
-class RunnerBase {
+class BrkgaRunner {
 public:
-  RunnerBase(int argc, char** argv)
+  BrkgaRunner(int argc, char** argv)
       : brkga(nullptr),
         params(Parameters::parse(argc, argv)),
         instance(Instance::fromFile(params.instanceFileName)),
         generation(0) {}
 
-  virtual ~RunnerBase() {}
+  virtual ~BrkgaRunner() {}
 
   static void showParams(unsigned argc, char** argv);
 
@@ -88,7 +88,7 @@ protected:
   void localSearch();
 
   inline float getTimeElapsed() const {
-    return RunnerBase::timeDiff(startTime, RunnerBase::now());
+    return BrkgaRunner::timeDiff(startTime, BrkgaRunner::now());
   }
 
   bool importPop = false;

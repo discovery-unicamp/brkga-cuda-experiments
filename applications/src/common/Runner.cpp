@@ -12,13 +12,13 @@
 #include <tuple>
 #include <vector>
 
-void RunnerBase::showParams(unsigned argc, char** argv) {
+void BrkgaRunner::showParams(unsigned argc, char** argv) {
   std::cout << argv[0];
   for (unsigned i = 1; i < argc; ++i) std::cout << ' ' << argv[i];
   std::cout << '\n';
 }
 
-std::vector<BrkgaInterface::Population> RunnerBase::importPopulation(
+std::vector<BrkgaInterface::Population> BrkgaRunner::importPopulation(
     std::istream& in) {
   unsigned p = 0;  // Population id
   BrkgaInterface::Population population;
@@ -66,7 +66,7 @@ std::vector<BrkgaInterface::Population> RunnerBase::importPopulation(
   return allPopulations;
 }
 
-void RunnerBase::exportPopulation(std::ostream& out) {
+void BrkgaRunner::exportPopulation(std::ostream& out) {
   const auto populations = brkga->getPopulations();
   for (unsigned p = 0; p < params.numberOfPopulations; ++p) {
     const auto population = populations[p];
@@ -88,7 +88,7 @@ void RunnerBase::exportPopulation(std::ostream& out) {
   }
 }
 
-void RunnerBase::run() {
+void BrkgaRunner::run() {
   const auto filename = "pop.txt";
   std::vector<BrkgaInterface::Population> initialPopulation;
   if (importPop) {
@@ -215,7 +215,7 @@ void RunnerBase::run() {
   box::logger::info("Exiting");
 }
 
-void RunnerBase::localSearch() {
+void BrkgaRunner::localSearch() {
 #if defined(TSP)
   // const auto n = config.chromosomeLength();
   // const auto* distances = instance.distances.data();

@@ -6,6 +6,8 @@ from instance import get_instance_path
 from shell import shell
 
 
+MAX_EXPERIMENTS = 300
+VALIDATION_ONLY = False
 PRECISION = 2
 TUNING_PATH = Path('experiments', 'tuning')
 
@@ -14,6 +16,11 @@ TUNING_INSTANCES = {
         'X-n219-k73',
         'X-n599-k92',
         'X-n1001-k43',
+    ],
+    'scp': [
+        'scp41',
+        'scp45',
+        'scp49',
     ],
 }
 
@@ -29,37 +36,44 @@ class IraceParam:
     def __init__(
             self,
             name: str,
-            ptype: Literal['int', 'float', 'category', 'ordinal'],
-            values: Union[Tuple[int, int],
-                          Tuple[float, float],
-                          List[Union[str, int, float]]],
+            param_type: Literal['int', 'float', 'category', 'ordinal'],
+            values: Union[Tuple[Union[int, float, str], ...],
+                          List[int],
+                          List[float]],
             condition: Optional[str] = None,
     ):
-        if ptype not in IraceParam.TYPES:
-            raise ValueError(f'Unknown type: {ptype}')
+        if param_type not in IraceParam.TYPES:
+            raise ValueError(f'Unknown type: {param_type}')
 
-        if ptype in ('int', 'float'):
-            if not isinstance(values, tuple):
-                raise ValueError(f"For {ptype} you should provide a values as a"
-                                 f" tuple, not {type(values)}")
-        else:
+        if param_type in ('int', 'float'):
             if not isinstance(values, list):
-                raise ValueError(f"For {ptype} you should provide a values as a"
-                                 f" list, not {type(values)}")
+                raise TypeError(f"For {param_type} you should provide a values "
+                                f"as a list, not {type(values)}")
+            if len(values) != 2:
+                raise ValueError("You should specify the begin and the end"
+                                 f"of the range of {param_type}")
+            if values[0] > values[1]:
+                raise ValueError(f"Empty range for {param_type}: {values}")
+        else:
+            if not isinstance(values, tuple):
+                raise TypeError(f"For {param_type} you should provide a values "
+                                f"as a tuple, not {type(values)}")
+            if not values:
+                raise ValueError(f"There no values to select in {param_type}")
 
         self.name = name
-        self.ptype = ptype
+        self.param_type = param_type
         self.values = values
         self.condition = condition
 
     def __str__(self) -> str:
         name = self.name.replace('-', '_')
         arg = f"--{self.name} "
-        ptype = IraceParam.TYPES[self.ptype]
+        param_type = IraceParam.TYPES[self.param_type]
         values = ', '.join(f'"{v}"' if isinstance(v, str) else str(v)
-                        for v in self.values)
+                           for v in self.values)
         cond = '' if not self.condition else f' | {self.condition}'
-        return f'{name}\t"{arg}"\t{ptype}\t({values}){cond}'
+        return f'{name}\t"{arg}"\t{param_type}\t({values}){cond}'
 
 
 def irace(
@@ -69,7 +83,6 @@ def irace(
         fixed_params: Dict[str, Union[str, int, float]],
         tune_params: List[IraceParam],
         forbidden_combinations: List[str],
-        check: bool = False,
 ):
     def text(lines: Iterable):
         return ''.join(str(k) + '\n' for k in lines)
@@ -95,6 +108,9 @@ def irace(
     scenario_path = results_path.joinpath('scenario.txt')
     scenario_path.write_text(text(scenario))
 
+    experiments_log_path = results_path.joinpath('experiments.txt')
+    experiments_log_path.unlink(missing_ok=True)
+
     runner = f"""#!/bin/bash
 error() {{
     echo "`TZ=UTC date`: $0: error: $@"
@@ -119,7 +135,7 @@ if [ ! -x "$EXE" ]; then
 fi
 
 echo "$EXE --instance \"$INSTANCE\" --seed $SEED $FIXED_PARAMS $TUNE_PARAMS" \\
-     >>experiments.txt
+     >>{str(experiments_log_path.absolute())}
 $EXE --instance "$INSTANCE" --seed $SEED $FIXED_PARAMS $TUNE_PARAMS \\
      1> $STDOUT 2> $STDERR
 
@@ -137,13 +153,13 @@ fi
     runner_path.chmod(777)
 
     irace_params = {
-        'max-experiments': 1000,
+        'max-experiments': MAX_EXPERIMENTS,
         'log-file': str(results_path.joinpath('results.Rdata').absolute()),
-        'deterministic': 0,
-        'parallel': 1,
+        'deterministic': 0,  # the BRKGA is stochastic
+        'parallel': 1,  # number of threads that irace should use
         'seed': 0,
     }
-    if check:
+    if VALIDATION_ONLY:
         irace_params['check'] = ''  # no value required
 
     output_path = results_path.joinpath('output.txt')
@@ -166,37 +182,38 @@ def tune_box_2(problem: str, decoder: str):
         fixed_params={
             'omp-threads': shell('nproc'),
             'generations': MAX_GENERATIONS,
-            'max-time': MAX_TIME_SECONDS,
+            'max-time': MAX_TIME_SECONDS[problem],
             'decoder': 'cpu',
             'log-step': 0,
+            'pr-interval': 0,
+            'prune-interval': 0,
         },
         tune_params=[
-            IraceParam('threads', 'category', [64, 128, 256, 512, 1024]),
-            IraceParam('pop-count', 'int', (1, 8)),
-            IraceParam('pop-size', 'int', (64, 1024)),
-            IraceParam('parents', 'int', (2, 10)),
-            IraceParam('elite-parents', 'int', (1, 9)),
+            IraceParam('threads', 'category', (64, 128, 256, 512, 1024)),
+            IraceParam('pop-count', 'int', [1, 8]),
+            IraceParam('pop-size', 'int', [64, 1024]),
+            IraceParam('parents', 'int', [2, 10]),
+            IraceParam('elite-parents', 'int', [1, 9]),
             IraceParam('rhoe-function', 'category',
-                       ['LINEAR', 'QUADRATIC', 'CUBIC', 'EXPONENTIAL',
-                        'LOGARITHM', 'CONSTANT']),
-            IraceParam('elite', 'float', (.02, .20)),
-            IraceParam('mutant', 'float', (.02, .20)),
-            IraceParam('exchange-interval', 'int', (0, 200)),
-            IraceParam('exchange-count', 'int', (1, 10)),
-            IraceParam('pr-interval', 'int', (0, 200)),
-            IraceParam('pr-pairs', 'int', (1, 5)),
-            IraceParam('pr-block-factor', 'float', (.05, .15)),
-            IraceParam('pr-min-diff', 'float', (.20, .90)),
-            IraceParam('prune-interval', 'int', (0, 200)),
-            IraceParam('prune-threshold', 'float', (.90, .99)),
+                       ('LINEAR', 'QUADRATIC', 'CUBIC', 'EXPONENTIAL',
+                        'LOGARITHM', 'CONSTANT')),
+            IraceParam('elite', 'float', [.02, .20]),
+            IraceParam('mutant', 'float', [.02, .20]),
+            IraceParam('exchange-interval', 'int', [0, 200]),
+            IraceParam('exchange-count', 'int', [1, 10]),
+            # IraceParam('pr-interval', 'int', [0, 200]),
+            # IraceParam('pr-pairs', 'int', [1, 5]),
+            # IraceParam('pr-block-factor', 'float', [.05, .15]),
+            # IraceParam('pr-min-diff', 'float', [.20, .90]),
+            # IraceParam('prune-interval', 'int', [0, 200]),
+            # IraceParam('prune-threshold', 'float', [.90, .99]),
         ],
         forbidden_combinations=[
-            'elite * as.numeric(pop_size) < pr_pairs',
-            'elite * as.numeric(pop_size) < elite_parents',
-            'elite * as.numeric(pop_size) < exchange_count',
-            'parents <= elite_parents',
+            'as.numeric(elite) * as.numeric(pop_size) < as.numeric(elite_parents)',
+            'as.numeric(elite) * as.numeric(pop_size) < as.numeric(exchange_count)',
+            'as.numeric(parents) <= as.numeric(elite_parents)',
+            # 'as.numeric(elite) * as.numeric(pop_size) < as.numeric(pr_pairs)',
         ],
-        check=False,
     )
 
 
@@ -212,38 +229,37 @@ def tune_brkga_mp_ipr(problem: str):
         fixed_params={
             'omp-threads': shell('nproc'),
             'generations': MAX_GENERATIONS,
-            'max-time': MAX_TIME_SECONDS,
+            'max-time': MAX_TIME_SECONDS[problem],
             'decoder': decoder,
             'log-step': 0,
             'pr-pairs': 1,
         },
         tune_params=[
-            IraceParam('pop-count', 'int', (1, 8)),
-            IraceParam('pop-size', 'int', (64, 1024)),
-            IraceParam('parents', 'int', (2, 10)),
-            IraceParam('elite-parents', 'int', (1, 9)),
+            IraceParam('pop-count', 'int', [1, 8]),
+            IraceParam('pop-size', 'int', [64, 1024]),
+            IraceParam('parents', 'int', [2, 10]),
+            IraceParam('elite-parents', 'int', [1, 9]),
             IraceParam('rhoe-function', 'category',
-                       ['LINEAR', 'QUADRATIC', 'CUBIC', 'EXPONENTIAL',
-                        'LOGARITHM', 'CONSTANT']),
-            IraceParam('elite', 'float', (.02, .20)),
-            IraceParam('mutant', 'float', (.02, .20)),
-            IraceParam('exchange-interval', 'int', (0, 200)),
-            IraceParam('exchange-count', 'int', (1, 10)),
-            IraceParam('pr-interval', 'int', (0, 200)),
-            IraceParam('pr-block-factor', 'float', (.05, 1.0)),
-            IraceParam('pr-max-time', 'int', (1, 30)),
-            IraceParam('pr-select', 'category', ['best', 'random']),
-            IraceParam('pr-min-diff', 'float', (.20, .90)),
+                       ('LINEAR', 'QUADRATIC', 'CUBIC', 'EXPONENTIAL',
+                        'LOGARITHM', 'CONSTANT')),
+            IraceParam('elite', 'float', [.02, .20]),
+            IraceParam('mutant', 'float', [.02, .20]),
+            IraceParam('exchange-interval', 'int', [0, 200]),
+            IraceParam('exchange-count', 'int', [1, 10]),
+            IraceParam('pr-interval', 'int', [0, 200]),
+            IraceParam('pr-block-factor', 'float', [.05, 1.0]),
+            IraceParam('pr-max-time', 'int', [1, 30]),
+            IraceParam('pr-select', 'category', ('best', 'random')),
+            IraceParam('pr-min-diff', 'float', [.20, .90]),
         ],
         forbidden_combinations=[
             'elite * pop_size < elite_parents',
             'elite * pop_size < exchange_count',
             'parents <= elite_parents',
         ],
-        check=False,
     )
 
 
 if __name__ == '__main__':
-    # tune_box_2('cvrp', 'cpu')
-    tune_brkga_mp_ipr('cvrp')
+    tune_box_2('scp', 'cpu')
+    # tune_brkga_mp_ipr('cvrp')

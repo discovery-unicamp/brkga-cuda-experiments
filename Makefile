@@ -3,6 +3,7 @@ project_path := $(patsubst %/,%,$(dir $(mkfile_path)))
 cuda_version := $(shell nvidia-smi | grep "CUDA Version" | cut -d: -f 3 | cut -d" " -f 2)
 device := 0
 
+
 run: .setup
 	git log --format="%H" -n 1 >.commit
 	docker run -it -u $$(id -u):$$(id -g) --env DEVICE=$(device) -v $(project_path)/:/experiment/ --rm --gpus device=$(device) brkga
@@ -13,7 +14,7 @@ run: .setup
 	echo "Setup on: $$(date)" >.setup
 
 tuning: .setup-tuning
-	docker run -it -u $$(id -u):$$(id -g) --env DEVICE=$(device) -v $(project_path)/:/experiment/ --rm --gpus device=$(device) tuning
+	docker run -it --env DEVICE=$(device) -v $(project_path)/:/experiment/ --rm --gpus device=$(device) tuning
 
 .setup-tuning: experiments/Dockerfile.tuning experiments/requirements.txt
 	docker build --build-arg CUDA_VERSION=$(cuda_version) -t tuning -f experiments/Dockerfile.tuning .
@@ -26,7 +27,7 @@ open-terminal:
 
 .PHONY: open-nvidia
 open-nvidia: .setup-nvidia
-	docker run -it -u $$(id -u):$$(id -g) -v $(project_path)/:/experiment/ --rm nvidia
+	docker run -it -v $(project_path)/:/experiment/ --rm nvidia
 
 .setup-nvidia: experiments/Dockerfile.nvidia experiments/requirements.txt
 	docker build --build-arg CUDA_VERSION=$(cuda_version) -t nvidia -f experiments/Dockerfile.nvidia .

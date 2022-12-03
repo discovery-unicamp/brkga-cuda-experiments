@@ -26,9 +26,8 @@ logging.basicConfig(
 DEVICE = int(os.environ['DEVICE'])
 RESUME_FROM_BACKUP = False
 TEST_COUNT = 20
-MAX_GENERATIONS = 10000
-MAX_TIME_SECONDS = 60 * 60
-TIMEOUT_SECONDS = MAX_TIME_SECONDS + 3 * 60
+MAX_GENERATIONS = 100
+TIMEOUT_SECONDS = 2 * 60
 OMP_THREADS = int(shell('nproc'))
 BUILD_TYPE = 'release'
 TWEAKS_FILE = Path('applications', 'src', 'Tweaks.hpp')
@@ -37,15 +36,11 @@ OUTPUT_PATH = Path('experiments', 'results')
 PARAMS_PATH = Path('experiments', 'parameters')
 BACKUP_FILE = OUTPUT_PATH.joinpath('.backup.tsv')
 
-GENE_TYPE = {
-    'brkga-api': 'double',
-    'brkga-cuda-1.0': 'float',
-    'brkga-cuda-2.0': 'float',
-    'brkga-mp-ipr': 'double',
-    'gpu-brkga': 'float',
-    'gpu-brkga-fix': 'float',
+MAX_TIME_SECONDS = {
+    'cvrp': 60 * 60,
+    'scp': 5 * 60,
+    'tsp': 60 * 60,
 }
-
 PROBLEM_NAME = {
     'cvrp': 'cvrp',
     'cvrp_greedy': 'cvrp',
@@ -53,7 +48,7 @@ PROBLEM_NAME = {
     'tsp': 'tsp',
 }
 INSTANCES = {
-    'cvrp': list(reversed([
+    'cvrp': list(([
         'X-n219-k73',
         'X-n266-k58',
         'X-n317-k53',
@@ -179,18 +174,18 @@ def main():
         #     ],
         #     test_count=TEST_COUNT,
         # ),
+        __build_params(
+            tool='brkga-cuda-2.0',
+            problems=['scp'],
+            decoders=['cpu'],
+            test_count=TEST_COUNT,
+        ),
         # __build_params(
-        #     tool='brkga-cuda-2.0',
+        #     tool='brkga-mp-ipr',
         #     problems=['cvrp'],
         #     decoders=['cpu'],
         #     test_count=TEST_COUNT,
         # ),
-        __build_params(
-            tool='brkga-mp-ipr',
-            problems=['cvrp'],
-            decoders=['cpu'],
-            test_count=TEST_COUNT,
-        ),
     ))
 
     __save_results(results)
@@ -232,7 +227,7 @@ def __build_params(
                 'seed': range(1, test_count + 1),
                 'omp-threads': OMP_THREADS,
                 'generations': MAX_GENERATIONS,
-                'max-time': MAX_TIME_SECONDS,
+                'max-time': MAX_TIME_SECONDS[problem],
                 'log-step': 25,
             }
 
@@ -284,10 +279,7 @@ def __experiment(
 
 def compile_optimizer(target: str, problem: str) -> Path:
     return __cmake(str(SOURCE_PATH.absolute()), BUILD_TYPE, target,
-                   tweaks=[
-                       problem.upper(),
-                       f"FrameworkGeneType {GENE_TYPE[target]}",
-                   ])
+                   tweaks=[problem.upper()])
 
 
 def __cmake(

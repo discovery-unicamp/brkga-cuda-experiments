@@ -12,25 +12,27 @@ public:
             unsigned chromosomeLength,
             const std::vector<Population>& initialPopulations,
             Decoder& decoder)
-      : config(
-          box::BrkgaConfiguration::Builder()
-              .decoder(&decoder)
-              .decodeType(box::DecodeType::fromString(params.decoder))
-              .numberOfPopulations(params.numberOfPopulations)
-              .populationSize(params.populationSize)
-              .chromosomeLength(chromosomeLength)
-              .parents(params.numParents,
-                       box::biasFromString(params.rhoeFunction),
-                       params.numEliteParents)
-              .numberOfElites(params.getNumberOfElites())
-              .numberOfMutants(params.getNumberOfMutants())
-              .numberOfElitesToExchange(params.exchangeBestCount)
-              .pathRelinkBlockSize((unsigned)(params.getPathRelinkBlockFactor()
-                                              * (float)chromosomeLength))
-              .seed(params.seed)
-              .gpuThreads(params.threadsPerBlock)
-              .ompThreads(params.ompThreads)
-              .build()),
+      : config(box::BrkgaConfiguration::Builder()
+                   .decoder(&decoder)
+                   .decodeType(box::DecodeType::fromString(params.decoder))
+                   .numberOfPopulations(params.numberOfPopulations)
+                   .populationSize(params.populationSize)
+                   .chromosomeLength(chromosomeLength)
+                   .parents(params.numParents,
+                            box::biasFromString(params.rhoeFunction),
+                            params.numEliteParents)
+                   .numberOfElites(params.getNumberOfElites())
+                   .numberOfMutants(params.getNumberOfMutants())
+                   .numberOfElitesToExchange(params.exchangeBestCount)
+                   .pathRelinkBlockSize(
+                       params.prInterval == 0
+                           ? 1
+                           : (unsigned)(params.getPathRelinkBlockFactor()
+                                        * (float)chromosomeLength))
+                   .seed(params.seed)
+                   .gpuThreads(params.threadsPerBlock)
+                   .ompThreads(params.ompThreads)
+                   .build()),
         obj(config, initialPopulations) {
     if (params.prMaxTime != 0)
       throw std::invalid_argument("PR has no time limit; it should be 0");
