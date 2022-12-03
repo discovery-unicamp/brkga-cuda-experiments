@@ -63,7 +63,7 @@ public:
     dist.reset(new BRKGA::HammingDistance(instance.acceptThreshold));
     obj.pr_minimum_distance = n * params.prMinDiffPercentage;
 #else
-#error No problem/instance/decoder defined
+#error No known problem defined
 #endif
 
     // block-size = alpha * sqrt(pop-size)

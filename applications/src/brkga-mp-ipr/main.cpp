@@ -20,12 +20,12 @@ typedef CvrpDecoder Decoder;
 #include "../common/Runner.hpp"
 #include "BrkgaMPIpr.hpp"
 
-class BrkgaMPIprRunner : public RunnerBase {
+class BrkgaMPIprRunner : public BrkgaRunner {
 public:
   // TODO add option to set import/export flags
 
   BrkgaMPIprRunner(int argc, char** argv)
-      : RunnerBase(argc, argv), decoder(&instance) {}
+      : BrkgaRunner(argc, argv), decoder(&instance) {}
 
   BrkgaInterface* getBrkga() override {
     return new BrkgaMPIpr(instance.chromosomeLength(), &decoder);
@@ -36,7 +36,7 @@ private:
 };
 
 int main(int argc, char** argv) {
-  RunnerBase::showParams(argc, argv);
+  BrkgaRunner::showParams(argc, argv);
   BrkgaMPIprRunner(argc, argv).run();
   return 0;
 }

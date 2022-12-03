@@ -28,7 +28,7 @@ typedef ScpDecoder DecoderImpl;
 typedef CvrpInstance Instance;
 typedef CvrpDecoder DecoderImpl;
 #else
-#error No problem/instance/decoder defined
+#error No known problem defined
 #endif  // Problem/Instance
 
 std::string decodeType;

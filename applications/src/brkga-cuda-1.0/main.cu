@@ -30,7 +30,7 @@ typedef ScpDecoderInfo DecoderInfo;
 typedef CvrpInstance Instance;
 typedef CvrpDecoderInfo DecoderInfo;
 #else
-#error No problem/instance/decoder defined
+#error No known problem defined
 #endif  // Problem/Instance
 
 std::string decodeType;
