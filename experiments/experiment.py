@@ -26,7 +26,7 @@ logging.basicConfig(
 DEVICE = int(os.environ['DEVICE'])
 RESUME_FROM_BACKUP = False
 TEST_COUNT = 20
-MAX_GENERATIONS = 100
+MAX_GENERATIONS = 10000
 TIMEOUT_SECONDS = 2 * 60
 OMP_THREADS = int(shell('nproc'))
 BUILD_TYPE = 'release'
