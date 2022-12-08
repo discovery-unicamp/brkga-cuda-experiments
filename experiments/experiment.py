@@ -38,7 +38,7 @@ BACKUP_FILE = OUTPUT_PATH.joinpath('.backup.tsv')
 
 MAX_TIME_SECONDS = {
     'cvrp': 60 * 60,
-    'scp': 5 * 60,
+    'scp': 10 * 60,
     'tsp': 60 * 60,
 }
 PROBLEM_NAME = {

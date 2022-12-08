@@ -261,5 +261,5 @@ def tune_brkga_mp_ipr(problem: str):
 
 
 if __name__ == '__main__':
-    tune_box_2('scp', 'cpu')
-    # tune_brkga_mp_ipr('cvrp')
+    # tune_box_2('scp', 'cpu')
+    tune_brkga_mp_ipr('scp')

@@ -60,8 +60,9 @@ public:
         (float)((long)n * (n - 1) / 2) * params.prMinDiffPercentage;
 #elif defined(SCP)
     obj.pr_type = BRKGA::PathRelinking::Type::DIRECT;
-    dist.reset(new BRKGA::HammingDistance(instance.acceptThreshold));
-    obj.pr_minimum_distance = n * params.prMinDiffPercentage;
+    // FIXME how to take the 0.5 from an object of the ScpInstance?
+    dist.reset(new BRKGA::HammingDistance(0.5));
+    obj.pr_minimum_distance = (float)n * params.prMinDiffPercentage;
 #else
 #error No known problem defined
 #endif
