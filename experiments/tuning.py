@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import Dict, Iterable, List, Literal, Optional, Tuple, Union
 
-from experiment import MAX_GENERATIONS, MAX_TIME_SECONDS, PROBLEM_NAME, compile_optimizer
+from experiment import (MAX_GENERATIONS, MAX_TIME_SECONDS, PROBLEM_NAME,
+                        TIMEOUT_SECONDS, compile_optimizer)
 from instance import get_instance_path
 from shell import shell
 
@@ -83,6 +84,7 @@ def irace(
         fixed_params: Dict[str, Union[str, int, float]],
         tune_params: List[IraceParam],
         forbidden_combinations: List[str],
+        timeout_seconds: int = 62 * 60,
 ):
     def text(lines: Iterable):
         return ''.join(str(k) + '\n' for k in lines)
@@ -136,6 +138,7 @@ fi
 
 echo "$EXE --instance \"$INSTANCE\" --seed $SEED $FIXED_PARAMS $TUNE_PARAMS" \\
      >>{str(experiments_log_path.absolute())}
+max_time={timeout_seconds}
 $EXE --instance "$INSTANCE" --seed $SEED $FIXED_PARAMS $TUNE_PARAMS \\
      1> $STDOUT 2> $STDERR
 
@@ -214,6 +217,7 @@ def tune_box_2(problem: str, decoder: str):
             'as.numeric(parents) <= as.numeric(elite_parents)',
             # 'as.numeric(elite) * as.numeric(pop_size) < as.numeric(pr_pairs)',
         ],
+        timeout_seconds=MAX_TIME_SECONDS[problem] + TIMEOUT_SECONDS,
     )
 
 
@@ -257,6 +261,7 @@ def tune_brkga_mp_ipr(problem: str):
             'elite * pop_size < exchange_count',
             'parents <= elite_parents',
         ],
+        timeout_seconds=MAX_TIME_SECONDS[problem] + TIMEOUT_SECONDS,
     )
 
 
