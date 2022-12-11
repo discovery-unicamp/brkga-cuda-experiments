@@ -15,7 +15,7 @@
 void BrkgaRunner::showParams(unsigned argc, char** argv) {
   std::cout << argv[0];
   for (unsigned i = 1; i < argc; ++i) std::cout << ' ' << argv[i];
-  std::cout << '\n';
+  std::cout << std::endl;
 }
 
 std::vector<BrkgaInterface::Population> BrkgaRunner::importPopulation(

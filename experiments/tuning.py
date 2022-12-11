@@ -139,7 +139,8 @@ fi
 echo "$EXE --instance \"$INSTANCE\" --seed $SEED $FIXED_PARAMS $TUNE_PARAMS" \\
      >>{str(experiments_log_path.absolute())}
 max_time={timeout_seconds}
-$EXE --instance "$INSTANCE" --seed $SEED $FIXED_PARAMS $TUNE_PARAMS \\
+timeout $max_time \\
+    $EXE --instance "$INSTANCE" --seed $SEED $FIXED_PARAMS $TUNE_PARAMS \\
      1> $STDOUT 2> $STDERR
 
 if [ -s "$STDOUT" ]; then
