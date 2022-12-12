@@ -156,6 +156,8 @@ void BrkgaRunner::run() {
       box::logger::debug("Run path relink heuristic");
       brkga->pathRelink();
     }
+
+    box::logger::debug("Evolved to generation", generation);
   }
 
   box::logger::debug("Get the best result");
