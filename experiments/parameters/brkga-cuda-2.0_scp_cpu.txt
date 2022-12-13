@@ -1,0 +1,2 @@
+threads pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count
+     64         6      705       7             6      CONSTANT  0.09   0.12                38              4
