@@ -23,6 +23,11 @@ TUNING_INSTANCES = {
         'scp45',
         'scp49',
     ],
+    'tsp': [
+        'zi929',
+        'mu1979',
+        'ca4663',
+    ],
 }
 
 
@@ -267,5 +272,5 @@ def tune_brkga_mp_ipr(problem: str):
 
 
 if __name__ == '__main__':
-    # tune_box_2('scp', 'cpu')
-    tune_brkga_mp_ipr('scp')
+    tune_box_2('tsp', 'cpu')
+    # tune_brkga_mp_ipr('tsp')
