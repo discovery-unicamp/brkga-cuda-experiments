@@ -1,6 +1,7 @@
 #include "CvrpInstance.hpp"
 
 #include "../Checker.hpp"
+#include "../Logger.hpp"
 #include "../Point.hpp"
 
 #include <algorithm>
@@ -13,6 +14,8 @@
 #include <vector>
 
 CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
+  box::logger::info("Reading instance from", filename);
+
   std::ifstream file(filename);
   if (!file.is_open())
     throw std::runtime_error("Failed to open file " + filename);
@@ -29,6 +32,8 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
       --instance.numberOfClients;  // Remove the depot
     }
   }
+  box::logger::debug("Capacity:", instance.capacity);
+  box::logger::debug("Number of clients:", instance.numberOfClients);
 
   // Read the locations
   std::vector<Point> locations;
@@ -37,7 +42,6 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
     file >> x >> y;
     locations.emplace_back(x, y);
   }
-  instance.numberOfClients = (unsigned)(locations.size() - 1);
 
   // Read the demands
   while ((file >> str) && str != "DEPOT_SECTION") {
@@ -64,6 +68,7 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
         "Demands should not exceed the truck capacity");
 
   // Calculate the 2d distances
+  box::logger::debug("Calculating the distance matrix...");
   const auto n = instance.numberOfClients;
   instance.distances.resize((n + 1) * (n + 1));
   for (unsigned i = 0; i <= n; ++i)
@@ -72,6 +77,7 @@ CvrpInstance CvrpInstance::fromFile(const std::string& filename) {
           instance.distances[j * (n + 1) + i] =
               locations[i].distance(locations[j]);
     }
+  box::logger::debug("Distance matrix was computed");
 
   return instance;
 }

@@ -1,4 +1,4 @@
-#include "../../common/instances/TspInstance.cuh"
+#include "../../common/instances/TspInstance.hpp"
 #include "TspDecoder.hpp"
 #include <brkga-cuda/utils/GpuUtils.hpp>
 
@@ -11,35 +11,39 @@
 #include <vector>
 
 TspDecoder::TspDecoder(TspInstance* _instance, const Parameters& params)
-    : instance(_instance),
-      dDistances(nullptr),
-      numberOfChromosomes(params.populationSize),
-      chromosomeLength(instance->chromosomeLength()),
-      isHostDecode(params.decoder == "cpu"),
-      ompThreads(params.ompThreads),
-      threadsPerBlock(params.threadsPerBlock) {
-  CUDA_CHECK(
-      cudaMalloc(&dDistances, instance->distances.size() * sizeof(float)));
-  CUDA_CHECK(cudaMemcpy(dDistances, instance->distances.data(),
-                        instance->distances.size() * sizeof(float),
-                        cudaMemcpyHostToDevice));
+    : GpuBrkga::Decoder(
+        params.populationSize,
+        _instance->chromosomeLength(),
+        (params.decoder == "cpu" ? params.ompThreads : params.threadsPerBlock),
+        params.decoder == "cpu"),
+      instance(_instance),
+      dDistances(nullptr) {
+  if (!isCpuDecode) {
+    CUDA_CHECK(
+        cudaMalloc(&dDistances, instance->distances.size() * sizeof(float)));
+    CUDA_CHECK(cudaMemcpy(dDistances, instance->distances.data(),
+                          instance->distances.size() * sizeof(float),
+                          cudaMemcpyHostToDevice));
 
-  // Set CUDA heap limit to 1GB to avoid memory issues with the sort of thrust
-  CUDA_CHECK(cudaDeviceSetLimit(cudaLimitMallocHeapSize,
-                                (std::size_t)1024 * 1024 * 1024));
+    // Set CUDA heap limit to 1GB to avoid memory issues with the sort of thrust
+    CUDA_CHECK(cudaDeviceSetLimit(cudaLimitMallocHeapSize,
+                                  (std::size_t)1024 * 1024 * 1024));
+  }
 }
 
 TspDecoder::~TspDecoder() {
-  CUDA_CHECK(cudaFree(dDistances));
+  if (!isCpuDecode) CUDA_CHECK(cudaFree(dDistances));
 }
 
-void TspDecoder::Decode(float* chromosomes, float* fitness) const {
-  CUDA_CHECK_LAST();  // Check for errors in GPU-BRKGA
-  if (isHostDecode) {
-    hostDecode(chromosomes, fitness);
-  } else {
-    deviceDecode(chromosomes, fitness);
-  }
+TspDecoder::Fitness TspDecoder::DecodeOnCpu(const float* chromosome) const {
+  std::vector<unsigned> permutation(chromosomeLength);
+  std::iota(permutation.begin(), permutation.end(), 0);
+  std::sort(permutation.begin(), permutation.end(),
+            [chromosome](unsigned a, unsigned b) {
+              return chromosome[a] < chromosome[b];
+            });
+  return getFitness(permutation.data(), chromosomeLength,
+                    instance->distances.data());
 }
 
 __global__ void deviceDecodeKernel(const unsigned numberOfChromosomes,
@@ -59,12 +63,12 @@ __global__ void deviceDecodeKernel(const unsigned numberOfChromosomes,
   thrust::device_ptr<unsigned> vals(tour);
   thrust::sort_by_key(thrust::device, keys, keys + chromosomeLength, vals);
 
-  dFitness[tid] = deviceGetFitness(tour, chromosomeLength, dDistances);
+  dFitness[tid] = getFitness(tour, chromosomeLength, dDistances);
 }
 
-void TspDecoder::deviceDecode(const float* dChromosomes,
-                              float* dFitness) const {
-  const auto length = numberOfChromosomes * chromosomeLength;
+void TspDecoder::DecodeOnGpu(const float* dChromosomes, float* dFitness) const {
+  assert(!isCpuDecode);
+  const auto length = populationSize * chromosomeLength;
 
   float* dChromosomesCopy = nullptr;
   CUDA_CHECK(cudaMalloc(&dChromosomesCopy, length * sizeof(float)));
@@ -74,9 +78,9 @@ void TspDecoder::deviceDecode(const float* dChromosomes,
   unsigned* dTempMemory = nullptr;
   CUDA_CHECK(cudaMalloc(&dTempMemory, length * sizeof(unsigned)));
 
-  const auto threads = threadsPerBlock;
-  const auto blocks = (numberOfChromosomes + threads - 1) / threads;
-  deviceDecodeKernel<<<blocks, threads>>>(numberOfChromosomes, dChromosomesCopy,
+  const auto threads = numberOfThreads;
+  const auto blocks = (populationSize + threads - 1) / threads;
+  deviceDecodeKernel<<<blocks, threads>>>(populationSize, dChromosomesCopy,
                                           dTempMemory, chromosomeLength,
                                           dDistances, dFitness);
   CUDA_CHECK_LAST();

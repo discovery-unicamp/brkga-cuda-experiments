@@ -1,5 +1,5 @@
-#include "../../common/instances/CvrpInstance.cuh"
 #include "../../common/CudaCheck.cuh"
+#include "../../common/instances/CvrpInstance.hpp"
 #include "CvrpDecoder.hpp"
 
 #include <cuda_runtime.h>
@@ -10,39 +10,46 @@
 #include <numeric>
 
 CvrpDecoder::CvrpDecoder(CvrpInstance* _instance, const Parameters& params)
-    : instance(_instance),
+    : GpuBrkga::Decoder(
+        params.populationSize,
+        _instance->chromosomeLength(),
+        (params.decoder == "cpu" ? params.ompThreads : params.threadsPerBlock),
+        params.decoder == "cpu"),
+      instance(_instance),
       dDemands(nullptr),
-      dDistances(nullptr),
-      numberOfChromosomes(params.populationSize),
-      chromosomeLength(instance->chromosomeLength()),
-      isHostDecode(params.decoder == "cpu"),
-      ompThreads(params.ompThreads),
-      threadsPerBlock(params.threadsPerBlock) {
-  CUDA_CHECK(
-      cudaMalloc(&dDemands, instance->demands.size() * sizeof(unsigned)));
-  CUDA_CHECK(cudaMemcpy(dDemands, instance->demands.data(),
-                        instance->demands.size() * sizeof(unsigned),
-                        cudaMemcpyHostToDevice));
+      dDistances(nullptr) {
+  box::logger::debug("Building CVRP decoder");
+  if (!isCpuDecode) {
+    CUDA_CHECK(
+        cudaMalloc(&dDemands, instance->demands.size() * sizeof(unsigned)));
+    CUDA_CHECK(cudaMemcpy(dDemands, instance->demands.data(),
+                          instance->demands.size() * sizeof(unsigned),
+                          cudaMemcpyHostToDevice));
 
-  CUDA_CHECK(
-      cudaMalloc(&dDistances, instance->distances.size() * sizeof(float)));
-  CUDA_CHECK(cudaMemcpy(dDistances, instance->distances.data(),
-                        instance->distances.size() * sizeof(float),
-                        cudaMemcpyHostToDevice));
+    CUDA_CHECK(
+        cudaMalloc(&dDistances, instance->distances.size() * sizeof(float)));
+    CUDA_CHECK(cudaMemcpy(dDistances, instance->distances.data(),
+                          instance->distances.size() * sizeof(float),
+                          cudaMemcpyHostToDevice));
+  }
 }
 
 CvrpDecoder::~CvrpDecoder() {
-  CUDA_CHECK(cudaFree(dDemands));
-  CUDA_CHECK(cudaFree(dDistances));
+  if (!isCpuDecode) {
+    CUDA_CHECK(cudaFree(dDemands));
+    CUDA_CHECK(cudaFree(dDistances));
+  }
 }
 
-void CvrpDecoder::Decode(float* chromosomes, float* fitness) const {
-  CUDA_CHECK_LAST();  // Check for errors in GPU-BRKGA
-  if (isHostDecode) {
-    hostDecode(chromosomes, fitness);
-  } else {
-    deviceDecode(chromosomes, fitness);
-  }
+CvrpDecoder::Fitness CvrpDecoder::DecodeOnCpu(const float* chromosome) const {
+  std::vector<unsigned> permutation(chromosomeLength);
+  std::iota(permutation.begin(), permutation.end(), 0);
+  std::sort(permutation.begin(), permutation.end(),
+            [chromosome](unsigned a, unsigned b) {
+              return chromosome[a] < chromosome[b];
+            });
+  return getFitness(permutation.data(), chromosomeLength, instance->capacity,
+                    instance->demands.data(), instance->distances.data());
 }
 
 __global__ void deviceDecodeKernel(float* dFitness,
@@ -65,12 +72,14 @@ __global__ void deviceDecodeKernel(float* dFitness,
   thrust::sort_by_key(thrust::device, keys, keys + chromosomeLength, vals);
 
   dFitness[tid] =
-      deviceGetFitness(tour, chromosomeLength, capacity, dDemands, dDistances);
+      getFitness(tour, chromosomeLength, capacity, dDemands, dDistances);
 }
 
-void CvrpDecoder::deviceDecode(const float* dChromosomes,
-                               float* dFitness) const {
-  const auto length = numberOfChromosomes * chromosomeLength;
+void CvrpDecoder::DecodeOnGpu(const float* dChromosomes,
+                              float* dFitness) const {
+  assert(!isCpuDecode);
+  const auto length = populationSize * chromosomeLength;
+
   float* dChromosomesCopy = nullptr;
   CUDA_CHECK(cudaMalloc(&dChromosomesCopy, length * sizeof(float)));
   CUDA_CHECK(cudaMemcpy(dChromosomesCopy, dChromosomes, length * sizeof(float),
@@ -79,11 +88,11 @@ void CvrpDecoder::deviceDecode(const float* dChromosomes,
   unsigned* dTempMemory = nullptr;
   CUDA_CHECK(cudaMalloc(&dTempMemory, length * sizeof(unsigned)));
 
-  const auto threads = threadsPerBlock;
-  const auto blocks = (numberOfChromosomes + threads - 1) / threads;
+  const auto threads = numberOfThreads;
+  const auto blocks = (populationSize + threads - 1) / threads;
   deviceDecodeKernel<<<blocks, threads>>>(
-      dFitness, numberOfChromosomes, dChromosomesCopy, dTempMemory,
-      chromosomeLength, instance->capacity, dDemands, dDistances);
+      dFitness, populationSize, dChromosomesCopy, dTempMemory, chromosomeLength,
+      instance->capacity, dDemands, dDistances);
   CUDA_CHECK_LAST();
 
   CUDA_CHECK(cudaFree(dChromosomesCopy));

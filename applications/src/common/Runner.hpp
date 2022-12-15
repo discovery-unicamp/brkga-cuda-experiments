@@ -65,7 +65,9 @@ public:
       : brkga(nullptr),
         params(Parameters::parse(argc, argv)),
         instance(Instance::fromFile(params.instanceFileName)),
-        generation(0) {}
+        generation(0) {
+    box::logger::debug("Runner was built");
+  }
 
   virtual ~BrkgaRunner() {}
 

@@ -1,32 +1,28 @@
 #ifndef DECODERS_TSPDECODER_HPP
 #define DECODERS_TSPDECODER_HPP
 
-#include "../../common/Parameters.hpp"
+#include "../GpuBrkga.hpp"
 
 class TspInstance;
 
-class TspDecoder {
+class TspDecoder : public GpuBrkga::Decoder {
 public:
+  typedef GpuBrkga::Fitness Fitness;
+  typedef GpuBrkga::Chromosome Chromosome;
+
+  using GpuBrkga::Decoder::DecodeOnCpu;
+
   TspDecoder(TspInstance* instance, const Parameters& params);
 
   ~TspDecoder();
 
-  void Init() const {}
-
-  void Decode(float* chromosomes, float* fitness) const;
-
 private:
-  void hostDecode(const float* chromosomes, float* fitness) const;
+  Fitness DecodeOnCpu(const float* chromosome) const override;
 
-  void deviceDecode(const float* chromosomes, float* fitness) const;
+  void DecodeOnGpu(const float* chromosomes, float* fitness) const override;
 
   TspInstance* instance;
   float* dDistances;
-  unsigned numberOfChromosomes;
-  unsigned chromosomeLength;
-  bool isHostDecode;
-  unsigned ompThreads;
-  unsigned threadsPerBlock;
 };
 
 #endif  // DECODERS_TSPDECODER_HPP

@@ -89,6 +89,8 @@ void BrkgaRunner::exportPopulation(std::ostream& out) {
 }
 
 void BrkgaRunner::run() {
+  box::logger::info("Running");
+
   const auto filename = "pop.txt";
   std::vector<BrkgaInterface::Population> initialPopulation;
   if (importPop) {

@@ -1,34 +1,30 @@
 #ifndef DECODERS_SCPDECODER_HPP
 #define DECODERS_SCPDECODER_HPP
 
-#include "../../common/Parameters.hpp"
+#include "../GpuBrkga.hpp"
 
 class ScpInstance;
 
-class ScpDecoder {
+class ScpDecoder : public GpuBrkga::Decoder {
 public:
+  typedef GpuBrkga::Fitness Fitness;
+  typedef GpuBrkga::Chromosome Chromosome;
+
+  using GpuBrkga::Decoder::DecodeOnCpu;
+
   ScpDecoder(ScpInstance* instance, const Parameters& params);
 
   ~ScpDecoder();
 
-  void Init() const {}
-
-  void Decode(float* chromosomes, float* fitness) const;
-
 private:
-  void hostDecode(const float* chromosomes, float* fitness) const;
+  Fitness DecodeOnCpu(const float* chromosome) const override;
 
-  void deviceDecode(const float* chromosomes, float* fitness) const;
+  void DecodeOnGpu(const float* chromosomes, float* fitness) const override;
 
   ScpInstance* instance;
   float* dCosts;
   unsigned* dSets;
   unsigned* dSetEnd;
-  unsigned numberOfChromosomes;
-  unsigned chromosomeLength;
-  bool isHostDecode;
-  unsigned ompThreads;
-  unsigned threadsPerBlock;
 };
 
 #endif  // DECODERS_SCPDECODER_HPP

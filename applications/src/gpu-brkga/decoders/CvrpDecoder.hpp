@@ -1,33 +1,29 @@
 #ifndef DECODERS_CVRPDECODER_HPP
 #define DECODERS_CVRPDECODER_HPP
 
-#include "../../common/Parameters.hpp"
+#include "../GpuBrkga.hpp"
 
 class CvrpInstance;
 
-class CvrpDecoder {
+class CvrpDecoder : public GpuBrkga::Decoder {
 public:
+  typedef GpuBrkga::Fitness Fitness;
+  typedef GpuBrkga::Chromosome Chromosome;
+
+  using GpuBrkga::Decoder::DecodeOnCpu;
+
   CvrpDecoder(CvrpInstance* instance, const Parameters& params);
 
   ~CvrpDecoder();
 
-  void Init() const {}
-
-  void Decode(float* chromosomes, float* fitness) const;
-
 private:
-  void hostDecode(const float* chromosomes, float* fitness) const;
+  Fitness DecodeOnCpu(const float* chromosome) const override;
 
-  void deviceDecode(const float* chromosomes, float* fitness) const;
+  void DecodeOnGpu(const float* chromosomes, float* fitness) const override;
 
   CvrpInstance* instance;
   unsigned* dDemands;
   float* dDistances;
-  unsigned numberOfChromosomes;
-  unsigned chromosomeLength;
-  bool isHostDecode;
-  unsigned ompThreads;
-  unsigned threadsPerBlock;
 };
 
 #endif  // DECODERS_CVRPDECODER_HPP
