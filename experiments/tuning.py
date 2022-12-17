@@ -272,5 +272,7 @@ def tune_brkga_mp_ipr(problem: str):
 
 
 if __name__ == '__main__':
-    tune_box_2('tsp', 'cpu')
-    # tune_brkga_mp_ipr('tsp')
+    # tune_box_2('tsp', 'cpu')
+    tune_brkga_mp_ipr('tsp')
+    tune_box_2('cvrp', 'cpu')
+    tune_brkga_mp_ipr('cvrp')
