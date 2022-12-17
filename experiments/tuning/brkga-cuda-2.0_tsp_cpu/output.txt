@@ -1,0 +1,265 @@
+#------------------------------------------------------------------------------
+# irace: An implementation in R of (Elitist) Iterated Racing
+# Version: 3.5.6863679
+# Copyright (C) 2010-2020
+# Manuel Lopez-Ibanez     <manuel.lopez-ibanez@manchester.ac.uk>
+# Jeremie Dubois-Lacoste  
+# Leslie Perez Caceres    <leslie.perez.caceres@ulb.ac.be>
+#
+# This is free software, and you are welcome to redistribute it under certain
+# conditions.  See the GNU General Public License for details. There is NO
+# WARRANTY; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# irace builds upon previous code from the race package:
+#     race: Racing methods for the selection of the best
+#     Copyright (C) 2003 Mauro Birattari
+#------------------------------------------------------------------------------
+# installed at: /usr/local/lib/R/site-library/irace
+# called with: --max-experiments 300 --log-file /experiment/experiments/tuning/brkga-cuda-2.0_tsp_cpu/results.Rdata --deterministic 0 --parallel 1 --seed 0
+== irace == WARNING: A default scenario file '/experiment/experiments/tuning/brkga-cuda-2.0_tsp_cpu/scenario.txt' has been found and will be read.
+# 2022-12-13 17:07:49 UTC: 3 expression(s) specifying forbidden configurations read from '/experiment/experiments/tuning/brkga-cuda-2.0_tsp_cpu/forbidden.txt'
+# 2022-12-13 17:07:49 UTC: Initialization
+# Elitist race
+# Elitist new instances: 1
+# Elitist limit: 2
+# nbIterations: 5
+# minNbSurvival: 5
+# nbParameters: 10
+# seed: 0
+# confidence level: 0.95
+# budget: 300
+# mu: 5
+# deterministic: FALSE
+
+# 2022-12-13 17:07:49 UTC: Iteration 1 of 5
+# experimentsUsedSoFar: 0
+# remainingBudget: 300
+# currentBudget: 60
+# nbConfigurations: 10
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          1|         10|          6|     602344.0000|         10|01:02:03|   NA|  NA|    NA|
+|x|          2|         10|          6|     420377.5000|         20|00:26:41|+0.26|0.63|0.4078|
+|x|          3|         10|          6|     5473469.333|         30|02:43:07|+0.50|0.67|0.3474|
+|x|          4|         10|          6|     8096527.000|         40|02:42:20|+0.62|0.72|0.2814|
+|-|          5|          1|          6|     6530260.200|         50|00:26:40|   NA|  NA|    NA|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:           6    mean value:      6530260.200
+Description of the best-so-far configuration:
+  .ID. threads pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count .PARENT.
+6    6      64         7      660       3             1     QUADRATIC  0.09   0.05                60              2       NA
+
+# 2022-12-14 00:28:42 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+  threads pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count
+6      64         7      660       3             1     QUADRATIC  0.09   0.05                60              2
+# 2022-12-14 00:28:42 UTC: Iteration 2 of 5
+# experimentsUsedSoFar: 50
+# remainingBudget: 250
+# currentBudget: 62
+# nbConfigurations: 9
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          6|          9|         18|     576843.0000|          9|01:41:44|   NA|  NA|    NA|
+|x|          2|          9|         18|     397673.5000|         17|00:36:30|+0.93|0.97|0.0083|
+|x|          3|          9|         18|     5699594.333|         25|03:46:12|+0.92|0.95|0.0110|
+|x|          4|          9|          6|     8106342.000|         33|03:46:44|+0.92|0.94|0.0104|
+|-|          5|          2|         18|     6756253.000|         41|00:36:26|-0.20|0.04|0.6000|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:           6    mean value:      5548817.500
+Description of the best-so-far configuration:
+  .ID. threads pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count .PARENT.
+6    6      64         7      660       3             1     QUADRATIC  0.09   0.05                60              2       NA
+
+# 2022-12-14 10:56:22 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   threads pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count
+6       64         7      660       3             1     QUADRATIC  0.09   0.05                60              2
+18    1024         6      778      10             3     QUADRATIC  0.02   0.14                12              2
+# 2022-12-14 10:56:22 UTC: Iteration 3 of 5
+# experimentsUsedSoFar: 91
+# remainingBudget: 209
+# currentBudget: 69
+# nbConfigurations: 10
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          7|         10|         18|     229786.0000|         10|00:51:10|   NA|  NA|    NA|
+|x|          1|         10|          6|     419269.0000|         19|01:44:25|+0.93|0.96|0.0056|
+|x|          5|         10|         18|     357798.6667|         27|00:37:07|+0.91|0.94|0.0044|
+|x|          3|         10|         18|     4344208.000|         35|03:49:16|+0.86|0.90|0.0140|
+|-|          2|          2|         18|     3519067.200|         43|00:37:06|-0.20|0.04|0.6000|
+|.|          6|          2|         18|     3028696.500|         43|00:00:00|-0.07|0.11|0.5333|
+|.|          4|          2|         18|     4945668.143|         43|00:00:00|-0.14|0.02|0.5714|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          18    mean value:      4945668.143
+Description of the best-so-far configuration:
+   .ID. threads pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count .PARENT.
+18   18    1024         6      778      10             3     QUADRATIC  0.02   0.14                12              2        6
+
+# 2022-12-14 18:35:29 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   threads pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count
+18    1024         6      778      10             3     QUADRATIC  0.02   0.14                12              2
+6       64         7      660       3             1     QUADRATIC  0.09   0.05                60              2
+# 2022-12-14 18:35:29 UTC: Iteration 4 of 5
+# experimentsUsedSoFar: 134
+# remainingBudget: 166
+# currentBudget: 83
+# nbConfigurations: 10
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          8|         10|         29|     15445379.00|         10|05:59:06|   NA|  NA|    NA|
+|x|          7|         10|         29|     7837040.500|         18|00:44:37|+0.95|0.98|0.0029|
+|x|          1|         10|         34|     5487352.000|         26|01:45:10|+0.89|0.92|0.0030|
+|x|          3|         10|         29|     7758331.500|         34|04:30:32|+0.89|0.92|0.0033|
+|-|          2|          5|         29|     6253251.200|         42|00:44:52|+0.04|0.23|0.8525|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          18    mean value:      6549981.125
+Description of the best-so-far configuration:
+   .ID. threads pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count .PARENT.
+18   18    1024         6      778      10             3     QUADRATIC  0.02   0.14                12              2        6
+
+# 2022-12-15 08:19:48 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   threads pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count
+6       64         7      660       3             1     QUADRATIC  0.09   0.05                60              2
+18    1024         6      778      10             3     QUADRATIC  0.02   0.14                12              2
+29    1024         8      561       8             2     QUADRATIC  0.07   0.08                75              1
+34    1024         6      723       6             2     QUADRATIC  0.04   0.09                67              6
+33    1024         8      907       9             2     QUADRATIC  0.07   0.11                65              4
+# 2022-12-15 08:19:48 UTC: Iteration 5 of 5
+# experimentsUsedSoFar: 176
+# remainingBudget: 124
+# currentBudget: 124
+# nbConfigurations: 16
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          9|         16|         29|     499733.0000|         16|04:03:22|   NA|  NA|    NA|
+|x|          3|         16|         43|     7381598.000|         27|06:06:27|+0.77|0.89|0.1672|
+|x|          8|         16|         43|     9454328.000|         38|06:05:22|+0.84|0.89|0.1095|
+|x|          6|         16|         43|     7229547.000|         52|03:30:29|+0.80|0.85|0.1032|
+|-|          1|          8|         43|     5902421.600|         63|02:35:51|+0.14|0.31|0.8123|
+|=|          4|          8|         43|     7184964.500|         69|04:39:52|+0.18|0.31|0.7620|
+|=|          7|          8|         43|     6193757.143|         72|00:29:13|+0.11|0.24|0.8143|
+|=|          2|          8|         29|     5994028.750|         75|00:29:20|+0.08|0.19|0.8277|
+|=|          5|          8|         29|     5353998.556|         81|00:52:21|+0.11|0.21|0.7989|
+|-|         10|          4|         29|     4870086.000|         89|02:38:16|-0.10|0.01|0.8122|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          29    mean value:      4870086.000
+Description of the best-so-far configuration:
+   .ID. threads pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count .PARENT.
+29   29    1024         8      561       8             2     QUADRATIC  0.07   0.08                75              1       18
+
+# 2022-12-16 15:50:26 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   threads pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count
+29    1024         8      561       8             2     QUADRATIC  0.07   0.08                75              1
+34    1024         6      723       6             2     QUADRATIC  0.04   0.09                67              6
+33    1024         8      907       9             2     QUADRATIC  0.07   0.11                65              4
+43    1024         5      810       7             4     QUADRATIC  0.03   0.10                26              1
+# 2022-12-16 15:50:26 UTC: Iteration 6 of 6
+# experimentsUsedSoFar: 265
+# remainingBudget: 35
+# currentBudget: 35
+# nbConfigurations: 6
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|         11|          6|         43|     13762621.00|          6|03:47:57|   NA|  NA|    NA|
+|x|          6|          6|         43|     7158912.500|          8|00:19:39|+0.37|0.69|0.1431|
+|x|          9|          6|         43|     4951769.000|         10|00:19:35|+0.58|0.72|0.0922|
+|x|         10|          6|         29|     4220681.000|         12|00:19:34|+0.63|0.72|0.0656|
+|-|          3|          4|         43|     5926173.200|         14|00:51:37|+0.12|0.30|0.6908|
+|.|          8|          4|         43|     7205109.000|         14|00:00:00|+0.25|0.38|0.6035|
+|.|          4|          4|         43|     8118333.286|         14|00:00:00|+0.30|0.40|0.5373|
+|.|          2|          4|         43|     7134809.125|         14|00:00:00|+0.10|0.21|0.6913|
+|.|          7|          4|         43|     6369442.889|         14|00:00:00|+0.03|0.14|0.7310|
+|.|          5|          4|         43|     5756299.900|         14|00:00:00|-0.04|0.06|0.7807|
+|.|          1|          4|         43|     5286992.636|         14|00:00:00|-0.08|0.02|0.8014|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          29    mean value:      5818419.545
+Description of the best-so-far configuration:
+   .ID. threads pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count .PARENT.
+29   29    1024         8      561       8             2     QUADRATIC  0.07   0.08                75              1       18
+
+# 2022-12-16 21:28:52 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   threads pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count
+29    1024         8      561       8             2     QUADRATIC  0.07   0.08                75              1
+43    1024         5      810       7             4     QUADRATIC  0.03   0.10                26              1
+34    1024         6      723       6             2     QUADRATIC  0.04   0.09                67              6
+33    1024         8      907       9             2     QUADRATIC  0.07   0.11                65              4
+# 2022-12-16 21:28:52 UTC: Stopped because there is not enough budget left to race more than the minimum (5)
+# You may either increase the budget or set 'minNbSurvival' to a lower value
+# Iteration: 7
+# nbIterations: 7
+# experimentsUsedSoFar: 279
+# timeUsed: 0
+# remainingBudget: 21
+# currentBudget: 21
+# number of elites: 4
+# nbConfigurations: 5
+# Total CPU user time: 1641831, CPU sys time: 2960.646, Wall-clock time: 274862.7
+# Best configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   threads pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count
+29    1024         8      561       8             2     QUADRATIC  0.07   0.08                75              1
+43    1024         5      810       7             4     QUADRATIC  0.03   0.10                26              1
+34    1024         6      723       6             2     QUADRATIC  0.04   0.09                67              6
+33    1024         8      907       9             2     QUADRATIC  0.07   0.11                65              4
+# Best configurations as commandlines (first number is the configuration ID; same order as above):
+29  --threads 1024 --pop-count 8 --pop-size 561 --parents 8 --elite-parents 2 --rhoe-function QUADRATIC --elite 0.07 --mutant 0.08 --exchange-interval 75 --exchange-count 1
+43  --threads 1024 --pop-count 5 --pop-size 810 --parents 7 --elite-parents 4 --rhoe-function QUADRATIC --elite 0.03 --mutant 0.1 --exchange-interval 26 --exchange-count 1
+34  --threads 1024 --pop-count 6 --pop-size 723 --parents 6 --elite-parents 2 --rhoe-function QUADRATIC --elite 0.04 --mutant 0.09 --exchange-interval 67 --exchange-count 6
+33  --threads 1024 --pop-count 8 --pop-size 907 --parents 9 --elite-parents 2 --rhoe-function QUADRATIC --elite 0.07 --mutant 0.11 --exchange-interval 65 --exchange-count 4
+
+
+# Testing of elite configurations: 1 
+# Testing iteration configurations: FALSE 
+# 2022-12-16 21:28:52 UTC: No test instances, skip testing
