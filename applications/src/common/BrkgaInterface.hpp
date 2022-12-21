@@ -53,7 +53,8 @@ public:
   virtual Chromosome getBestChromosome() = 0;
 
   /// The best chromosome sorted
-  virtual std::vector<unsigned> getBestPermutation() = 0;
+  /// Calls @ref sorted by default
+  virtual std::vector<unsigned> getBestPermutation();
 
   /// The current population
   virtual std::vector<Population> getPopulations() = 0;
@@ -61,7 +62,7 @@ public:
 protected:
   unsigned chromosomeLength;
 
-  /// The the indices of @p chromosome as if it was sorted
+  /// The indices of @p chromosome as if it was sorted
   /// Sorts using @ref std::sort by default
   virtual std::vector<unsigned> sorted(const Chromosome& chromosome);
 };
