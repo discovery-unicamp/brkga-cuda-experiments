@@ -52,15 +52,18 @@ public:
   /// The best chromosome found after the @ref init call
   virtual Chromosome getBestChromosome() = 0;
 
+  /// The best chromosome sorted
+  virtual std::vector<unsigned> getBestPermutation() = 0;
+
   /// The current population
   virtual std::vector<Population> getPopulations() = 0;
+
+protected:
+  unsigned chromosomeLength;
 
   /// The the indices of @p chromosome as if it was sorted
   /// Sorts using @ref std::sort by default
   virtual std::vector<unsigned> sorted(const Chromosome& chromosome);
-
-protected:
-  unsigned chromosomeLength;
 };
 
 #endif  // COMMON_BRKGAINTERFACE_HPP
