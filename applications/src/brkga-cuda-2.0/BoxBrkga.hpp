@@ -28,7 +28,7 @@ public:
   Fitness getBestFitness() override;
   Chromosome getBestChromosome() override;
   std::vector<Population> getPopulations() override;
-  std::vector<unsigned> sorted(const Chromosome& chromosome);
+  std::vector<unsigned> sorted(const Chromosome& chromosome) override;
 
 private:
   class Algorithm;
