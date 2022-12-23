@@ -26,7 +26,7 @@ typedef CvrpInstance Instance;
 #include <utility>
 #include <vector>
 
-#define SHOW_PROGRESS
+// #define SHOW_PROGRESS
 
 constexpr auto TERMINAL_LENGTH = 50;
 

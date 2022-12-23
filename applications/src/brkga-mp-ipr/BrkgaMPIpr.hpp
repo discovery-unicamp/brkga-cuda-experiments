@@ -34,6 +34,7 @@ public:
   void pathRelink() override;
   Fitness getBestFitness() override;
   Chromosome getBestChromosome() override;
+  std::vector<unsigned> getBestPermutation() override;
   std::vector<Population> getPopulations() override;
 
 private:
@@ -46,6 +47,7 @@ private:
   Parameters params;
   Fitness bestFitness;
   Chromosome bestChromosome;
+  std::vector<unsigned> bestPermutation;
 };
 
 #endif  // BRKGAMPIPR_HPP

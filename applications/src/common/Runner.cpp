@@ -15,7 +15,7 @@
 void BrkgaRunner::showParams(unsigned argc, char** argv) {
   std::cout << argv[0];
   for (unsigned i = 1; i < argc; ++i) std::cout << ' ' << argv[i];
-  std::cout << '\n';
+  std::cout << std::endl;
 }
 
 std::vector<BrkgaInterface::Population> BrkgaRunner::importPopulation(
@@ -158,6 +158,8 @@ void BrkgaRunner::run() {
       box::logger::debug("Run path relink heuristic");
       brkga->pathRelink();
     }
+
+    box::logger::debug("Evolved to generation", generation);
   }
 
   box::logger::debug("Get the best result");
@@ -198,14 +200,12 @@ void BrkgaRunner::run() {
             << " elapsed=" << timeElapsed << " convergence=" << convergence
             << std::endl;
 
-  box::logger::debug("Get the best chromosome");
-  auto bestChromosome = brkga->getBestChromosome();
-
   box::logger::info("Validating the solution");
   if (instance.validatePermutations()) {
-    const auto permutation = brkga->sorted(bestChromosome);
+    const auto permutation = brkga->getBestPermutation();
     instance.validate(permutation.data(), bestFitness);
   } else {
+    const auto bestChromosome = brkga->getBestChromosome();
     instance.validate(bestChromosome.data(), bestFitness);
   }
 

@@ -60,8 +60,9 @@ public:
         (float)((long)n * (n - 1) / 2) * params.prMinDiffPercentage;
 #elif defined(SCP)
     obj.pr_type = BRKGA::PathRelinking::Type::DIRECT;
-    dist.reset(new BRKGA::HammingDistance(instance.acceptThreshold));
-    obj.pr_minimum_distance = n * params.prMinDiffPercentage;
+    // FIXME how to take the 0.5 from an object of the ScpInstance?
+    dist.reset(new BRKGA::HammingDistance(0.5));
+    obj.pr_minimum_distance = (float)n * params.prMinDiffPercentage;
 #else
 #error No known problem defined
 #endif
@@ -185,6 +186,10 @@ BrkgaMPIpr::Chromosome BrkgaMPIpr::getBestChromosome() {
   return bestChromosome;
 }
 
+std::vector<unsigned> BrkgaMPIpr::getBestPermutation() {
+  return bestPermutation;
+}
+
 std::vector<BrkgaMPIpr::Population> BrkgaMPIpr::getPopulations() {
   std::vector<BrkgaMPIpr::Population> populations;
   for (unsigned p = 0; p < params.numberOfPopulations; ++p) {
@@ -206,13 +211,21 @@ std::vector<BrkgaMPIpr::Population> BrkgaMPIpr::getPopulations() {
 void BrkgaMPIpr::updateBest() {
   box::logger::debug("Updating the best solution");
   assert(algorithm);
-  const auto currentFitness = algorithm->obj.getBestFitness();
+  const auto currentFitness = (float)algorithm->obj.getBestFitness();
   if (currentFitness < bestFitness) {
     box::logger::debug("Solution improved from", bestFitness, "to",
                        currentFitness);
     const auto bestChromosomeD = algorithm->obj.getBestChromosome();
+    assert((unsigned)bestChromosomeD.size() == chromosomeLength);
+
     bestFitness = currentFitness;
     bestChromosome = Chromosome(bestChromosomeD.begin(), bestChromosomeD.end());
-    assert((unsigned)bestChromosome.size() == chromosomeLength);
+
+    bestPermutation.resize(chromosomeLength);
+    std::iota(bestPermutation.begin(), bestPermutation.end(), 0);
+    std::sort(bestPermutation.begin(), bestPermutation.end(),
+              [&](unsigned a, unsigned b) {
+                return bestChromosomeD[a] < bestChromosomeD[b];
+              });
   }
 }

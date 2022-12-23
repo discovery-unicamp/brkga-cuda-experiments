@@ -1,0 +1,3 @@
+/experiment/experiments/instances/tsp/tsplib/zi929.tsp
+/experiment/experiments/instances/tsp/tsplib/mu1979.tsp
+/experiment/experiments/instances/tsp/tsplib/ca4663.tsp
