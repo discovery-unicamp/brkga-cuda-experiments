@@ -5,6 +5,7 @@
 #include <GPU-BRKGA/GPUBRKGA.cuh>
 
 #include <cassert>
+#include <cmath>
 
 class GpuBrkga::Algorithm {
 public:
@@ -46,7 +47,9 @@ GpuBrkga::GpuBrkga(unsigned _chromosomeLength, Decoder* _decoder)
     : BrkgaInterface(_chromosomeLength),
       algorithm(nullptr),
       decoder(_decoder),
-      params() {}
+      params(),
+      bestFitness((Fitness)INFINITY),
+      bestChromosome() {}
 
 GpuBrkga::~GpuBrkga() {
   delete algorithm;
@@ -62,27 +65,27 @@ void GpuBrkga::init(const Parameters& parameters,
   params = parameters;
   algorithm =
       new Algorithm(parameters, chromosomeLength, initialPopulations, *decoder);
+  updateBest();
 }
 
 void GpuBrkga::evolve() {
   assert(algorithm);
   algorithm->obj.evolve();
+  updateBest();
 }
 
 void GpuBrkga::exchangeElites() {
   assert(algorithm);
   algorithm->obj.exchangeElite(params.exchangeBestCount);
+  updateBest();
 }
 
 GpuBrkga::Fitness GpuBrkga::getBestFitness() {
-  assert(algorithm);
-  return algorithm->obj.getBestIndividual().fitness.first;
+  return bestFitness;
 }
 
 GpuBrkga::Chromosome GpuBrkga::getBestChromosome() {
-  assert(algorithm);
-  const auto best = algorithm->obj.getBestIndividual();
-  return Chromosome(best.aleles, best.aleles + chromosomeLength);
+  return bestChromosome;
 }
 
 std::vector<GpuBrkga::Population> GpuBrkga::getPopulations() {
@@ -124,4 +127,13 @@ std::vector<unsigned> GpuBrkga::sorted(const Chromosome& chromosome) {
 
   box::logger::error("Unknown sort method for the decoder:", decodeType);
   abort();
+}
+
+void GpuBrkga::updateBest() {
+  assert(algorithm);
+  const auto best = algorithm->obj.getBestIndividual();
+  if (best.fitness.first < bestFitness) {
+    bestFitness = best.fitness.first;
+    bestChromosome = Chromosome(best.aleles, best.aleles + chromosomeLength);
+  }
 }

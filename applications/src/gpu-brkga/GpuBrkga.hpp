@@ -70,9 +70,15 @@ protected:
 private:
   class Algorithm;
 
+  void updateBest();
+
   Algorithm* algorithm;
   Decoder* decoder;
   Parameters params;
+
+  // Save the best solution due to a bug on the framework.
+  Fitness bestFitness;
+  Chromosome bestChromosome;
 };
 
 #endif  // GPUBRKGA_HPP

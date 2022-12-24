@@ -109,6 +109,8 @@ void BrkgaRunner::run() {
                     initialPopulation.size(), "population(s) provided");
   brkga->init(params, initialPopulation);
 
+  box::logger::info("Best initial solution:", brkga->getBestFitness());
+
   if (exportPop) {
     box::logger::info("Exporting the initial population to", filename);
     std::ofstream populationFile(filename);
@@ -159,6 +161,16 @@ void BrkgaRunner::run() {
       brkga->pathRelink();
     }
 
+#ifndef NDEBUG
+    box::logger::debug("Validating the best solution found so far");
+    const auto bestSoFar = brkga->getBestFitness();
+    if (instance.validatePermutations()) {
+      instance.validate(brkga->getBestPermutation().data(), bestSoFar);
+    } else {
+      instance.validate(brkga->getBestChromosome().data(), bestSoFar);
+    }
+#endif  // NDEBUG
+
     box::logger::debug("Evolved to generation", generation);
   }
 
@@ -202,15 +214,9 @@ void BrkgaRunner::run() {
 
   box::logger::info("Validating the solution");
   if (instance.validatePermutations()) {
-    const auto permutation = brkga->getBestPermutation();
-    assert(permutation.size() == instance.chromosomeLength());
-    box::logger::debug("Calling the validation method");
-    instance.validate(permutation.data(), bestFitness);
+    instance.validate(brkga->getBestPermutation().data(), bestFitness);
   } else {
-    const auto bestChromosome = brkga->getBestChromosome();
-    assert(bestChromosome.size() == instance.chromosomeLength());
-    box::logger::debug("Calling the validation method");
-    instance.validate(bestChromosome.data(), bestFitness);
+    instance.validate(brkga->getBestChromosome().data(), bestFitness);
   }
 
   box::logger::info("Deleting the BRKGA object");
