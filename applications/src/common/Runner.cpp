@@ -203,9 +203,13 @@ void BrkgaRunner::run() {
   box::logger::info("Validating the solution");
   if (instance.validatePermutations()) {
     const auto permutation = brkga->getBestPermutation();
+    assert(permutation.size() == instance.chromosomeLength());
+    box::logger::debug("Calling the validation method");
     instance.validate(permutation.data(), bestFitness);
   } else {
     const auto bestChromosome = brkga->getBestChromosome();
+    assert(bestChromosome.size() == instance.chromosomeLength());
+    box::logger::debug("Calling the validation method");
     instance.validate(bestChromosome.data(), bestFitness);
   }
 
