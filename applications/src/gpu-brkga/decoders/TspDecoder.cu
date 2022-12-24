@@ -78,7 +78,7 @@ void TspDecoder::DecodeOnGpu(const float* dChromosomes, float* dFitness) const {
   unsigned* dTempMemory = nullptr;
   CUDA_CHECK(cudaMalloc(&dTempMemory, length * sizeof(unsigned)));
 
-  const auto threads = numberOfThreads;
+  const auto threads = 32;  // to avoid memory overflow
   const auto blocks = (populationSize + threads - 1) / threads;
   deviceDecodeKernel<<<blocks, threads>>>(populationSize, dChromosomesCopy,
                                           dTempMemory, chromosomeLength,

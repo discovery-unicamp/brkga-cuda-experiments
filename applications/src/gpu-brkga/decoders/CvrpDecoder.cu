@@ -31,6 +31,10 @@ CvrpDecoder::CvrpDecoder(CvrpInstance* _instance, const Parameters& params)
     CUDA_CHECK(cudaMemcpy(dDistances, instance->distances.data(),
                           instance->distances.size() * sizeof(float),
                           cudaMemcpyHostToDevice));
+
+    // Set CUDA heap limit to 1GB to avoid memory issues with the sort of thrust
+    CUDA_CHECK(cudaDeviceSetLimit(cudaLimitMallocHeapSize,
+                                  (std::size_t)1024 * 1024 * 1024));
   }
 }
 
@@ -88,7 +92,7 @@ void CvrpDecoder::DecodeOnGpu(const float* dChromosomes,
   unsigned* dTempMemory = nullptr;
   CUDA_CHECK(cudaMalloc(&dTempMemory, length * sizeof(unsigned)));
 
-  const auto threads = numberOfThreads;
+  const auto threads = 32;  // to avoid memory overflow
   const auto blocks = (populationSize + threads - 1) / threads;
   deviceDecodeKernel<<<blocks, threads>>>(
       dFitness, populationSize, dChromosomesCopy, dTempMemory, chromosomeLength,
