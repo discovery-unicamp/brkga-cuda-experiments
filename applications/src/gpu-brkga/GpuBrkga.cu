@@ -1,4 +1,6 @@
 #include "../Tweaks.hpp"
+#include "../common/CudaCheck.cuh"
+#include "../common/utils/ThrustSort.hpp"
 #include "GpuBrkga.hpp"
 #include <GPU-BRKGA/GPUBRKGA.cuh>
 
@@ -19,6 +21,7 @@ public:
             params.seed,
             /* decode on gpu? */ params.decoder == "gpu",
             params.numberOfPopulations) {
+    box::logger::debug("Validating params for the framework");
     if (params.decoder != "cpu" && params.decoder != "gpu")
       throw std::invalid_argument("Unsupported decode type: " + params.decoder);
     if (params.decoder == "gpu" && params.threadsPerBlock != max_t)
@@ -84,4 +87,41 @@ GpuBrkga::Chromosome GpuBrkga::getBestChromosome() {
 
 std::vector<GpuBrkga::Population> GpuBrkga::getPopulations() {
   throw std::logic_error("GPUBRKGA::getPopulations doesn't work");
+}
+
+std::vector<unsigned> GpuBrkga::sorted(const Chromosome& chromosome) {
+  const auto decodeType = params.decoder;
+  box::logger::debug("Sorting chromosome for decoder", decodeType);
+
+  const bool sortOnGpu = decodeType.find("gpu") != std::string::npos;
+  if (sortOnGpu) {
+    const auto n = (unsigned)chromosome.size();
+    Gene* dChromosome = nullptr;
+    CUDA_CHECK(cudaMalloc(&dChromosome, n * sizeof(Gene)));
+    CUDA_CHECK(cudaMemcpy(dChromosome, chromosome.data(), n * sizeof(Gene),
+                          cudaMemcpyHostToDevice));
+
+    std::vector<unsigned> permutation(n);
+    std::iota(permutation.begin(), permutation.end(), 0);
+    unsigned* dPermutation = nullptr;
+    CUDA_CHECK(cudaMalloc(&dPermutation, n * sizeof(unsigned)));
+    CUDA_CHECK(cudaMemcpy(dPermutation, permutation.data(),
+                          n * sizeof(unsigned), cudaMemcpyHostToDevice));
+
+    thrustSortKernel(dChromosome, dPermutation, n);
+
+    CUDA_CHECK(cudaDeviceSynchronize());
+    CUDA_CHECK(cudaMemcpy(permutation.data(), dPermutation,
+                          n * sizeof(unsigned), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaFree(dChromosome));
+    CUDA_CHECK(cudaFree(dPermutation));
+
+    return permutation;
+  }
+
+  if (decodeType.find("cpu") != std::string::npos)
+    return BrkgaInterface::sorted(chromosome);
+
+  box::logger::error("Unknown sort method for the decoder:", decodeType);
+  abort();
 }

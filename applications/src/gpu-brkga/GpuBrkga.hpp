@@ -64,6 +64,9 @@ public:
   Chromosome getBestChromosome() override;
   std::vector<Population> getPopulations() override;
 
+protected:
+  std::vector<unsigned> sorted(const Chromosome& chromosome) override;
+
 private:
   class Algorithm;
 
