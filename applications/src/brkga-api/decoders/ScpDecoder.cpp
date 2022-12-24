@@ -4,8 +4,10 @@
 
 #include <vector>
 
-double ScpDecoder::decode(const std::vector<double>& chromosome) const {
-  return getFitness(
-      chromosome.data(), (unsigned)chromosome.size(), instance->universeSize,
-      (double)ScpInstance::ACCEPT_THRESHOLD, instance->costs, instance->sets);
+BrkgaApi::Fitness ScpDecoder::decode(
+    const BrkgaApi::Decoder::ChromosomeD& chromosome) const {
+  return getFitness(chromosome.data(), (unsigned)chromosome.size(),
+                    instance->universeSize, instance->acceptThreshold,
+                    instance->costs.data(), instance->sets.data(),
+                    instance->setsEnd.data());
 }

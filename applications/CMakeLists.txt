@@ -25,7 +25,6 @@ SET(COMMON_SRC
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/ScpInstance.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/TspInstance.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/instances/TspInstance.hpp
-  ${CMAKE_CURRENT_LIST_DIR}/src/common/utils/ThrustSort.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/utils/StringUtils.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/utils/StringUtils.hpp
   ${CMAKE_CURRENT_LIST_DIR}/src/common/BrkgaInterface.cpp

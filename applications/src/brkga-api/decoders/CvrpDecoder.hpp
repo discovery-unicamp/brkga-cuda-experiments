@@ -1,17 +1,15 @@
 #ifndef DECODERS_CVRPDECODER_HPP
 #define DECODERS_CVRPDECODER_HPP
 
-#include "../../common/Parameters.hpp"
-
-#include <vector>
+#include "../BrkgaApi.hpp"
 
 class CvrpInstance;
 
-class CvrpDecoder {
+class CvrpDecoder : public BrkgaApi::Decoder {
 public:
   CvrpDecoder(CvrpInstance* _instance) : instance(_instance) {}
 
-  double decode(const std::vector<double>& chromosomeDouble) const;
+  BrkgaApi::Fitness decode(const ChromosomeD& chromosome) const override;
 
 private:
   CvrpInstance* instance;

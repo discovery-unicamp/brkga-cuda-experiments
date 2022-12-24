@@ -1,17 +1,15 @@
 #ifndef DECODERS_TSPDECODER_HPP
 #define DECODERS_TSPDECODER_HPP
 
-#include "../../common/Parameters.hpp"
-
-#include <vector>
+#include "../BrkgaApi.hpp"
 
 class TspInstance;
 
-class TspDecoder {
+class TspDecoder : public BrkgaApi::Decoder {
 public:
   TspDecoder(TspInstance* _instance) : instance(_instance) {}
 
-  double decode(const std::vector<double>& chromosome) const;
+  BrkgaApi::Fitness decode(const ChromosomeD& chromosome) const override;
 
 private:
   TspInstance* instance;

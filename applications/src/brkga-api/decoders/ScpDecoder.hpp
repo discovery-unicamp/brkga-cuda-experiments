@@ -1,17 +1,15 @@
 #ifndef DECODERS_SCPDECODER_HPP
 #define DECODERS_SCPDECODER_HPP
 
-#include "../../common/Parameters.hpp"
-
-#include <vector>
+#include "../BrkgaApi.hpp"
 
 class ScpInstance;
 
-class ScpDecoder {
+class ScpDecoder : public BrkgaApi::Decoder {
 public:
   ScpDecoder(ScpInstance* _instance) : instance(_instance) {}
 
-  double decode(const std::vector<double>& chromosome) const;
+  BrkgaApi::Fitness decode(const ChromosomeD& chromosome) const override;
 
 private:
   ScpInstance* instance;
