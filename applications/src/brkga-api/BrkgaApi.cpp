@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <numeric>
 #include <stdexcept>
 #include <vector>
@@ -49,7 +50,7 @@ BrkgaApi::BrkgaApi(unsigned _chromosomeLength, Decoder* _decoder)
       algorithm(nullptr),
       decoder(_decoder),
       params(),
-      bestFitness((Fitness)1e20),
+      bestFitness((Fitness)INFINITY),
       bestChromosome(),
       bestPermutation() {}
 
@@ -67,7 +68,7 @@ void BrkgaApi::init(const Parameters& parameters,
   params = parameters;
   algorithm =
       new Algorithm(parameters, chromosomeLength, initialPopulations, *decoder);
-  bestFitness = (Fitness)1e20;
+  bestFitness = (Fitness)INFINITY;
   updateBest();
 }
 

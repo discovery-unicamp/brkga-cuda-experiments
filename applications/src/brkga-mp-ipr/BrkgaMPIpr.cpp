@@ -4,6 +4,7 @@
 #include <brkga_mp_ipr/brkga_mp_ipr.hpp>
 
 #include <cassert>
+#include <cmath>
 
 class Configuration {
 public:
@@ -139,7 +140,7 @@ BrkgaMPIpr::BrkgaMPIpr(unsigned _chromosomeLength, Decoder* _decoder)
       algorithm(nullptr),
       decoder(_decoder),
       params(),
-      bestFitness((Fitness)1e20),
+      bestFitness((Fitness)INFINITY),
       bestChromosome() {}
 
 BrkgaMPIpr::~BrkgaMPIpr() {
@@ -156,7 +157,7 @@ void BrkgaMPIpr::init(const Parameters& parameters,
   params = parameters;
   algorithm =
       new Algorithm(parameters, chromosomeLength, initialPopulations, *decoder);
-  bestFitness = (Fitness)1e20;
+  bestFitness = (Fitness)INFINITY;
   updateBest();
 }
 
