@@ -1,4 +1,3 @@
-elite * as.numeric(pop_size) < pr_pairs
-elite * as.numeric(pop_size) < elite_parents
-elite * as.numeric(pop_size) < exchange_count
-parents <= elite_parents
+as.numeric(elite) * as.numeric(pop_size) < as.numeric(elite_parents)
+as.numeric(elite) * as.numeric(pop_size) < as.numeric(exchange_count)
+as.numeric(parents) <= as.numeric(elite_parents)

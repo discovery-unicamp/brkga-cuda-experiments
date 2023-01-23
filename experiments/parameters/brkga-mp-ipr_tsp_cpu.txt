@@ -1,2 +1,2 @@
 pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff
-        6      897       8             4     QUADRATIC  0.15   0.14                57              6          85            0.24          16      best        0.80
+        8      882       7             1   EXPONENTIAL  0.09   0.08                13              8          45            0.42           3      best        0.73
