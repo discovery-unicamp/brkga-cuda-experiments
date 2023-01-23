@@ -192,7 +192,7 @@ def tune_box_2(problem: str, decoder: str):
             'omp-threads': shell('nproc'),
             'generations': MAX_GENERATIONS,
             'max-time': MAX_TIME_SECONDS[problem_name],
-            'decoder': 'cpu',
+            'decoder': decoder,
             'log-step': 0,
             'pr-interval': 0,
             'prune-interval': 0,
@@ -222,6 +222,41 @@ def tune_box_2(problem: str, decoder: str):
             'as.numeric(elite) * as.numeric(pop_size) < as.numeric(exchange_count)',
             'as.numeric(parents) <= as.numeric(elite_parents)',
             # 'as.numeric(elite) * as.numeric(pop_size) < as.numeric(pr_pairs)',
+        ],
+        timeout_seconds=MAX_TIME_SECONDS[problem_name] + TIMEOUT_SECONDS,
+    )
+
+
+def tune_gpu_brkga(problem: str, decoder: str, fix: bool):
+    tool = 'gpu-brkga' + ('-fix' if fix else '')
+    problem_name = PROBLEM_NAME[problem]
+    assert problem_name != 'tsp'
+    irace(
+        results_path=TUNING_PATH.joinpath(f'{tool}_{problem}_{decoder}'),
+        executable=compile_optimizer(tool, problem),
+        instances=[get_instance_path(problem_name, i)
+                   for i in TUNING_INSTANCES[problem_name]],
+        fixed_params={
+            'omp-threads': shell('nproc'),
+            'generations': MAX_GENERATIONS,
+            'max-time': MAX_TIME_SECONDS[problem_name],
+            'decoder': decoder,
+            'log-step': 0,
+            'parents': 2,
+            'elite-parents': 1,
+            'rhoe-function': 'RHOE',
+        },
+        tune_params=[
+            IraceParam('threads', 'category', (64, 128, 256, 512, 1024)),
+            IraceParam('pop-count', 'int', [1, 8]),
+            IraceParam('pop-size', 'int', [64, 1024]),
+            IraceParam('elite', 'float', [.02, .20]),
+            IraceParam('mutant', 'float', [.02, .20]),
+            IraceParam('exchange-interval', 'int', [0, 200]),
+            IraceParam('exchange-count', 'int', [1, 10]),
+        ],
+        forbidden_combinations=[
+            'as.numeric(elite) * as.numeric(pop_size) < as.numeric(exchange_count)',
         ],
         timeout_seconds=MAX_TIME_SECONDS[problem_name] + TIMEOUT_SECONDS,
     )
@@ -272,5 +307,9 @@ def tune_brkga_mp_ipr(problem: str):
 
 
 if __name__ == '__main__':
-    tune_box_2('cvrp_greedy', 'cpu')
-    tune_brkga_mp_ipr('cvrp_greedy')
+    tune_gpu_brkga('scp', 'cpu', fix=False)
+    tune_gpu_brkga('scp', 'cpu', fix=True)
+    tune_gpu_brkga('cvrp_greedy', 'cpu', fix=False)
+    tune_gpu_brkga('cvrp_greedy', 'cpu', fix=True)
+    tune_gpu_brkga('cvrp', 'cpu', fix=False)
+    tune_gpu_brkga('cvrp', 'cpu', fix=True)
