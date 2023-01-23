@@ -185,13 +185,13 @@ def tune_box_2(problem: str, decoder: str):
     problem_name = PROBLEM_NAME[problem]
     irace(
         results_path=TUNING_PATH.joinpath(f'{tool}_{problem}_{decoder}'),
-        executable=compile_optimizer(tool, problem_name),
+        executable=compile_optimizer(tool, problem),
         instances=[get_instance_path(problem_name, i)
                    for i in TUNING_INSTANCES[problem_name]],
         fixed_params={
             'omp-threads': shell('nproc'),
             'generations': MAX_GENERATIONS,
-            'max-time': MAX_TIME_SECONDS[problem],
+            'max-time': MAX_TIME_SECONDS[problem_name],
             'decoder': 'cpu',
             'log-step': 0,
             'pr-interval': 0,
@@ -223,7 +223,7 @@ def tune_box_2(problem: str, decoder: str):
             'as.numeric(parents) <= as.numeric(elite_parents)',
             # 'as.numeric(elite) * as.numeric(pop_size) < as.numeric(pr_pairs)',
         ],
-        timeout_seconds=MAX_TIME_SECONDS[problem] + TIMEOUT_SECONDS,
+        timeout_seconds=MAX_TIME_SECONDS[problem_name] + TIMEOUT_SECONDS,
     )
 
 
@@ -233,13 +233,13 @@ def tune_brkga_mp_ipr(problem: str):
     problem_name = PROBLEM_NAME[problem]
     irace(
         results_path=TUNING_PATH.joinpath(f'{tool}_{problem}_{decoder}'),
-        executable=compile_optimizer(tool, problem_name),
+        executable=compile_optimizer(tool, problem),
         instances=[get_instance_path(problem_name, i)
                    for i in TUNING_INSTANCES[problem_name]],
         fixed_params={
             'omp-threads': shell('nproc'),
             'generations': MAX_GENERATIONS,
-            'max-time': MAX_TIME_SECONDS[problem],
+            'max-time': MAX_TIME_SECONDS[problem_name],
             'decoder': decoder,
             'log-step': 0,
             'pr-pairs': 1,
@@ -267,12 +267,10 @@ def tune_brkga_mp_ipr(problem: str):
             'elite * pop_size < exchange_count',
             'parents <= elite_parents',
         ],
-        timeout_seconds=MAX_TIME_SECONDS[problem] + TIMEOUT_SECONDS,
+        timeout_seconds=MAX_TIME_SECONDS[problem_name] + TIMEOUT_SECONDS,
     )
 
 
 if __name__ == '__main__':
-    # tune_box_2('tsp', 'cpu')
-    tune_brkga_mp_ipr('tsp')
-    tune_box_2('cvrp', 'cpu')
-    tune_brkga_mp_ipr('cvrp')
+    tune_box_2('cvrp_greedy', 'cpu')
+    tune_brkga_mp_ipr('cvrp_greedy')
