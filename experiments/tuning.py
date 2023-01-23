@@ -180,6 +180,42 @@ fi
     shell(f'cd {str(results_path.absolute())} && {irace_cmd}', get=False)
 
 
+def tune_brkga_cuda(problem: str):
+    tool = 'brkga-cuda-1.0'
+    decoder = 'cpu'
+    problem_name = PROBLEM_NAME[problem]
+    irace(
+        results_path=TUNING_PATH.joinpath(f'{tool}_{problem}'),
+        executable=compile_optimizer(tool, problem),
+        instances=[get_instance_path(problem_name, i)
+                   for i in TUNING_INSTANCES[problem_name]],
+        fixed_params={
+            'omp-threads': shell('nproc'),
+            'generations': MAX_GENERATIONS,
+            'max-time': MAX_TIME_SECONDS[problem_name],
+            'decoder': decoder,
+            'log-step': 0,
+            'parents': 2,
+            'elite-parents': 1,
+            'rhoe-function': 'RHOE',
+            'threads': 256,
+        },
+        tune_params=[
+            IraceParam('pop-count', 'int', [1, 8]),
+            IraceParam('pop-size', 'category', (256, 512, 768, 1024)),
+            IraceParam('elite', 'float', [.02, .20]),
+            IraceParam('mutant', 'float', [.02, .20]),
+            IraceParam('exchange-interval', 'int', [0, 200]),
+            IraceParam('exchange-count', 'int', [1, 10]),
+        ],
+        forbidden_combinations=[
+            'as.numeric(elite) * as.numeric(pop_size)'
+                ' < as.numeric(exchange_count)',
+        ],
+        timeout_seconds=MAX_TIME_SECONDS[problem_name] + TIMEOUT_SECONDS,
+    )
+
+
 def tune_box_2(problem: str, decoder: str):
     tool = 'brkga-cuda-2.0'
     problem_name = PROBLEM_NAME[problem]
@@ -198,7 +234,6 @@ def tune_box_2(problem: str, decoder: str):
             'prune-interval': 0,
         },
         tune_params=[
-            IraceParam('threads', 'category', (64, 128, 256, 512, 1024)),
             IraceParam('pop-count', 'int', [1, 8]),
             IraceParam('pop-size', 'int', [64, 1024]),
             IraceParam('parents', 'int', [2, 10]),
@@ -250,7 +285,6 @@ def tune_gpu_brkga(problem: str, fix: bool):
             'rhoe-function': 'RHOE',
         },
         tune_params=[
-            IraceParam('threads', 'category', (64, 128, 256, 512, 1024)),
             IraceParam('pop-count', 'int', [1, 8]),
             IraceParam('pop-size', 'int', [64, 1024]),
             IraceParam('elite', 'float', [.02, .20]),
@@ -355,3 +389,7 @@ if __name__ == '__main__':
     tune_brkga_api('cvrp_greedy')
     tune_brkga_api('cvrp')
     tune_brkga_api('tsp')
+    tune_brkga_cuda('scp')
+    tune_brkga_cuda('cvrp_greedy')
+    tune_brkga_cuda('cvrp')
+    tune_brkga_cuda('tsp')
