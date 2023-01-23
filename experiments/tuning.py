@@ -218,8 +218,10 @@ def tune_box_2(problem: str, decoder: str):
             # IraceParam('prune-threshold', 'float', [.90, .99]),
         ],
         forbidden_combinations=[
-            'as.numeric(elite) * as.numeric(pop_size) < as.numeric(elite_parents)',
-            'as.numeric(elite) * as.numeric(pop_size) < as.numeric(exchange_count)',
+            'as.numeric(elite) * as.numeric(pop_size)'
+                ' < as.numeric(elite_parents)',
+            'as.numeric(elite) * as.numeric(pop_size)'
+                ' < as.numeric(exchange_count)',
             'as.numeric(parents) <= as.numeric(elite_parents)',
             # 'as.numeric(elite) * as.numeric(pop_size) < as.numeric(pr_pairs)',
         ],
@@ -227,12 +229,13 @@ def tune_box_2(problem: str, decoder: str):
     )
 
 
-def tune_gpu_brkga(problem: str, decoder: str, fix: bool):
+def tune_gpu_brkga(problem: str, fix: bool):
     tool = 'gpu-brkga' + ('-fix' if fix else '')
+    decoder = 'cpu'
     problem_name = PROBLEM_NAME[problem]
     assert problem_name != 'tsp'
     irace(
-        results_path=TUNING_PATH.joinpath(f'{tool}_{problem}_{decoder}'),
+        results_path=TUNING_PATH.joinpath(f'{tool}_{problem}'),
         executable=compile_optimizer(tool, problem),
         instances=[get_instance_path(problem_name, i)
                    for i in TUNING_INSTANCES[problem_name]],
@@ -256,7 +259,42 @@ def tune_gpu_brkga(problem: str, decoder: str, fix: bool):
             IraceParam('exchange-count', 'int', [1, 10]),
         ],
         forbidden_combinations=[
-            'as.numeric(elite) * as.numeric(pop_size) < as.numeric(exchange_count)',
+            'as.numeric(elite) * as.numeric(pop_size)'
+                ' < as.numeric(exchange_count)',
+        ],
+        timeout_seconds=MAX_TIME_SECONDS[problem_name] + TIMEOUT_SECONDS,
+    )
+
+
+def tune_brkga_api(problem: str):
+    tool = 'brkga-api'
+    decoder = 'cpu'
+    problem_name = PROBLEM_NAME[problem]
+    irace(
+        results_path=TUNING_PATH.joinpath(f'{tool}_{problem}'),
+        executable=compile_optimizer(tool, problem),
+        instances=[get_instance_path(problem_name, i)
+                   for i in TUNING_INSTANCES[problem_name]],
+        fixed_params={
+            'omp-threads': shell('nproc'),
+            'generations': MAX_GENERATIONS,
+            'max-time': MAX_TIME_SECONDS[problem_name],
+            'decoder': decoder,
+            'log-step': 0,
+            'parents': 2,
+            'elite-parents': 1,
+            'rhoe-function': 'RHOE',
+        },
+        tune_params=[
+            IraceParam('pop-count', 'int', [1, 8]),
+            IraceParam('pop-size', 'int', [64, 1024]),
+            IraceParam('elite', 'float', [.02, .20]),
+            IraceParam('mutant', 'float', [.02, .20]),
+            IraceParam('exchange-interval', 'int', [0, 200]),
+            IraceParam('exchange-count', 'int', [1, 10]),
+        ],
+        forbidden_combinations=[
+            'elite * pop_size < exchange_count',
         ],
         timeout_seconds=MAX_TIME_SECONDS[problem_name] + TIMEOUT_SECONDS,
     )
@@ -307,9 +345,13 @@ def tune_brkga_mp_ipr(problem: str):
 
 
 if __name__ == '__main__':
-    tune_gpu_brkga('scp', 'cpu', fix=False)
-    tune_gpu_brkga('scp', 'cpu', fix=True)
-    tune_gpu_brkga('cvrp_greedy', 'cpu', fix=False)
-    tune_gpu_brkga('cvrp_greedy', 'cpu', fix=True)
-    tune_gpu_brkga('cvrp', 'cpu', fix=False)
-    tune_gpu_brkga('cvrp', 'cpu', fix=True)
+    tune_gpu_brkga('scp', fix=False)
+    tune_gpu_brkga('scp', fix=True)
+    tune_gpu_brkga('cvrp_greedy', fix=False)
+    tune_gpu_brkga('cvrp_greedy', fix=True)
+    tune_gpu_brkga('cvrp', fix=False)
+    tune_gpu_brkga('cvrp', fix=True)
+    tune_brkga_api('scp')
+    tune_brkga_api('cvrp_greedy')
+    tune_brkga_api('cvrp')
+    tune_brkga_api('tsp')
