@@ -1,0 +1,292 @@
+#------------------------------------------------------------------------------
+# irace: An implementation in R of (Elitist) Iterated Racing
+# Version: 3.5.6863679
+# Copyright (C) 2010-2020
+# Manuel Lopez-Ibanez     <manuel.lopez-ibanez@manchester.ac.uk>
+# Jeremie Dubois-Lacoste  
+# Leslie Perez Caceres    <leslie.perez.caceres@ulb.ac.be>
+#
+# This is free software, and you are welcome to redistribute it under certain
+# conditions.  See the GNU General Public License for details. There is NO
+# WARRANTY; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# irace builds upon previous code from the race package:
+#     race: Racing methods for the selection of the best
+#     Copyright (C) 2003 Mauro Birattari
+#------------------------------------------------------------------------------
+# installed at: /usr/local/lib/R/site-library/irace
+# called with: --max-experiments 300 --log-file /experiment/experiments/tuning/brkga-mp-ipr_cvrp_greedy_cpu/results.Rdata --deterministic 0 --parallel 1 --seed 0
+== irace == WARNING: A default scenario file '/experiment/experiments/tuning/brkga-mp-ipr_cvrp_greedy_cpu/scenario.txt' has been found and will be read.
+# 2023-01-20 10:32:35 UTC: 3 expression(s) specifying forbidden configurations read from '/experiment/experiments/tuning/brkga-mp-ipr_cvrp_greedy_cpu/forbidden.txt'
+# 2023-01-20 10:32:35 UTC: Initialization
+# Elitist race
+# Elitist new instances: 1
+# Elitist limit: 2
+# nbIterations: 5
+# minNbSurvival: 5
+# nbParameters: 14
+# seed: 0
+# confidence level: 0.95
+# budget: 300
+# mu: 5
+# deterministic: FALSE
+
+# 2023-01-20 10:32:35 UTC: Iteration 1 of 5
+# experimentsUsedSoFar: 0
+# remainingBudget: 300
+# currentBudget: 60
+# nbConfigurations: 10
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          1|         10|         10|     138461.0000|         10|02:03:47|   NA|  NA|    NA|
+|x|          2|         10|         10|     155745.0000|         20|00:40:37|+0.92|0.96|0.1479|
+|x|          3|         10|         10|     161172.6667|         30|04:24:12|+0.80|0.87|0.1613|
+|x|          4|         10|         10|     163352.7500|         40|04:23:59|+0.83|0.87|0.1379|
+|-|          5|          2|         10|     165195.6000|         50|00:32:18|+1.00|1.00|0.0000|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          10    mean value:      165195.6000
+Description of the best-so-far configuration:
+   .ID. pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff .PARENT.
+10   10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31       NA
+
+# 2023-01-20 22:37:31 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff
+10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31
+8          7      466      10             3      CONSTANT  0.18   0.10                21              4         168            0.31          18      best        0.25
+# 2023-01-20 22:37:31 UTC: Iteration 2 of 5
+# experimentsUsedSoFar: 50
+# remainingBudget: 250
+# currentBudget: 62
+# nbConfigurations: 10
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          6|         10|         10|     140954.0000|         10|02:39:10|   NA|  NA|    NA|
+|x|          5|         10|         10|     156760.5000|         18|00:19:00|+0.77|0.88|0.1916|
+|x|          1|         10|         10|     150660.6667|         26|02:06:15|+0.85|0.90|0.1176|
+|x|          4|         10|         10|     155468.7500|         34|03:45:09|+0.83|0.88|0.1038|
+|-|          2|          3|         10|     158980.8000|         42|00:18:40|+0.80|0.84|0.0615|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          10    mean value:      161155.3333
+Description of the best-so-far configuration:
+   .ID. pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff .PARENT.
+10   10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31       NA
+
+# 2023-01-21 07:45:49 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff
+10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31
+8          7      466      10             3      CONSTANT  0.18   0.10                21              4         168            0.31          18      best        0.25
+11         6      401       9             5     LOGARITHM  0.11   0.17                28              9          14            0.56          25    random        0.23
+# 2023-01-21 07:45:49 UTC: Iteration 3 of 5
+# experimentsUsedSoFar: 92
+# remainingBudget: 208
+# currentBudget: 69
+# nbConfigurations: 10
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          7|         10|         10|     172733.0000|         10|00:17:03|   NA|  NA|    NA|
+|x|          4|         10|         10|     171313.0000|         17|01:40:36|+0.96|0.98|0.1393|
+|x|          3|         10|         10|     171551.3333|         25|02:41:16|+0.97|0.98|0.0912|
+|x|          6|         10|         10|     163902.0000|         32|00:36:47|+0.96|0.97|0.0668|
+|-|          5|          3|         10|     165635.0000|         39|00:08:56|+1.00|1.00|0.0549|
+|.|          1|          3|         10|     161106.0000|         39|00:00:00|+1.00|1.00|0.0446|
+|.|          2|          3|         10|     162809.2857|         39|00:00:00|+0.86|0.88|0.0545|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          10    mean value:      162809.2857
+Description of the best-so-far configuration:
+   .ID. pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff .PARENT.
+10   10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31       NA
+
+# 2023-01-21 13:10:29 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff
+10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31
+11         6      401       9             5     LOGARITHM  0.11   0.17                28              9          14            0.56          25    random        0.23
+8          7      466      10             3      CONSTANT  0.18   0.10                21              4         168            0.31          18      best        0.25
+# 2023-01-21 13:10:29 UTC: Iteration 4 of 5
+# experimentsUsedSoFar: 131
+# remainingBudget: 169
+# currentBudget: 84
+# nbConfigurations: 11
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          8|         11|         10|     166627.0000|         11|08:42:42|   NA|  NA|    NA|
+|x|          1|         11|         10|     152544.0000|         19|03:22:04|+0.91|0.95|0.0305|
+|x|          6|         11|         10|     148680.6667|         27|03:21:52|+0.93|0.96|0.0177|
+|x|          7|         11|         10|     154693.7500|         35|00:37:09|+0.85|0.89|0.0190|
+|-|          4|          3|         10|     157733.6000|         43|06:16:05|+1.00|1.00|0.0632|
+|.|          2|          3|         10|     160282.8333|         43|00:00:00|+0.83|0.86|0.0766|
+|.|          5|          3|         10|     162037.7143|         43|00:00:00|+0.86|0.88|0.0655|
+|.|          3|          3|         10|     163286.5000|         43|00:00:00|+0.88|0.89|0.0609|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          10    mean value:      163286.5000
+Description of the best-so-far configuration:
+   .ID. pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff .PARENT.
+10   10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31       NA
+
+# 2023-01-22 11:30:24 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff
+10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31
+11         6      401       9             5     LOGARITHM  0.11   0.17                28              9          14            0.56          25    random        0.23
+8          7      466      10             3      CONSTANT  0.18   0.10                21              4         168            0.31          18      best        0.25
+# 2023-01-22 11:30:24 UTC: Iteration 5 of 5
+# experimentsUsedSoFar: 174
+# remainingBudget: 126
+# currentBudget: 126
+# nbConfigurations: 15
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          9|         15|         10|     140648.0000|         15|05:14:01|   NA|  NA|    NA|
+|x|          2|         15|         44|     157920.0000|         27|00:51:19|+0.83|0.91|0.0055|
+|x|          6|         15|         10|     151543.6667|         39|04:03:44|+0.85|0.90|0.0045|
+|x|          4|         15|         10|     156131.0000|         51|08:46:25|+0.83|0.88|0.0130|
+|-|          8|          4|         10|     158230.2000|         63|08:47:42|+0.68|0.74|0.0931|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          10    mean value:      160771.1111
+Description of the best-so-far configuration:
+   .ID. pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff .PARENT.
+10   10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31       NA
+
+# 2023-01-23 15:13:38 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff
+10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31
+11         6      401       9             5     LOGARITHM  0.11   0.17                28              9          14            0.56          25    random        0.23
+8          7      466      10             3      CONSTANT  0.18   0.10                21              4         168            0.31          18      best        0.25
+45         5      922       9             2      CONSTANT  0.11   0.15                48             10          57            0.25          27    random        0.27
+# 2023-01-23 15:13:38 UTC: Iteration 6 of 6
+# experimentsUsedSoFar: 237
+# remainingBudget: 63
+# currentBudget: 63
+# nbConfigurations: 9
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|         10|          9|         10|     140001.0000|          9|03:34:06|   NA|  NA|    NA|
+|x|          9|          9|         10|     140324.5000|         14|02:08:21|+0.78|0.89|0.0032|
+|x|          2|          9|         10|     151226.0000|         19|00:15:21|+0.80|0.87|0.0121|
+|x|          1|          9|         10|     148034.7500|         25|02:24:17|+0.83|0.87|0.0089|
+|-|          5|          4|         10|     152941.2000|         31|00:19:43|+0.64|0.71|0.0879|
+|.|          8|          4|         10|     155222.1667|         31|00:00:00|+0.69|0.74|0.0949|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          10    mean value:      158694.1000
+Description of the best-so-far configuration:
+   .ID. pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff .PARENT.
+10   10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31       NA
+
+# 2023-01-23 23:55:28 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff
+10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31
+11         6      401       9             5     LOGARITHM  0.11   0.17                28              9          14            0.56          25    random        0.23
+8          7      466      10             3      CONSTANT  0.18   0.10                21              4         168            0.31          18      best        0.25
+45         5      922       9             2      CONSTANT  0.11   0.15                48             10          57            0.25          27    random        0.27
+# 2023-01-23 23:55:28 UTC: Iteration 7 of 7
+# experimentsUsedSoFar: 268
+# remainingBudget: 32
+# currentBudget: 32
+# nbConfigurations: 6
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|         11|          6|         10|     167800.0000|          6|04:12:50|   NA|  NA|    NA|
+|x|         10|          6|         10|     153900.5000|          8|00:15:35|+0.89|0.94|0.1893|
+|x|          3|          6|         10|     159943.0000|         11|01:47:57|+0.92|0.95|0.1050|
+|x|          6|          6|         10|     155195.7500|         13|00:15:46|+0.92|0.94|0.0962|
+|-|          8|          4|         10|     157482.0000|         15|00:52:22|+0.88|0.90|0.1024|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          10    mean value:      159521.9091
+Description of the best-so-far configuration:
+   .ID. pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff .PARENT.
+10   10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31       NA
+
+# 2023-01-24 07:19:59 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff
+10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31
+11         6      401       9             5     LOGARITHM  0.11   0.17                28              9          14            0.56          25    random        0.23
+8          7      466      10             3      CONSTANT  0.18   0.10                21              4         168            0.31          18      best        0.25
+45         5      922       9             2      CONSTANT  0.11   0.15                48             10          57            0.25          27    random        0.27
+# 2023-01-24 07:19:59 UTC: Stopped because there is not enough budget left to race more than the minimum (5)
+# You may either increase the budget or set 'minNbSurvival' to a lower value
+# Iteration: 8
+# nbIterations: 8
+# experimentsUsedSoFar: 283
+# timeUsed: 0
+# remainingBudget: 17
+# currentBudget: 17
+# number of elites: 4
+# nbConfigurations: 5
+# Total CPU user time: 1575331, CPU sys time: 1187.252, Wall-clock time: 334043.8
+# Best configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   pop_count pop_size parents elite_parents rhoe_function elite mutant exchange_interval exchange_count pr_interval pr_block_factor pr_max_time pr_select pr_min_diff
+10         5      694      10             3      CONSTANT  0.16   0.17                22             10          29            0.19          28    random        0.31
+11         6      401       9             5     LOGARITHM  0.11   0.17                28              9          14            0.56          25    random        0.23
+8          7      466      10             3      CONSTANT  0.18   0.10                21              4         168            0.31          18      best        0.25
+45         5      922       9             2      CONSTANT  0.11   0.15                48             10          57            0.25          27    random        0.27
+# Best configurations as commandlines (first number is the configuration ID; same order as above):
+10  --pop-count 5 --pop-size 694 --parents 10 --elite-parents 3 --rhoe-function CONSTANT --elite 0.16 --mutant 0.17 --exchange-interval 22 --exchange-count 10 --pr-interval 29 --pr-block-factor 0.19 --pr-max-time 28 --pr-select random --pr-min-diff 0.31
+11  --pop-count 6 --pop-size 401 --parents 9 --elite-parents 5 --rhoe-function LOGARITHM --elite 0.11 --mutant 0.17 --exchange-interval 28 --exchange-count 9 --pr-interval 14 --pr-block-factor 0.56 --pr-max-time 25 --pr-select random --pr-min-diff 0.23
+8   --pop-count 7 --pop-size 466 --parents 10 --elite-parents 3 --rhoe-function CONSTANT --elite 0.18 --mutant 0.1 --exchange-interval 21 --exchange-count 4 --pr-interval 168 --pr-block-factor 0.31 --pr-max-time 18 --pr-select best --pr-min-diff 0.25
+45  --pop-count 5 --pop-size 922 --parents 9 --elite-parents 2 --rhoe-function CONSTANT --elite 0.11 --mutant 0.15 --exchange-interval 48 --exchange-count 10 --pr-interval 57 --pr-block-factor 0.25 --pr-max-time 27 --pr-select random --pr-min-diff 0.27
+
+
+# Testing of elite configurations: 1 
+# Testing iteration configurations: FALSE 
+# 2023-01-24 07:19:59 UTC: No test instances, skip testing
