@@ -380,10 +380,10 @@ def tune_brkga_mp_ipr(problem: str):
 
 if __name__ == '__main__':
     tune_gpu_brkga('scp', fix=False)
-    tune_gpu_brkga('scp', fix=True)
     tune_gpu_brkga('cvrp_greedy', fix=False)
-    tune_gpu_brkga('cvrp_greedy', fix=True)
     tune_gpu_brkga('cvrp', fix=False)
+    tune_gpu_brkga('scp', fix=True)
+    tune_gpu_brkga('cvrp_greedy', fix=True)
     tune_gpu_brkga('cvrp', fix=True)
     tune_brkga_api('scp')
     tune_brkga_api('cvrp_greedy')
