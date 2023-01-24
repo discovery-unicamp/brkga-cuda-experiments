@@ -8,8 +8,6 @@
 #include "../../Tweaks.hpp"
 
 void thrustSort(float* dKeys, unsigned* dValues, unsigned length);
-void thrustSortKernel(float* dKeys,
-                      unsigned* dValues,
-                      unsigned length);
+void thrustSortKernel(float* dKeys, unsigned* dValues, unsigned length);
 
 #endif  // THRUST_SORT_HPP

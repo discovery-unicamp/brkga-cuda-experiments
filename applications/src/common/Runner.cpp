@@ -89,6 +89,8 @@ void BrkgaRunner::exportPopulation(std::ostream& out) {
 }
 
 void BrkgaRunner::run() {
+  box::logger::info("Running");
+
   const auto filename = "pop.txt";
   std::vector<BrkgaInterface::Population> initialPopulation;
   if (importPop) {
@@ -106,6 +108,8 @@ void BrkgaRunner::run() {
   box::logger::info("Initializing the BRKGA object with",
                     initialPopulation.size(), "population(s) provided");
   brkga->init(params, initialPopulation);
+
+  box::logger::info("Best initial solution:", brkga->getBestFitness());
 
   if (exportPop) {
     box::logger::info("Exporting the initial population to", filename);
@@ -157,6 +161,16 @@ void BrkgaRunner::run() {
       brkga->pathRelink();
     }
 
+#ifndef NDEBUG
+    box::logger::debug("Validating the best solution found so far");
+    const auto bestSoFar = brkga->getBestFitness();
+    if (instance.validatePermutations()) {
+      instance.validate(brkga->getBestPermutation().data(), bestSoFar);
+    } else {
+      instance.validate(brkga->getBestChromosome().data(), bestSoFar);
+    }
+#endif  // NDEBUG
+
     box::logger::debug("Evolved to generation", generation);
   }
 
@@ -200,11 +214,9 @@ void BrkgaRunner::run() {
 
   box::logger::info("Validating the solution");
   if (instance.validatePermutations()) {
-    const auto permutation = brkga->getBestPermutation();
-    instance.validate(permutation.data(), bestFitness);
+    instance.validate(brkga->getBestPermutation().data(), bestFitness);
   } else {
-    const auto bestChromosome = brkga->getBestChromosome();
-    instance.validate(bestChromosome.data(), bestFitness);
+    instance.validate(brkga->getBestChromosome().data(), bestFitness);
   }
 
   box::logger::info("Deleting the BRKGA object");

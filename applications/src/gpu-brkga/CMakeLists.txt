@@ -9,16 +9,16 @@ include_directories(SYSTEM "${CUDA_INCLUDE_DIRS}")
 # The executable
 add_executable(gpu-brkga
   ${CUDA_COMMON_SRC}
-  ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.cpp
   ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.cu
   ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.hpp
-  ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.cpp
   ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.cu
   ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.hpp
-  ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cpp
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cu
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.hpp
-  ${CMAKE_CURRENT_LIST_DIR}/main.cu
+  ${CMAKE_CURRENT_LIST_DIR}/GpuBrkga.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/GpuBrkga.cu
+  ${CMAKE_CURRENT_LIST_DIR}/GpuBrkga.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/main.cpp
 )
 
 set_target_properties(gpu-brkga PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -32,16 +32,16 @@ target_link_libraries(gpu-brkga PUBLIC OpenMP::OpenMP_CXX PUBLIC -lcurand -fopen
 # The executable of the fixed version
 add_executable(gpu-brkga-fix
   ${CUDA_COMMON_SRC}
-  ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.cpp
   ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.cu
   ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.hpp
-  ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.cpp
   ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.cu
   ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.hpp
-  ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cpp
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cu
   ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.hpp
-  ${CMAKE_CURRENT_LIST_DIR}/main.cu
+  ${CMAKE_CURRENT_LIST_DIR}/GpuBrkga.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/GpuBrkga.cu
+  ${CMAKE_CURRENT_LIST_DIR}/GpuBrkga.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/main.cpp
 )
 
 set_target_properties(gpu-brkga-fix PROPERTIES POSITION_INDEPENDENT_CODE ON)

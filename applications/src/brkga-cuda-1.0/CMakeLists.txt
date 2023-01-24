@@ -11,11 +11,16 @@ include_directories(SYSTEM "${CUDA_INCLUDE_DIRS}")
 # The executable
 add_executable(brkga-cuda-1.0
   ${CUDA_COMMON_SRC}
-  ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.cuh
-  ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.cuh
-  ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cuh
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.cu
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/CvrpDecoder.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.cu
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/ScpDecoder.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.cu
+  ${CMAKE_CURRENT_LIST_DIR}/decoders/TspDecoder.hpp
+  ${CMAKE_CURRENT_LIST_DIR}/BrkgaCuda.cu
+  ${CMAKE_CURRENT_LIST_DIR}/BrkgaCuda.hpp
   ${CMAKE_CURRENT_LIST_DIR}/BrkgaCudaInclude.cu
-  ${CMAKE_CURRENT_LIST_DIR}/main.cu
+  ${CMAKE_CURRENT_LIST_DIR}/main.cpp
 )
 
 set_target_properties(brkga-cuda-1.0 PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -28,15 +33,3 @@ target_link_libraries(brkga-cuda-1.0 PUBLIC OpenMP::OpenMP_CXX PUBLIC -lcurand -
 
 # The library
 include_directories(SYSTEM ${BRKGA_CUDA_1_ROOT})
-
-add_library(brkga-cuda-1.0-lib INTERFACE)
-target_sources(brkga-cuda-1.0-lib INTERFACE
-  ${BRKGA_CUDA_1_ROOT}/brkga-cuda-api/src/BRKGA.cu
-  ${BRKGA_CUDA_1_ROOT}/brkga-cuda-api/src/BRKGA.h
-  ${BRKGA_CUDA_1_ROOT}/brkga-cuda-api/src/CommonStructs.h
-  ${BRKGA_CUDA_1_ROOT}/brkga-cuda-api/src/ConfigFile.cpp
-  ${BRKGA_CUDA_1_ROOT}/brkga-cuda-api/src/ConfigFile.h
-  ${BRKGA_CUDA_1_ROOT}/brkga-cuda-api/src/Decoder.h
-)
-
-target_link_libraries(brkga-cuda-1.0 LINK_PUBLIC brkga-cuda-1.0-lib)

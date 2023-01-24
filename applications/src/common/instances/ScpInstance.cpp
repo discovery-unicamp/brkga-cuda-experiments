@@ -63,7 +63,7 @@ void ScpInstance::validate(const float* chromosome,
     if (chromosome[i] > acceptThreshold) {
       expectedFitness += costs[i];
       const auto l = i == 0 ? 0 : setsEnd[i - 1];
-      const auto r = setsEnd[i + 1];
+      const auto r = setsEnd[i];
       for (unsigned j = l; j < r; ++j) {
         const auto item = sets[j];
         covered[item] = true;

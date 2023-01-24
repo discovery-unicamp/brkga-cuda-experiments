@@ -4,6 +4,7 @@
 #include <brkga-cuda/Brkga.hpp>
 #include <brkga-cuda/utils/GpuUtils.hpp>
 
+#include <cmath>
 #include <numeric>
 
 class BoxBrkga::Algorithm {
@@ -49,7 +50,7 @@ BoxBrkga::BoxBrkga(unsigned _chromosomeLength, Decoder* _decoder)
       algorithm(nullptr),
       decoder(_decoder),
       params(),
-      bestFitness((Fitness)1e20),
+      bestFitness((Fitness)INFINITY),
       bestChromosome() {}
 
 BoxBrkga::~BoxBrkga() {

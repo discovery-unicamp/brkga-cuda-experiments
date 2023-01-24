@@ -1,5 +1,5 @@
-#ifndef USE_CPP_ONLY
-#error Flag USE_CPP_ONLY must be set
+#ifdef USE_CPP_ONLY
+#error Flag USE_CPP_ONLY must be unset
 #endif  // USE_CPP_ONLY
 
 #include "../Tweaks.hpp"  // Must be generated
@@ -18,15 +18,17 @@ typedef CvrpDecoder Decoder;
 #endif
 
 #include "../common/Runner.hpp"
-#include "BrkgaApi.hpp"
+#include "BrkgaCuda.hpp"
 
-class BrkgaApiRunner : public BrkgaRunner {
+class BrkgaCudaRunner : public BrkgaRunner {
 public:
-  BrkgaApiRunner(int argc, char** argv)
-      : BrkgaRunner(argc, argv), decoder(&instance) {}
+  BrkgaCudaRunner(int argc, char** argv)
+      : BrkgaRunner(argc, argv), decoder(&instance) {
+    box::logger::debug("BrkgaCudaRunner was built");
+  }
 
   BrkgaInterface* getBrkga() override {
-    return new BrkgaApi(instance.chromosomeLength(), &decoder);
+    return new BrkgaCuda(instance.chromosomeLength(), &decoder);
   }
 
 private:
@@ -35,6 +37,6 @@ private:
 
 int main(int argc, char** argv) {
   BrkgaRunner::showParams(argc, argv);
-  BrkgaApiRunner(argc, argv).run();
+  BrkgaCudaRunner(argc, argv).run();
   return 0;
 }

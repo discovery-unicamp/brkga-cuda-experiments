@@ -1,45 +1,51 @@
-#ifndef BOXBRKGA_HPP
-#define BOXBRKGA_HPP
+#ifndef BRKGAAPI_HPP
+#define BRKGAAPI_HPP
 
 #include "../common/BrkgaInterface.hpp"
-#include <brkga-cuda/Decoder.hpp>
 
 #include <vector>
 
-class BoxBrkga : public BrkgaInterface {
+class BrkgaApi : public BrkgaInterface {
 public:
   using BrkgaInterface::Chromosome;
   using BrkgaInterface::Fitness;
   using BrkgaInterface::Population;
 
-  typedef box::Decoder Decoder;
+  class Decoder {
+  public:
+    typedef double Gene;
+    typedef std::vector<Gene> ChromosomeD;
 
-  BoxBrkga(unsigned _chromosomeLength, Decoder* _decoder);
-  ~BoxBrkga();
+    virtual ~Decoder() = default;
 
-  inline std::string getName() override { return "BoxBrkga"; }
+    virtual Fitness decode(const ChromosomeD& chromosome) const = 0;
+  };
+
+  BrkgaApi(unsigned _chromosomeLength, Decoder* _decoder);
+  ~BrkgaApi();
+
+  inline std::string getName() override { return "BRKGA-API"; }
 
   void init(const Parameters& parameters,
             const std::vector<Population>& initialPopulations) override;
   void evolve() override;
   void exchangeElites() override;
-  void pathRelink() override;
-  void prune() override;
   Fitness getBestFitness() override;
   Chromosome getBestChromosome() override;
+  std::vector<unsigned> getBestPermutation() override;
   std::vector<Population> getPopulations() override;
-
-protected:
-  std::vector<unsigned> sorted(const Chromosome& chromosome) override;
 
 private:
   class Algorithm;
+
+  void updateBest();
 
   Algorithm* algorithm;
   Decoder* decoder;
   Parameters params;
   Fitness bestFitness;
   Chromosome bestChromosome;
+  std::vector<unsigned> bestPermutation;
 };
 
-#endif  // BOXBRKGA_HPP
+#endif  // BRKGAAPI_HPP

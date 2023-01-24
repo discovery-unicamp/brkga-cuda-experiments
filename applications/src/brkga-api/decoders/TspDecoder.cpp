@@ -6,7 +6,8 @@
 #include <numeric>
 #include <vector>
 
-double TspDecoder::decode(const std::vector<double>& chromosome) const {
+BrkgaApi::Fitness TspDecoder::decode(
+    const BrkgaApi::Decoder::ChromosomeD& chromosome) const {
   std::vector<unsigned> permutation(chromosome.size());
   std::iota(permutation.begin(), permutation.end(), 0);
   std::sort(permutation.begin(), permutation.end(),
