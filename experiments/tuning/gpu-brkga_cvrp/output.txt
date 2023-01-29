@@ -1,0 +1,206 @@
+#------------------------------------------------------------------------------
+# irace: An implementation in R of (Elitist) Iterated Racing
+# Version: 3.5.6863679
+# Copyright (C) 2010-2020
+# Manuel Lopez-Ibanez     <manuel.lopez-ibanez@manchester.ac.uk>
+# Jeremie Dubois-Lacoste  
+# Leslie Perez Caceres    <leslie.perez.caceres@ulb.ac.be>
+#
+# This is free software, and you are welcome to redistribute it under certain
+# conditions.  See the GNU General Public License for details. There is NO
+# WARRANTY; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# irace builds upon previous code from the race package:
+#     race: Racing methods for the selection of the best
+#     Copyright (C) 2003 Mauro Birattari
+#------------------------------------------------------------------------------
+# installed at: /usr/local/lib/R/site-library/irace
+# called with: --max-experiments 300 --log-file /experiment/experiments/tuning/gpu-brkga_cvrp/results.Rdata --deterministic 0 --parallel 1 --seed 0
+== irace == WARNING: A default scenario file '/experiment/experiments/tuning/gpu-brkga_cvrp/scenario.txt' has been found and will be read.
+# 2023-01-24 22:43:57 UTC: 1 expression(s) specifying forbidden configurations read from '/experiment/experiments/tuning/gpu-brkga_cvrp/forbidden.txt'
+# 2023-01-24 22:43:57 UTC: Initialization
+# Elitist race
+# Elitist new instances: 1
+# Elitist limit: 2
+# nbIterations: 4
+# minNbSurvival: 4
+# nbParameters: 6
+# seed: 0
+# confidence level: 0.95
+# budget: 300
+# mu: 5
+# deterministic: FALSE
+
+# 2023-01-24 22:43:57 UTC: Iteration 1 of 4
+# experimentsUsedSoFar: 0
+# remainingBudget: 300
+# currentBudget: 75
+# nbConfigurations: 12
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          1|         12|          2|     315396.0000|         12|00:20:08|   NA|  NA|    NA|
+|x|          2|         12|          2|     241472.0000|         24|00:06:00|+0.67|0.84|0.3665|
+|x|          3|         12|          2|     328718.0000|         36|00:36:41|+0.58|0.72|0.4482|
+|x|          4|         12|          2|     371938.0000|         48|00:36:34|+0.52|0.64|0.4684|
+|-|          5|          5|          2|     331344.6000|         60|00:06:01|-0.14|0.09|0.8726|
+|=|          6|          5|          2|     328812.1667|         65|00:12:58|-0.13|0.06|0.8354|
+|=|          7|          5|          9|     305422.2857|         70|00:03:50|-0.08|0.08|0.7930|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:           9    mean value:      305422.2857
+Description of the best-so-far configuration:
+  .ID. pop_count pop_size elite mutant exchange_interval exchange_count .PARENT.
+9    9         4      804  0.03   0.11               176              4       NA
+
+# 2023-01-25 00:46:14 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   pop_count pop_size elite mutant exchange_interval exchange_count
+9          4      804  0.03   0.11               176              4
+4          4      970  0.16   0.19                94              7
+2          6      597  0.10   0.10                61              6
+12         1      178  0.03   0.19               135              1
+# 2023-01-25 00:46:14 UTC: Iteration 2 of 4
+# experimentsUsedSoFar: 70
+# remainingBudget: 230
+# currentBudget: 76
+# nbConfigurations: 13
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          8|         13|          9|     497841.0000|         13|01:01:51|   NA|  NA|    NA|
+|x|          4|         13|          2|     501419.0000|         22|00:39:42|+0.40|0.70|0.6083|
+|x|          5|         13|          9|     389534.3333|         31|00:06:28|+0.02|0.35|0.8754|
+|x|          7|         13|         13|     334298.2500|         40|00:06:28|+0.18|0.38|0.7690|
+|-|          1|         10|         13|     330650.2000|         49|00:21:48|-0.06|0.16|0.9538|
+|=|          6|         10|         13|     328020.0000|         55|00:14:37|-0.08|0.10|0.9845|
+|=|          2|         10|         13|     305222.2857|         61|00:04:20|-0.06|0.09|0.9430|
+|=|          3|         10|         13|     329395.7500|         67|00:26:44|-0.04|0.09|0.9217|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          13    mean value:      329395.7500
+Description of the best-so-far configuration:
+   .ID. pop_count pop_size elite mutant exchange_interval exchange_count .PARENT.
+13   13         4      886  0.11   0.19                68              8        4
+
+# 2023-01-25 03:48:16 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   pop_count pop_size elite mutant exchange_interval exchange_count
+13         4      886  0.11   0.19                68              8
+9          4      804  0.03   0.11               176              4
+2          6      597  0.10   0.10                61              6
+4          4      970  0.16   0.19                94              7
+# 2023-01-25 03:48:16 UTC: Iteration 3 of 4
+# experimentsUsedSoFar: 137
+# remainingBudget: 163
+# currentBudget: 81
+# nbConfigurations: 12
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          9|         12|          4|     314876.0000|         12|00:47:18|   NA|  NA|    NA|
+|x|          2|         12|         22|     241527.5000|         20|00:09:18|-0.61|0.20|1.4398|
+|x|          5|         12|         13|     217126.3333|         28|00:09:18|-0.24|0.17|1.1105|
+|x|          7|         12|         26|     205098.5000|         36|00:09:18|-0.04|0.22|0.9718|
+|=|          4|         12|         26|     263926.2000|         44|00:57:30|+0.05|0.24|0.8975|
+|=|          3|         12|         26|     303827.0000|         52|00:57:30|+0.07|0.23|0.8688|
+|=|          8|         12|         26|     332011.7143|         60|00:57:19|+0.00|0.14|0.9157|
+|=|          6|         12|         13|     329255.7500|         68|00:31:31|+0.04|0.16|0.8923|
+|=|          1|         12|         28|     328145.1111|         76|00:31:29|+0.03|0.14|0.8909|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          28    mean value:      328145.1111
+Description of the best-so-far configuration:
+   .ID. pop_count pop_size elite mutant exchange_interval exchange_count .PARENT.
+28   28         5      921   0.1   0.19                83              8        4
+
+# 2023-01-25 08:58:52 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   pop_count pop_size elite mutant exchange_interval exchange_count
+28         5      921  0.10   0.19                83              8
+13         4      886  0.11   0.19                68              8
+29         5      634  0.17   0.19                79              9
+26         1      787  0.12   0.17                 9              7
+# 2023-01-25 08:58:52 UTC: Iteration 4 of 4
+# experimentsUsedSoFar: 213
+# remainingBudget: 87
+# currentBudget: 87
+# nbConfigurations: 12
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . All alive configurations are elite and nothing is discarded
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|         10|         12|         33|     314208.0000|         12|00:39:12|   NA|  NA|    NA|
+|x|          6|         12|         28|     315482.0000|         20|00:25:42|+0.31|0.66|1.0614|
+|x|          1|         12|         28|     315473.6667|         28|00:25:41|-0.14|0.24|1.1190|
+|x|          3|         12|         28|     361257.7500|         36|00:46:53|+0.12|0.34|0.9033|
+|=|          7|         12|         28|     322690.0000|         44|00:07:35|-0.09|0.13|0.9786|
+|=|          2|         12|         28|     296838.0000|         52|00:07:35|-0.03|0.14|0.9321|
+|=|          8|         12|         28|     325957.4286|         60|00:46:53|-0.04|0.11|0.9503|
+|=|          4|         12|         28|     347953.6250|         68|00:47:03|-0.07|0.06|0.9831|
+|=|          5|         12|         28|     328022.0000|         76|00:07:35|-0.09|0.03|0.9933|
+|=|          9|         12|         35|     327146.3000|         84|00:25:42|-0.08|0.03|0.9809|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          35    mean value:      327146.3000
+Description of the best-so-far configuration:
+   .ID. pop_count pop_size elite mutant exchange_interval exchange_count .PARENT.
+35   35         4     1020  0.17   0.18               123              9       13
+
+# 2023-01-25 13:38:48 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   pop_count pop_size elite mutant exchange_interval exchange_count
+35         4     1020  0.17   0.18               123              9
+28         5      921  0.10   0.19                83              8
+13         4      886  0.11   0.19                68              8
+37         4      988  0.13   0.17                21              7
+# 2023-01-25 13:38:48 UTC: Stopped because there is not enough budget left to race more than the minimum (4)
+# You may either increase the budget or set 'minNbSurvival' to a lower value
+# Iteration: 5
+# nbIterations: 5
+# experimentsUsedSoFar: 297
+# timeUsed: 0
+# remainingBudget: 3
+# currentBudget: 3
+# number of elites: 4
+# nbConfigurations: 3
+# Total CPU user time: 317473.3, CPU sys time: 3199.557, Wall-clock time: 53690.91
+# Best configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   pop_count pop_size elite mutant exchange_interval exchange_count
+35         4     1020  0.17   0.18               123              9
+28         5      921  0.10   0.19                83              8
+13         4      886  0.11   0.19                68              8
+37         4      988  0.13   0.17                21              7
+# Best configurations as commandlines (first number is the configuration ID; same order as above):
+35  --pop-count 4 --pop-size 1020 --elite 0.17 --mutant 0.18 --exchange-interval 123 --exchange-count 9
+28  --pop-count 5 --pop-size 921 --elite 0.1 --mutant 0.19 --exchange-interval 83 --exchange-count 8
+13  --pop-count 4 --pop-size 886 --elite 0.11 --mutant 0.19 --exchange-interval 68 --exchange-count 8
+37  --pop-count 4 --pop-size 988 --elite 0.13 --mutant 0.17 --exchange-interval 21 --exchange-count 7
+
+
+# Testing of elite configurations: 1 
+# Testing iteration configurations: FALSE 
+# 2023-01-25 13:38:48 UTC: No test instances, skip testing

@@ -1,0 +1,1 @@
+as.numeric(elite) * as.numeric(pop_size) < as.numeric(exchange_count)
