@@ -11,17 +11,19 @@ from result import PARAMS, read_results
 T = TypeVar('T')
 
 
-FILES = [
-    'BRKGA-MP-IPR-old.zip',
-    'BRKGA-CUDA+PR+pruning.zip',
-    # 'BRKGA-MP-IPR+PR.zip',
-    'BRKGA-CUDA+pruning.zip',
-    'BRKGA-CUDA.zip',
-]
-data = pd.concat((read_results(Path(f'results/{file}')) for file in FILES),
-                 ignore_index=True)
+# FILES = [
+#     # 'BRKGA-MP-IPR+PR.tsv',
+#     # 'BRKGA-CUDA+PR+pruning.zip',
+#     # 'BRKGA-MP-IPR+PR.zip',
+#     # 'BRKGA-CUDA+pruning.zip',
+#     # 'BRKGA-CUDA.zip',
+#     # 'BRKGA-CUDA+CEA-LS.tsv',
+# ]
+# data = pd.concat((read_results(Path(f'results/{file}')) for file in FILES),
+#                  ignore_index=True)
+data = pd.read_csv('results/v5.tsv', sep='\t')
 
-COLORS = ['red', 'green', 'blue', 'purple']
+COLORS = ['red', 'green', 'blue', 'purple', 'orange']
 
 FITNESS_ELAPSED = [1, 2, 3, 5, 15, 30, 60, 120, 180]
 FITNESS_VAR = [
@@ -29,13 +31,13 @@ FITNESS_VAR = [
     'elite',
     'similarity-threshold',
 ]
-SMOOTH_PLOT = True
+SMOOTH_PLOT = False
 PLOT_GENERATIONS = False
 
 
 def plot_convergence():
     plot_by = ['problem', 'instance']
-    plot_params = list(PARAMS - {'seed'} - set(plot_by))
+    plot_params = [p for p in PARAMS if p not in plot_by + ['seed']]
     label_color = {}
     for _, plot_condition in data[plot_by].drop_duplicates().iterrows():
         plt.figure(figsize=(10.80, 7.20))
@@ -111,9 +113,10 @@ def build_apc(df: pd.DataFrame) -> pd.DataFrame:
 
         return apc
 
+    assert not df.empty  # Avoids breaking inside `eval_apc`
     return (
         df
-        .groupby(list(PARAMS - {'seed'}))
+        .groupby([p for p in PARAMS if p != 'seed'])
         .apply(eval_apc)
         .rename('convergence')
         .reset_index()
@@ -136,6 +139,46 @@ def mean(iterable: Iterable[T]) -> T:
     return sum(lst) / len(lst)
 
 
+def greedy_vs_optimal_cvrp():
+    df = data.loc[data['problem'].isin(['cvrp', 'cvrp_greedy'])]
+    assert len(df['problem'].unique() == 2)
+
+    markers = ['^', 'v', '<', '>', 'o', 's', 'p', 'P', '*', 'D', ]
+
+    df = df.groupby(['tool', 'problem', 'instance'])['ans'].mean().reset_index()
+
+    instances =  sorted(df['instance'].unique(),
+                        key=lambda x: int(x[3:].split('-')[0]))
+    instances_dict = {name: k for k, name in enumerate(instances)}
+    df['x'] = df['instance'].apply(lambda x: instances_dict[x])
+    df = df.rename(columns={'ans': 'y'})
+
+    fig = plt.figure(figsize=(10.80, 7.20))
+    markers = ['o', '.']
+    colors = ['grey', 'black']
+    for i, problem in enumerate(df['problem'].unique()):
+        x = df.loc[df['problem'] == problem, 'x']
+        y = df.loc[df['problem'] == problem, 'y']
+        label = 'Optimal' if problem == 'cvrp' else 'Greedy'
+        label = f'{label} decoder'
+        plt.scatter(x, y, marker=markers[i], c=colors[i], label=label)
+
+    plt.legend()
+    plt.xticks(range(len(instances)), instances, rotation=45, ha='right')
+    plt.subplots_adjust(bottom=0.2)
+    plt.title('CVRP: greedy vs. optimal decoder')
+    plt.xlabel('Instance')
+    plt.ylabel('Fitness')
+    plt.grid(axis='x', which='major', linestyle='--')
+
+    fig_file = Path('plots/greedy-vs-optimal-decoder.eps')
+    fig_file.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(fig_file, bbox_inches='tight')
+    plt.savefig(fig_file.with_suffix('.png'), bbox_inches='tight')
+    plt.close(fig)
+
+
 if __name__ == '__main__':
-    plot_convergence()
+    # plot_convergence()
     # fitness()
+    greedy_vs_optimal_cvrp()
