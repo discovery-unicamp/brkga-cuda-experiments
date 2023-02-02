@@ -23,6 +23,8 @@ T = TypeVar('T')
 #                  ignore_index=True)
 data = pd.read_csv('results/v5.tsv', sep='\t')
 
+FIG_SIZE = (10.80, 7.20)
+COMPARE_TO = 'brkga-api (cpu)'
 COLORS = ['red', 'green', 'blue', 'purple', 'orange']
 
 FITNESS_ELAPSED = [1, 2, 3, 5, 15, 30, 60, 120, 180]
@@ -34,13 +36,54 @@ FITNESS_VAR = [
 SMOOTH_PLOT = False
 PLOT_GENERATIONS = False
 
+PLOTS = {
+    'brkga-api (cpu)':
+        ('BRKGA-API (CPU)', 'black', '.', 0),
+    'gpu-brkga (cpu)':
+        ('GPU-BRKGA (CPU)', 'blue', '.', 1),
+    'gpu-brkga-fix (cpu)':
+        ('GPU-BRKGA-Fixed (CPU)', 'cyan', '.', 2),
+    'brkga-cuda-1.0 (cpu)':
+        ('BrkgaCuda 1.0 (CPU)', 'pink', '*', 3),
+    'brkga-cuda-2.0 (cpu)':
+        ('BrkgaCuda 2.0 (CPU)', 'green', (3, 2, 0), 4),
+    'brkga-cuda-2.0 (all-cpu)':
+        ('BrkgaCuda 2.0 (All-CPU)', 'coral', (3, 2, 180), 5),
+    'brkga-cuda-2.0 (cpu-permutation)':
+        ('BrkgaCuda 2.0 (CPU-permutation)', 'red', (3, 2, 180), 6),
+    'brkga-cuda-2.0 (all-cpu-permutation)':
+        ('BrkgaCuda 2.0 (All-CPU-permutation)', 'lime', (3, 2, 180), 7),
+    'gpu-brkga (gpu)':
+        ('GPU-BRKGA (GPU)', 'purple', '.', 8),
+    'gpu-brkga-fix (gpu)':
+        ('GPU-BRKGA-Fixed (GPU)', 'magenta', '.', 9),
+    'brkga-cuda-1.0 (gpu)':
+        ('BrkgaCuda 1.0 (All-GPU)', 'cadetblue', '*', 10),
+    'brkga-cuda-1.0 (gpu-permutation)':
+        ('BrkgaCuda 1.0 (All-GPU-permutation)', 'orange', '*', 11),
+    'brkga-cuda-2.0 (gpu)':
+        ('BrkgaCuda 2.0 (GPU)', 'brown', (3, 2, 90), 12),
+    'brkga-cuda-2.0 (all-gpu)':
+        ('BrkgaCuda 2.0 (All-GPU)', 'peru', (3, 2, 90), 13),
+    'brkga-cuda-2.0 (gpu-permutation)':
+        ('BrkgaCuda 2.0 (GPU-permutation)', 'sienna', (3, 2, 270), 14),
+    'brkga-cuda-2.0 (all-gpu-permutation)':
+        ('BrkgaCuda 2.0 (All-GPU-permutation)', 'violet', (3, 2, 270), 15),
+}
+
+LABELS = {k: p[0] for k, p in PLOTS.items()}
+COLORS = {k: p[1] for k, p in PLOTS.items()}
+MARKERS = {k: p[2] for k, p in PLOTS.items()}
+LABEL_ORDER = {k: p[3] for k, p in PLOTS.items()}
+
 
 def plot_convergence():
     plot_by = ['problem', 'instance']
     plot_params = [p for p in PARAMS if p not in plot_by + ['seed']]
     label_color = {}
+    colors = COLORS.copy()
     for _, plot_condition in data[plot_by].drop_duplicates().iterrows():
-        plt.figure(figsize=(10.80, 7.20))
+        plt.figure(figsize=FIG_SIZE)
 
         mask = True
         for p in plot_by:
@@ -66,8 +109,8 @@ def plot_convergence():
 
             label = '_'.join(map(str, row[plot_params]))
             if label not in label_color:
-                assert COLORS
-                label_color[label] = COLORS.pop()
+                assert colors
+                label_color[label] = colors.pop()
 
             plt.plot(
                 (generation if PLOT_GENERATIONS else elapsed),
@@ -153,7 +196,7 @@ def greedy_vs_optimal_cvrp():
     df['x'] = df['instance'].apply(lambda x: instances_dict[x])
     df = df.rename(columns={'ans': 'y'})
 
-    fig = plt.figure(figsize=(10.80, 7.20))
+    fig = plt.figure(figsize=FIG_SIZE)
     markers = ['o', '.']
     colors = ['grey', 'black']
     for i, problem in enumerate(df['problem'].unique()):
@@ -166,7 +209,6 @@ def greedy_vs_optimal_cvrp():
     plt.legend()
     plt.xticks(range(len(instances)), instances, rotation=45, ha='right')
     plt.subplots_adjust(bottom=0.2)
-    plt.title('CVRP: greedy vs. optimal decoder')
     plt.xlabel('Instance')
     plt.ylabel('Fitness')
     plt.grid(axis='x', which='major', linestyle='--')
@@ -178,7 +220,82 @@ def greedy_vs_optimal_cvrp():
     plt.close(fig)
 
 
+def time_box_plot():
+    # The columns with the results
+    ans = 'ans'
+    elapsed = 'elapsed'
+
+    groups = data.groupby('problem').groups.items()
+    groups = sorted(groups, key=lambda x: x[0][1])  # permutation by problem
+    for problem, rows in groups:
+        compare_results = data[
+            (data['tool'] == COMPARE_TO.split()[0])
+            & (data['problem'] == problem)
+        ]
+
+        rows = list(set(rows).union(set(compare_results.index)))
+        plot = data.iloc[rows].pivot_table(
+            values=[ans, elapsed],
+            index=['instance', 'seed'],
+            columns=['tool', 'decode'],
+        )
+
+        plot.columns = pd.MultiIndex.from_tuples(
+            [(col[0], f'{col[1]} ({col[2]})') for col in plot.columns])
+
+        # Calculate the average of the solution of the algorithm in COMPARE_TO
+        #  and normalize the other solutions.
+        tmp = plot[(ans, COMPARE_TO)].reset_index()
+        tmp.columns = tmp.columns.droplevel(1)
+        tmp = tmp.groupby('instance')[ans].mean()
+        norm = plot[(ans, COMPARE_TO)].copy()
+        for instance in tmp.index:
+            norm.loc[instance] = tmp.loc[instance]
+        for algorithm in set(col for _, col in plot.columns):
+            plot[(ans, algorithm)] /= norm
+
+        # Calculate the median of time of the algorithm in COMPARE_TO
+        #  and normalize the other times.
+        tmp = plot[(elapsed, COMPARE_TO)].reset_index()
+        tmp.columns = tmp.columns.droplevel(1)
+        tmp = tmp.groupby('instance')[elapsed].median()
+        norm = plot[(elapsed, COMPARE_TO)].copy()
+        for instance in tmp.index:
+            norm.loc[instance] = tmp.loc[instance]
+        for algorithm in set(col for _, col in plot.columns):
+            plot[(elapsed, algorithm)] = norm / plot[(elapsed, algorithm)]
+
+        # Build the figure
+        plot.columns = plot.columns.swaplevel(0, 1)
+        plot = plot.sort_index(axis=1, level=0)
+
+        fig = plt.figure(figsize=FIG_SIZE)
+
+        algos = sorted(set(col for col, _ in plot.columns), key=LABEL_ORDER.get)
+        points = [plot[(algorithm, elapsed)] for algorithm in algos]
+        bp = plt.boxplot(points, sym='k.', vert=True, patch_artist=True, whis=1.5)
+        for patch in bp['boxes']:
+            patch.set_facecolor('lightblue')
+
+        # Format and save the figure
+        labels = [LABELS[a] for a in algos]
+        plt.xticks(range(1, len(labels) + 1), labels)
+        plt.ylabel('Speedup', fontsize=11)
+        plt.minorticks_on()
+        plt.grid(axis='y', which='minor', linestyle=':')
+        plt.grid(axis='y', which='major', linestyle='-')
+        plt.grid(axis='x', which='major', linestyle=':')
+
+        fig.autofmt_xdate(rotation=45)
+        plt.subplots_adjust(bottom=0.3)
+        plt.tight_layout()
+        plt.savefig(f'plots/time-box-plot-{problem}.eps')
+        plt.savefig(f'plots/time-box-plot-{problem}.png')
+        plt.close(fig)
+
+
 if __name__ == '__main__':
     # plot_convergence()
     # fitness()
-    greedy_vs_optimal_cvrp()
+    # greedy_vs_optimal_cvrp()
+    time_box_plot()
