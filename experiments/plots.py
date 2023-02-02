@@ -220,6 +220,86 @@ def greedy_vs_optimal_cvrp():
     plt.close(fig)
 
 
+def result_box_plot():
+    # The columns with the results
+    ans = 'ans'
+    elapsed = 'elapsed'
+
+    groups = data.groupby('problem').groups.items()
+    groups = sorted(groups, key=lambda x: x[0][1])  # permutation by problem
+
+    for problem, rows in groups:
+        compare_results = data[
+            (data['tool'] == COMPARE_TO.split()[0])
+            & (data['problem'] == problem)
+        ]
+
+        rows = list(set(rows).union(set(compare_results.index)))
+        plot = data.iloc[rows].pivot_table(
+            values=[ans, elapsed],
+            index=['instance', 'seed'],
+            columns=['tool', 'decode'],
+        )
+
+        plot.columns = pd.MultiIndex.from_tuples(
+            [(col[0], f'{col[1]} ({col[2]})') for col in plot.columns])
+
+        # Calculate the average of the solution of the algorithm in COMPARE_TO
+        #  and normalize the other solutions.
+        tmp = plot[(ans, COMPARE_TO)].reset_index()
+        tmp.columns = tmp.columns.droplevel(1)
+        tmp = tmp.groupby('instance')[ans].mean()
+        norm = plot[(ans, COMPARE_TO)].copy()
+        for instance in tmp.index:
+            norm.loc[instance] = tmp.loc[instance]
+        for algorithm in set(col for _, col in plot.columns):
+            plot[(ans, algorithm)] /= norm
+
+        # Calculate the median of time of the algorithm in COMPARE_TO
+        #  and normalize the other times.
+        tmp = plot[(elapsed, COMPARE_TO)].reset_index()
+        tmp.columns = tmp.columns.droplevel(1)
+        tmp = tmp.groupby('instance')[elapsed].median()
+        norm = plot[(elapsed, COMPARE_TO)].copy()
+        for instance in tmp.index:
+            norm.loc[instance] = tmp.loc[instance]
+        for algorithm in set(col for _, col in plot.columns):
+            plot[(elapsed, algorithm)] = norm / plot[(elapsed, algorithm)]
+
+        # Build the figure
+        plot.columns = plot.columns.swaplevel(0, 1)
+        plot = plot.sort_index(axis=1, level=0)
+
+        fig = plt.figure(figsize=FIG_SIZE)
+
+        algos = sorted(set(col for col, _ in plot.columns), key=LABEL_ORDER.get)
+        points = [plot[(algorithm, ans)] for algorithm in algos]
+        bp = plt.boxplot(points, sym='k.', vert=True, patch_artist=True, whis=1.5)
+        for algo, patch in zip(algos, bp['boxes']):
+            if 'gpu-brkga ' in algo:
+                patch.set_facecolor('red')
+            else:
+                patch.set_facecolor('lightblue')
+
+        # Format the figure
+        labels = [LABELS[a] for a in algos]
+        plt.xticks(range(1, len(labels) + 1), labels)
+        plt.ylabel('Fitness ratio')
+
+        if problem == 'scp':
+            plt.ylim([0.65, 1.75])
+        else:
+            plt.ylim([0.89, 1.25])
+
+        plt.grid(zorder=0)
+
+        fig.autofmt_xdate(rotation=45)
+        plt.tight_layout()
+        plt.savefig(f'plots/result-box-plot-{problem}.eps')
+        plt.savefig(f'plots/result-box-plot-{problem}.png')
+        plt.close(fig)
+
+
 def time_box_plot():
     # The columns with the results
     ans = 'ans'
@@ -298,4 +378,5 @@ if __name__ == '__main__':
     # plot_convergence()
     # fitness()
     # greedy_vs_optimal_cvrp()
-    time_box_plot()
+    result_box_plot()
+    # time_box_plot()
