@@ -28,6 +28,7 @@ RESUME_FROM_BACKUP = False
 TEST_COUNT = 20
 MAX_GENERATIONS = 10000
 TIMEOUT_SECONDS = 2 * 60
+LOG_STEP = 25
 OMP_THREADS = int(shell('nproc'))
 BUILD_TYPE = 'release'
 TWEAKS_FILE = Path('applications', 'src', 'Tweaks.hpp')
@@ -38,6 +39,7 @@ BACKUP_FILE = OUTPUT_PATH.joinpath('.backup.tsv')
 
 MAX_TIME_SECONDS = {
     'cvrp': 60 * 60,
+    'cvrp_greedy': 60 * 60,
     'scp': 10 * 60,
     'tsp': 60 * 60,
 }
@@ -205,7 +207,7 @@ def __build_params(
         for decoder in decoders:
             tuned_params = (
                 PARAMS_PATH
-                .joinpath(f'{tool}_{problem}_{decoder}.txt')
+                .joinpath(f'{tool}_{problem}_cpu.txt')
                 .read_text()
                 .split('\n')
             )
@@ -228,7 +230,7 @@ def __build_params(
                 'omp-threads': OMP_THREADS,
                 'generations': MAX_GENERATIONS,
                 'max-time': MAX_TIME_SECONDS[problem],
-                'log-step': 25,
+                'log-step': LOG_STEP,
             }
 
             yield from __combinations(tuned_params)
@@ -322,7 +324,7 @@ def __run_test(
         for key, value in params.items()
     }
 
-    cmd = f'timeout {TIMEOUT_SECONDS}s'
+    cmd = f'timeout {params["max-time"] + TIMEOUT_SECONDS}s'
     cmd += ' ' + str(executable.absolute())
     cmd += ''.join(f' --{arg} {value}' for arg, value in parsed_params.items())
 
