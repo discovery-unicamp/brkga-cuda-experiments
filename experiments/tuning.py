@@ -195,9 +195,6 @@ def tune_brkga_cuda(problem: str):
             'max-time': MAX_TIME_SECONDS[problem_name],
             'decoder': decoder,
             'log-step': 0,
-            'parents': 2,
-            'elite-parents': 1,
-            'rhoe-function': 'RHOE',
             'threads': 256,
         },
         tune_params=[
@@ -205,6 +202,7 @@ def tune_brkga_cuda(problem: str):
             IraceParam('pop-size', 'category', (256, 512, 768, 1024)),
             IraceParam('elite', 'float', [.02, .20]),
             IraceParam('mutant', 'float', [.02, .20]),
+            IraceParam('rhoe', 'float', [.6, .9]),
             IraceParam('exchange-interval', 'int', [0, 200]),
             IraceParam('exchange-count', 'int', [1, 10]),
         ],
@@ -280,15 +278,13 @@ def tune_gpu_brkga(problem: str, fix: bool):
             'max-time': MAX_TIME_SECONDS[problem_name],
             'decoder': decoder,
             'log-step': 0,
-            'parents': 2,
-            'elite-parents': 1,
-            'rhoe-function': 'RHOE',
         },
         tune_params=[
             IraceParam('pop-count', 'int', [1, 8]),
             IraceParam('pop-size', 'int', [64, 1024]),
             IraceParam('elite', 'float', [.02, .20]),
             IraceParam('mutant', 'float', [.02, .20]),
+            IraceParam('rhoe', 'float', [.6, .9]),
             IraceParam('exchange-interval', 'int', [0, 200]),
             IraceParam('exchange-count', 'int', [1, 10]),
         ],
@@ -315,15 +311,13 @@ def tune_brkga_api(problem: str):
             'max-time': MAX_TIME_SECONDS[problem_name],
             'decoder': decoder,
             'log-step': 0,
-            'parents': 2,
-            'elite-parents': 1,
-            'rhoe-function': 'RHOE',
         },
         tune_params=[
             IraceParam('pop-count', 'int', [1, 8]),
             IraceParam('pop-size', 'int', [64, 1024]),
             IraceParam('elite', 'float', [.02, .20]),
             IraceParam('mutant', 'float', [.02, .20]),
+            IraceParam('rhoe', 'float', [.6, .9]),
             IraceParam('exchange-interval', 'int', [0, 200]),
             IraceParam('exchange-count', 'int', [1, 10]),
         ],
@@ -379,17 +373,17 @@ def tune_brkga_mp_ipr(problem: str):
 
 
 if __name__ == '__main__':
-    tune_gpu_brkga('scp', fix=False)
-    tune_gpu_brkga('cvrp_greedy', fix=False)
-    tune_gpu_brkga('cvrp', fix=False)
+    # tune_gpu_brkga('scp', fix=False)
+    # tune_gpu_brkga('cvrp_greedy', fix=False)
+    # tune_gpu_brkga('cvrp', fix=False)
     tune_gpu_brkga('scp', fix=True)
     tune_gpu_brkga('cvrp_greedy', fix=True)
     tune_gpu_brkga('cvrp', fix=True)
-    tune_brkga_api('scp')
-    tune_brkga_api('cvrp_greedy')
-    tune_brkga_api('cvrp')
-    tune_brkga_api('tsp')
-    tune_brkga_cuda('scp')
-    tune_brkga_cuda('cvrp_greedy')
-    tune_brkga_cuda('cvrp')
-    tune_brkga_cuda('tsp')
+    # tune_brkga_api('scp')
+    # tune_brkga_api('cvrp_greedy')
+    # tune_brkga_api('cvrp')
+    # tune_brkga_api('tsp')
+    # tune_brkga_cuda('scp')
+    # tune_brkga_cuda('cvrp_greedy')
+    # tune_brkga_cuda('cvrp')
+    # tune_brkga_cuda('tsp')
