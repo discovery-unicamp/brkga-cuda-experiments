@@ -58,14 +58,18 @@ GpuBrkga::~GpuBrkga() {
 void GpuBrkga::init(const Parameters& parameters,
                     const std::vector<Population>& initialPopulations) {
   if (algorithm) {
+    box::logger::warning("Freeing previous algorithm");
     delete algorithm;
     algorithm = nullptr;
   }
 
+  box::logger::debug("Creating the object");
   params = parameters;
+  assert(decoder != nullptr);
   algorithm =
       new Algorithm(parameters, chromosomeLength, initialPopulations, *decoder);
   updateBest();
+  box::logger::debug("GPUBRKGA object is ready");
 }
 
 void GpuBrkga::evolve() {
@@ -130,9 +134,12 @@ std::vector<unsigned> GpuBrkga::sorted(const Chromosome& chromosome) {
 }
 
 void GpuBrkga::updateBest() {
+  box::logger::debug("Updating the best solution so far");
   assert(algorithm);
   const auto best = algorithm->obj.getBestIndividual();
   if (best.fitness.first < bestFitness) {
+    box::logger::debug("Solution improved from", bestFitness, "to",
+                       best.fitness.first);
     bestFitness = best.fitness.first;
     bestChromosome = Chromosome(best.aleles, best.aleles + chromosomeLength);
   }

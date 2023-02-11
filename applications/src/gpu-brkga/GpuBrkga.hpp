@@ -3,6 +3,7 @@
 
 #include "../common/BrkgaInterface.hpp"
 
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -21,7 +22,14 @@ public:
         : populationSize(_populationSize),
           chromosomeLength(_chromosomeLength),
           numberOfThreads(_numberOfThreads),
-          isCpuDecode(_isCpuDecode) {}
+          isCpuDecode(_isCpuDecode) {
+      if (populationSize == 0)
+        throw std::invalid_argument("Missing population size");
+      if (chromosomeLength == 0)
+        throw std::invalid_argument("Missing chromosome length");
+      if (numberOfThreads == 0)
+        throw std::invalid_argument("Missing number of threads");
+    }
 
     virtual ~Decoder() = default;
 
