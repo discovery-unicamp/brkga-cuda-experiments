@@ -1,0 +1,6 @@
+pop_count	"--pop-count "	i	(1, 8)
+pop_size	"--pop-size "	c	(256, 512, 768, 1024)
+elite	"--elite "	r	(0.02, 0.2)
+mutant	"--mutant "	r	(0.02, 0.2)
+exchange_interval	"--exchange-interval "	i	(0, 200)
+exchange_count	"--exchange-count "	i	(1, 10)

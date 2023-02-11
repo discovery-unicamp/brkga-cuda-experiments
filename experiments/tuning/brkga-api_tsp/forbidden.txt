@@ -1,0 +1,1 @@
+elite * pop_size < exchange_count
