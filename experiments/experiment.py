@@ -24,8 +24,8 @@ logging.basicConfig(
 )
 
 DEVICE = int(os.environ['DEVICE'])
-RESUME_FROM_BACKUP = False
-TEST_COUNT = 20
+RESUME_FROM_BACKUP = True
+TEST_COUNT = 10
 MAX_GENERATIONS = 10000
 TIMEOUT_SECONDS = 2 * 60
 LOG_STEP = 25
@@ -103,23 +103,23 @@ INSTANCES = {
         # 'scp65',
     ],
     'tsp': [
-        'zi929',
-        'lu980',
-        'rw1621',
-        'mu1979',
-        'nu3496',
-        'ca4663',
-        'tz6117',
-        'eg7146',
-        'ym7663',
-        'pm8079',
-        'ei8246',
-        'ar9152',
-        'ja9847',
-        'gr9882',
-        'kz9976',
-        'fi10639',
-        'mo14185',
+        # 'zi929',
+        # 'lu980',
+        # 'rw1621',
+        # 'mu1979',
+        # 'nu3496',
+        # 'ca4663',
+        # 'tz6117',
+        # 'eg7146',
+        # 'ym7663',
+        # 'pm8079',
+        # 'ei8246',
+        # 'ar9152',
+        # 'ja9847',
+        # 'gr9882',
+        # 'kz9976',
+        # 'fi10639',
+        # 'mo14185',
         'ho14473',
         'it16862',
         'vm22775',
@@ -139,7 +139,7 @@ def main():
         # ),
         __build_params(
             tool='brkga-mp-ipr',
-            problems=['scp', 'tsp', 'cvrp_greedy', 'cvrp'],
+            problems=['tsp', 'cvrp_greedy', 'cvrp'],
             decoders=['cpu'],
             test_count=TEST_COUNT,
         ),
