@@ -277,30 +277,25 @@ __global__ void evolveCrossover(float* dNewPopulation,  // random rhoe
 
   auto geneIndex = tid % chromosomeLength;
   auto chromosomeIndex = tid / chromosomeLength % newPopSize + eliteSize;
-  assert(chromosomeIndex < populationSize - mutantsSize);
+  // assert(chromosomeIndex < populationSize - mutantsSize);
   auto populationIndex = tid / chromosomeLength / newPopSize;
-  assert(populationIndex < populationCount);
+  // assert(populationIndex < populationCount);
   auto offset = populationIndex * populationSize;
   auto* newChromosome =
       dNewPopulation + (offset + chromosomeIndex) * chromosomeLength;
 
   auto pid = tid / chromosomeLength + eliteSize;
-  auto eliteParentIndex = (unsigned)(ceilf(dEliteParent[pid] * eliteSize) - 1);
-  auto nonEliteParentIndex =
-      (unsigned)(eliteSize + ceilf(dParent[pid] * (populationSize - eliteSize))
-                 - 1);
+  auto parentIndex =
+      (unsigned)(newChromosome[geneIndex] <= rhoe
+                     ? ceilf(dEliteParent[pid] * eliteSize) - 1
+                     : eliteSize
+                           + ceilf(dParent[pid] * (populationSize - eliteSize))
+                           - 1);
 
   auto* dPopFitnessIdx = dFitnessIdx + offset;
-  auto* eliteParent =
-      dPopulation
-      + (offset + dPopFitnessIdx[eliteParentIndex]) * chromosomeLength;
-  auto* nonEliteParent =
-      dPopulation
-      + (offset + dPopFitnessIdx[nonEliteParentIndex]) * chromosomeLength;
-
-  newChromosome[geneIndex] = newChromosome[geneIndex] <= rhoe
-                                 ? eliteParent[geneIndex]
-                                 : nonEliteParent[geneIndex];
+  auto* parent =
+      dPopulation + (offset + dPopFitnessIdx[parentIndex]) * chromosomeLength;
+  newChromosome[geneIndex] = parent[geneIndex];
 }
 
 // no need for mutants
@@ -426,11 +421,11 @@ __global__ void evolveCrossover(float* dNewPopulation,  // random rhoe
 
 int main() {
   // define params
-  const unsigned nLen = 2;  // up to 2^14 = ~8k
+  const unsigned nLen = 7;  // up to 2^14 = ~8k
   size_t chromosomeLengthsToTest[nLen];
   for (unsigned i = 0; i < nLen; ++i) chromosomeLengthsToTest[i] = 1 << (i + 7);
 
-  const unsigned tests = 2;
+  const unsigned tests = 10;
   const unsigned maxGenerations = 10000;
   const float rhoe = .7;
   const unsigned numPopulations = 4;
@@ -438,7 +433,8 @@ int main() {
   const unsigned numElites = 25;
   const unsigned numMutants = 25;
 
-  cout << "v0" << endl;
+  cout << "version\tchromosome_length\tseed\telapsed\tfitness" << endl;
+
   for (auto chromosomeLength : chromosomeLengthsToTest) {
     const auto totChr = numPopulations * popSize;
     const auto totGenes = totChr * chromosomeLength;
@@ -450,8 +446,6 @@ int main() {
     auto* dFitness = gpu::alloc<float>(nullptr, totChr);
     auto* dFitnessIdx = gpu::alloc<unsigned>(nullptr, totChr);
 
-    vector<float> elapsed;
-    vector<float> fitness;
     gpu::Timer timer;
     for (unsigned t = 1; t <= tests; ++t) {
       // cerr << "Test " << t << endl;
@@ -481,20 +475,14 @@ int main() {
       }
 
       gpu::sync();
-      elapsed.push_back(timer.seconds());
-      fitness.push_back(
-          getBest(dFitness, dFitnessIdx, numPopulations, popSize));
+      const auto elapsed = timer.seconds();
+      const auto fitness =
+          getBest(dFitness, dFitnessIdx, numPopulations, popSize);
+      cout << fixed << setprecision(6) << "v0"
+           << "\t" << chromosomeLength << "\t" << t << "\t" << elapsed << "\t"
+           << fitness << endl;
       gpu::free(gen);
     }
-
-    cout << fixed << setprecision(6);
-    cout << chromosomeLength << ":\n";
-    cout << "\telapsed:";
-    for (auto x : elapsed) cout << " " << x;
-    cout << endl;
-    cout << "\tfitness:";
-    for (auto x : fitness) cout << " " << x;
-    cout << endl;
 
     gpu::free(nullptr, dPopulation);
     gpu::free(nullptr, dPopulationTemp);
@@ -504,7 +492,6 @@ int main() {
     gpu::free(nullptr, dFitnessIdx);
   }
 
-  cout << "v1" << endl;
   for (auto chromosomeLength : chromosomeLengthsToTest) {
     const auto totChr = numPopulations * popSize;
     const auto totGenes = totChr * chromosomeLength;
@@ -516,8 +503,6 @@ int main() {
     auto* dFitness = gpu::alloc<float>(nullptr, totChr);
     auto* dFitnessIdx = gpu::alloc<unsigned>(nullptr, totChr);
 
-    vector<float> elapsed;
-    vector<float> fitness;
     gpu::Timer timer;
     for (unsigned t = 1; t <= tests; ++t) {
       // cerr << "Test " << t << endl;
@@ -549,20 +534,14 @@ int main() {
       }
 
       gpu::sync();
-      elapsed.push_back(timer.seconds());
-      fitness.push_back(
-          getBest(dFitness, dFitnessIdx, numPopulations, popSize));
+      const auto elapsed = timer.seconds();
+      const auto fitness =
+          getBest(dFitness, dFitnessIdx, numPopulations, popSize);
+      cout << fixed << setprecision(6) << "v1"
+           << "\t" << chromosomeLength << "\t" << t << "\t" << elapsed << "\t"
+           << fitness << endl;
       gpu::free(gen);
     }
-
-    cout << fixed << setprecision(6);
-    cout << chromosomeLength << ":\n";
-    cout << "\telapsed:";
-    for (auto x : elapsed) cout << " " << x;
-    cout << endl;
-    cout << "\tfitness:";
-    for (auto x : fitness) cout << " " << x;
-    cout << endl;
 
     gpu::free(nullptr, dPopulation);
     gpu::free(nullptr, dPopulationTemp);
@@ -572,7 +551,6 @@ int main() {
     gpu::free(nullptr, dFitnessIdx);
   }
 
-  cout << "v2" << endl;
   for (auto chromosomeLength : chromosomeLengthsToTest) {
     const auto totChr = numPopulations * popSize;
     const auto totGenes = totChr * chromosomeLength;
@@ -584,8 +562,6 @@ int main() {
     auto* dFitness = gpu::alloc<float>(nullptr, totChr);
     auto* dFitnessIdx = gpu::alloc<unsigned>(nullptr, totChr);
 
-    vector<float> elapsed;
-    vector<float> fitness;
     gpu::Timer timer;
     for (unsigned t = 1; t <= tests; ++t) {
       // cerr << "Test " << t << endl;
@@ -617,20 +593,14 @@ int main() {
       }
 
       gpu::sync();
-      elapsed.push_back(timer.seconds());
-      fitness.push_back(
-          getBest(dFitness, dFitnessIdx, numPopulations, popSize));
+      const auto elapsed = timer.seconds();
+      const auto fitness =
+          getBest(dFitness, dFitnessIdx, numPopulations, popSize);
+      cout << fixed << setprecision(6) << "v2"
+           << "\t" << chromosomeLength << "\t" << t << "\t" << elapsed << "\t"
+           << fitness << endl;
       gpu::free(gen);
     }
-
-    cout << fixed << setprecision(6);
-    cout << chromosomeLength << ":\n";
-    cout << "\telapsed:";
-    for (auto x : elapsed) cout << " " << x;
-    cout << endl;
-    cout << "\tfitness:";
-    for (auto x : fitness) cout << " " << x;
-    cout << endl;
 
     gpu::free(nullptr, dPopulation);
     gpu::free(nullptr, dPopulationTemp);
@@ -640,7 +610,6 @@ int main() {
     gpu::free(nullptr, dFitnessIdx);
   }
 
-  cout << "v3" << endl;
   for (auto chromosomeLength : chromosomeLengthsToTest) {
     const auto totChr = numPopulations * popSize;
     const auto totGenes = totChr * chromosomeLength;
@@ -652,8 +621,6 @@ int main() {
     auto* dFitness = gpu::alloc<float>(nullptr, totChr);
     auto* dFitnessIdx = gpu::alloc<unsigned>(nullptr, totChr);
 
-    vector<float> elapsed;
-    vector<float> fitness;
     gpu::Timer timer;
     for (unsigned t = 1; t <= tests; ++t) {
       // cerr << "Test " << t << endl;
@@ -693,20 +660,14 @@ int main() {
       }
 
       gpu::sync();
-      elapsed.push_back(timer.seconds());
-      fitness.push_back(
-          getBest(dFitness, dFitnessIdx, numPopulations, popSize));
+      const auto elapsed = timer.seconds();
+      const auto fitness =
+          getBest(dFitness, dFitnessIdx, numPopulations, popSize);
+      cout << fixed << setprecision(6) << "v3"
+           << "\t" << chromosomeLength << "\t" << t << "\t" << elapsed << "\t"
+           << fitness << endl;
       gpu::free(gen);
     }
-
-    cout << fixed << setprecision(6);
-    cout << chromosomeLength << ":\n";
-    cout << "\telapsed:";
-    for (auto x : elapsed) cout << " " << x;
-    cout << endl;
-    cout << "\tfitness:";
-    for (auto x : fitness) cout << " " << x;
-    cout << endl;
 
     gpu::free(nullptr, dPopulation);
     gpu::free(nullptr, dPopulationTemp);
@@ -716,25 +677,20 @@ int main() {
     gpu::free(nullptr, dFitnessIdx);
   }
 
-  cout << "v4" << endl;
   std::vector<std::vector<float>> biases;
 
   biases.push_back({});
   biases.back().push_back(rhoe);
   biases.back().push_back(1 - rhoe);
 
-  biases.push_back({});
-  for (unsigned i = 1; i <= 5; ++i) biases.back().push_back(1.0f / (float)i);
+  // biases.push_back({});
+  // for (unsigned i = 1; i <= 5; ++i) biases.back().push_back(1.0f / (float)i);
 
   for (unsigned i = 0; i < biases.size(); ++i)
     for (unsigned j = 1; j < biases[i].size(); ++j)
       biases[i][j] += biases[i][j - 1];
 
   for (const auto& bias : biases) {
-    cout << "Bias:";
-    for (const auto x : bias) cout << " " << x;
-    cout << endl;
-
     for (auto chromosomeLength : chromosomeLengthsToTest) {
       const unsigned numParents = bias.size();
       const unsigned numEliteParents = numParents / 2;
@@ -801,20 +757,17 @@ int main() {
         }
 
         gpu::sync();
-        elapsed.push_back(timer.seconds());
-        fitness.push_back(
-            getBest(dFitness, dFitnessIdx, numPopulations, popSize));
+        const auto elapsed = timer.seconds();
+        const auto fitness =
+            getBest(dFitness, dFitnessIdx, numPopulations, popSize);
+        cout << fixed << setprecision(6);
+        // show bias instead of the version
+        cout << "bias:";
+        for (const auto x : bias) cout << " " << x;
+        cout << "\t" << chromosomeLength << "\t" << t << "\t" << elapsed << "\t"
+             << fitness << endl;
         gpu::free(gen);
       }
-
-      cout << fixed << setprecision(6);
-      cout << chromosomeLength << ":\n";
-      cout << "\telapsed:";
-      for (auto x : elapsed) cout << " " << x;
-      cout << endl;
-      cout << "\tfitness:";
-      for (auto x : fitness) cout << " " << x;
-      cout << endl;
 
       gpu::free(nullptr, dPopulation);
       gpu::free(nullptr, dPopulationTemp);
