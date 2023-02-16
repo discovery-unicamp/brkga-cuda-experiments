@@ -433,7 +433,7 @@ int main() {
   const unsigned numElites = 25;
   const unsigned numMutants = 25;
 
-  cout << "version\tchromosome_length\tseed\telapsed\tfitness" << endl;
+  cout << "version\tn\tseed\telapsed\tfitness" << endl;
 
   for (auto chromosomeLength : chromosomeLengthsToTest) {
     const auto totChr = numPopulations * popSize;

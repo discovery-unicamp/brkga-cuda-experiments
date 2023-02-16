@@ -53,7 +53,7 @@ evolve:
 	@$(EXPERIMENT) "cd /experiment/experiments/performance/ && make docker-evolve"
 
 docker-evolve:
-	$(NVCC) -lcurand -o evolve.out evolve.cu
+	$(NVCC) -lcurand -o evolve.out evolve/evolve.cu
 	./evolve.out
 
 
