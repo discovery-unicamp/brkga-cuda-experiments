@@ -1,2 +1,2 @@
-pop_count pop_size elite mutant rhoe exchange_interval exchange_count
-        8      994  0.18   0.14 0.62                41              6
+pop_count pop_size elite mutant rhoe exchange_interval exchange_count threads
+        8      994  0.18   0.14 0.62                41              6    1024
