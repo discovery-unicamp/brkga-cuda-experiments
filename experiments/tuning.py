@@ -178,6 +178,7 @@ fi
         + " >" + str(output_path.absolute())
     )
     shell(f'cd {str(results_path.absolute())} && {irace_cmd}', get=False)
+    results_path.chmod(777)
 
 
 def tune_brkga_cuda(problem: str):
