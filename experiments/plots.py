@@ -11,19 +11,27 @@ from result import PARAMS, read_results
 T = TypeVar('T')
 
 
-# FILES = [
-#     # 'BRKGA-MP-IPR+PR.tsv',
-#     # 'BRKGA-CUDA+PR+pruning.zip',
-#     # 'BRKGA-MP-IPR+PR.zip',
-#     # 'BRKGA-CUDA+pruning.zip',
-#     # 'BRKGA-CUDA.zip',
-#     # 'BRKGA-CUDA+CEA-LS.tsv',
-# ]
-# data = pd.concat((read_results(Path(f'results/{file}')) for file in FILES),
-#                  ignore_index=True)
-data = pd.read_csv('results/v5.tsv', sep='\t')
+data = read_results(Path('results/v5.tsv'))
+FILES = [
+    # 'BRKGA-MP-IPR+PR.tsv',
+    # 'BRKGA-CUDA+PR+pruning.zip',
+    # 'BRKGA-MP-IPR+PR.zip',
+    # 'BRKGA-CUDA+pruning.zip',
+    # 'BRKGA-CUDA.zip',
+    # 'BRKGA-CUDA+CEA-LS.tsv',
+    'results/GPU-BRKGA.zip',
+    'results/.backup.tsv',
+]
+for file in map(Path, FILES):
+    df = read_results(file)
+    for tool, problem in (df[['tool', 'problem']]
+                          .drop_duplicates()
+                          .itertuples(index=False, name=None)):
+        data = data.loc[(data['tool'] != tool) | (data['problem'] != problem)]
+    data = pd.concat((data, df), ignore_index=True)
 
-FIG_SIZE = (10.80, 7.20)
+FIG_SIZE_PIXELS = 480
+FIG_SIZE = (4 / 3 * FIG_SIZE_PIXELS / 100, FIG_SIZE_PIXELS / 100)
 COMPARE_TO = 'brkga-api (cpu)'
 COLORS = ['red', 'green', 'blue', 'purple', 'orange']
 
@@ -238,7 +246,7 @@ def result_box_plot():
         plot = data.iloc[rows].pivot_table(
             values=[ans, elapsed],
             index=['instance', 'seed'],
-            columns=['tool', 'decode'],
+            columns=['tool', 'decoder'],
         )
 
         plot.columns = pd.MultiIndex.from_tuples(
@@ -286,10 +294,10 @@ def result_box_plot():
         plt.xticks(range(1, len(labels) + 1), labels)
         plt.ylabel('Fitness ratio')
 
-        if problem == 'scp':
-            plt.ylim([0.65, 1.75])
-        else:
-            plt.ylim([0.89, 1.25])
+        # if problem == 'scp':
+        #     plt.ylim([0.65, 1.75])
+        # else:
+        #     plt.ylim([0.89, 1.25])
 
         plt.grid(zorder=0)
 
@@ -317,7 +325,7 @@ def time_box_plot():
         plot = data.iloc[rows].pivot_table(
             values=[ans, elapsed],
             index=['instance', 'seed'],
-            columns=['tool', 'decode'],
+            columns=['tool', 'decoder'],
         )
 
         plot.columns = pd.MultiIndex.from_tuples(
