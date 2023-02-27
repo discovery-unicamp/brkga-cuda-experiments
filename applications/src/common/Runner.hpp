@@ -66,6 +66,7 @@ public:
         params(Parameters::parse(argc, argv)),
         instance(Instance::fromFile(params.instanceFileName)),
         generation(0) {
+    validate();
     box::logger::debug("Runner was built");
   }
 
@@ -86,6 +87,8 @@ protected:
   std::vector<BrkgaInterface::Population> importPopulation(std::istream& in);
 
   void exportPopulation(std::ostream& out);
+
+  void validate();
 
   void localSearch();
 

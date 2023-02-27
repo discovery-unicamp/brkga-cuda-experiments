@@ -1,9 +1,16 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-#include <cuda_runtime.h>
-#include <thrust/device_ptr.h>
-#include <thrust/sort.h>
+#include "../../brkga-cuda/src/brkga-cuda/utils/GpuUtils.cu"
+#include "../../brkga-cuda/src/brkga-cuda/utils/GpuUtils.hpp"
+using namespace box;
+
+template <class Key, class Value>
+void bbSegSort(Key*, Value*, std::size_t, std::size_t) {
+  abort();
+}
+
+#include <curand_kernel.h>
 
 #define alive cerr << "** alive " << __LINE__ << " **" << endl
 

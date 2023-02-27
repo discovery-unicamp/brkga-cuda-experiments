@@ -88,6 +88,26 @@ void BrkgaRunner::exportPopulation(std::ostream& out) {
   }
 }
 
+void BrkgaRunner::validate() {
+  box::logger::info("Validating the parameters");
+  if (params.numberOfPopulations == 0)
+    throw std::invalid_argument("Missing number of populations");
+  if (params.populationSize == 0)
+    throw std::invalid_argument("Missing population size");
+  if (params.getNumberOfElites() == 0)
+    throw std::invalid_argument("Missing number of elites");
+  if (params.getNumberOfMutants() == 0)
+    box::logger::warning("Number of mutants is 0");
+  box::logger::debug(params.rhoeFunction, params.rhoe);
+  if (params.rhoeFunction == "RHOE"
+      && (params.rhoe <= 0.5 || params.rhoe >= 1.0))
+    throw std::invalid_argument("The rhoe should be on range (0.5, 1.0)");
+  if (params.numParents < 2)
+    throw std::invalid_argument("Should use at least 2 parents");
+  if (params.numEliteParents < 1)
+    throw std::invalid_argument("Should use at least 1 elite parent");
+}
+
 void BrkgaRunner::run() {
   box::logger::info("Running");
 
@@ -104,6 +124,7 @@ void BrkgaRunner::run() {
 
   box::logger::info("Building the BRKGA object");
   brkga = getBrkga();
+  assert(brkga != nullptr);
 
   box::logger::info("Initializing the BRKGA object with",
                     initialPopulation.size(), "population(s) provided");

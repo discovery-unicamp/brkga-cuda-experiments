@@ -2,8 +2,8 @@ mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 current_path := $(patsubst %/,%,$(dir $(mkfile_path)))
 cuda_version := $(shell nvidia-smi | grep "CUDA Version" | cut -d: -f 3 | cut -d" " -f 2)
 
-EXPERIMENT = echo Starting container... && docker run --rm --gpus device=0 -v $(current_path)/:/performance/ nvidia/cuda:${cuda_version}.0-devel-ubuntu20.04 /bin/bash -c
-NVCC = nvcc --expt-relaxed-constexpr --generate-code=arch=compute_61,code=[compute_61,sm_61] -Xcompiler=-fPIC -O3 -std=c++17
+EXPERIMENT = echo Starting container... && docker run --rm --gpus device=0 -v $(current_path)/../../:/experiment/ nvidia/cuda:${cuda_version}.0-devel-ubuntu20.04 /bin/bash -c
+NVCC = nvcc --expt-relaxed-constexpr --generate-code=arch=compute_61,code=[compute_61,sm_61] -Xcompiler=-fPIC -O2 -std=c++17
 G++ = g++ -O2 -std=c++17
 
 ################################################################################
@@ -46,6 +46,15 @@ transpose:
 docker-transpose:
 	$(NVCC) -o transpose.out transpose.cu
 	./transpose.out
+
+
+################################################################################
+evolve:
+	@$(EXPERIMENT) "cd /experiment/experiments/performance/ && make docker-evolve"
+
+docker-evolve:
+	$(NVCC) -lcurand -o evolve.out evolve/evolve.cu
+	./evolve.out
 
 
 ################################################################################

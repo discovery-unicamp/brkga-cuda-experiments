@@ -17,7 +17,7 @@ struct Parameters {
   unsigned mutantSize = 0;
   float mutantFactor = 0;
   float rhoe = 0;
-  std::string rhoeFunction = "rhoe";
+  std::string rhoeFunction = "RHOE";
   unsigned numParents = 2;
   unsigned numEliteParents = 1;
   unsigned exchangeBestInterval = 0;

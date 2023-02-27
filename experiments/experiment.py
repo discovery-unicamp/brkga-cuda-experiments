@@ -24,7 +24,7 @@ logging.basicConfig(
 )
 
 DEVICE = int(os.environ['DEVICE'])
-RESUME_FROM_BACKUP = True
+RESUME_FROM_BACKUP = False
 TEST_COUNT = 10
 MAX_GENERATIONS = 10000
 TIMEOUT_SECONDS = 2 * 60
@@ -180,6 +180,18 @@ def main():
         #         'cpu', 'all-cpu', 'cpu-permutation', 'all-cpu-permutation',
         #         'gpu', 'all-gpu', 'gpu-permutation', 'all-gpu-permutation',
         #     ],
+        #     test_count=TEST_COUNT,
+        # ),
+        # __build_params(
+        #     tool='brkga-cuda-2.0',
+        #     problems=['scp'],
+        #     decoders=['cpu'],
+        #     test_count=TEST_COUNT,
+        # ),
+        # __build_params(
+        #     tool='brkga-mp-ipr',
+        #     problems=['scp'],
+        #     decoders=['cpu'],
         #     test_count=TEST_COUNT,
         # ),
     ))

@@ -1,0 +1,5 @@
+trainInstancesDir = ""
+trainInstancesFile = "/experiment/experiments/tuning/brkga-api_cvrp_greedy/instances-list.txt"
+parameterFile = "/experiment/experiments/tuning/brkga-api_cvrp_greedy/parameters.txt"
+forbiddenFile = "/experiment/experiments/tuning/brkga-api_cvrp_greedy/forbidden.txt"
+digits = 2
