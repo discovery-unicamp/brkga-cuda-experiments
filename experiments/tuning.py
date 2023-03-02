@@ -323,7 +323,8 @@ def tune_brkga_api(problem: str):
             IraceParam('exchange-count', 'int', [1, 10]),
         ],
         forbidden_combinations=[
-            'elite * pop_size < exchange_count',
+            'as.numeric(elite) * as.numeric(pop_size)'
+                ' < as.numeric(exchange_count)',
         ],
         timeout_seconds=MAX_TIME_SECONDS[problem_name] + TIMEOUT_SECONDS,
     )
