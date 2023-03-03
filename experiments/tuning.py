@@ -215,9 +215,8 @@ def tune_brkga_cuda(problem: str):
     )
 
 
-def tune_brkga_cuda_ii(problem: str):
+def tune_box_2(problem: str, decoder: str):
     tool = 'brkga-cuda-2.0'
-    decoder = 'cpu'
     problem_name = PROBLEM_NAME[problem]
     irace(
         results_path=TUNING_PATH.joinpath(f'{tool}_{problem}_{decoder}'),
@@ -225,7 +224,6 @@ def tune_brkga_cuda_ii(problem: str):
         instances=[get_instance_path(problem_name, i)
                    for i in TUNING_INSTANCES[problem_name]],
         fixed_params={
-            'threads': 256,
             'omp-threads': shell('nproc'),
             'generations': MAX_GENERATIONS,
             'max-time': MAX_TIME_SECONDS[problem_name],
@@ -379,9 +377,9 @@ if __name__ == '__main__':
     # tune_gpu_brkga('scp', fix=False)
     # tune_gpu_brkga('cvrp_greedy', fix=False)
     # tune_gpu_brkga('cvrp', fix=False)
-    # tune_gpu_brkga('scp', fix=True)
-    # tune_gpu_brkga('cvrp_greedy', fix=True)
-    # tune_gpu_brkga('cvrp', fix=True)
+    tune_gpu_brkga('scp', fix=True)
+    tune_gpu_brkga('cvrp_greedy', fix=True)
+    tune_gpu_brkga('cvrp', fix=True)
     # tune_brkga_api('scp')
     # tune_brkga_api('cvrp_greedy')
     # tune_brkga_api('cvrp')
@@ -390,7 +388,3 @@ if __name__ == '__main__':
     # tune_brkga_cuda('cvrp_greedy')
     # tune_brkga_cuda('cvrp')
     # tune_brkga_cuda('tsp')
-    tune_brkga_cuda_ii('scp')
-    tune_brkga_cuda_ii('cvrp_greedy')
-    tune_brkga_cuda_ii('cvrp')
-    tune_brkga_cuda_ii('tsp')
