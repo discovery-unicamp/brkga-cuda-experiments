@@ -1,5 +1,6 @@
 from bisect import bisect_right
 from pathlib import Path
+from random import random
 from typing import Iterable, List, Tuple, TypeVar
 import matplotlib.pyplot as plt
 
@@ -20,15 +21,20 @@ FILES = [
     # 'BRKGA-CUDA.zip',
     # 'BRKGA-CUDA+CEA-LS.tsv',
     'results/GPU-BRKGA.zip',
+    'results/.backup-brkga-mp-ipr.tsv',
     'results/.backup.tsv',
 ]
 for file in map(Path, FILES):
     df = read_results(file)
+    df = df.loc[df['seed'] <= 10]
     for tool, problem in (df[['tool', 'problem']]
                           .drop_duplicates()
                           .itertuples(index=False, name=None)):
         data = data.loc[(data['tool'] != tool) | (data['problem'] != problem)]
     data = pd.concat((data, df), ignore_index=True)
+
+data = data.loc[data['tool'] != 'gpu-brkga-fix']
+data = data.loc[data['tool'] != 'brkga-cuda-1.0']
 
 FIG_SIZE_PIXELS = 480
 FIG_SIZE = (4 / 3 * FIG_SIZE_PIXELS / 100, FIG_SIZE_PIXELS / 100)
@@ -47,6 +53,8 @@ PLOT_GENERATIONS = False
 PLOTS = {
     'brkga-api (cpu)':
         ('BRKGA-API (CPU)', 'black', '.', 0),
+    'brkga-mp-ipr (cpu)':
+        ('BRKGA-MP-IPR (CPU)', 'black', '.', 0.5),
     'gpu-brkga (cpu)':
         ('GPU-BRKGA (CPU)', 'blue', '.', 1),
     'gpu-brkga-fix (cpu)':
@@ -243,7 +251,7 @@ def result_box_plot():
         ]
 
         rows = list(set(rows).union(set(compare_results.index)))
-        plot = data.iloc[rows].pivot_table(
+        plot = data.loc[rows].pivot_table(
             values=[ans, elapsed],
             index=['instance', 'seed'],
             columns=['tool', 'decoder'],
@@ -281,7 +289,7 @@ def result_box_plot():
         fig = plt.figure(figsize=FIG_SIZE)
 
         algos = sorted(set(col for col, _ in plot.columns), key=LABEL_ORDER.get)
-        points = [plot[(algorithm, ans)] for algorithm in algos]
+        points = [plot[(algorithm, ans)].dropna() for algorithm in algos]
         bp = plt.boxplot(points, sym='k.', vert=True, patch_artist=True, whis=1.5)
         for algo, patch in zip(algos, bp['boxes']):
             if 'gpu-brkga ' in algo:
@@ -322,7 +330,7 @@ def time_box_plot():
         ]
 
         rows = list(set(rows).union(set(compare_results.index)))
-        plot = data.iloc[rows].pivot_table(
+        plot = data.loc[rows].pivot_table(
             values=[ans, elapsed],
             index=['instance', 'seed'],
             columns=['tool', 'decoder'],
@@ -360,7 +368,7 @@ def time_box_plot():
         fig = plt.figure(figsize=FIG_SIZE)
 
         algos = sorted(set(col for col, _ in plot.columns), key=LABEL_ORDER.get)
-        points = [plot[(algorithm, elapsed)] for algorithm in algos]
+        points = [plot[(algorithm, elapsed)].dropna() for algorithm in algos]
         bp = plt.boxplot(points, sym='k.', vert=True, patch_artist=True, whis=1.5)
         for patch in bp['boxes']:
             patch.set_facecolor('lightblue')
@@ -387,4 +395,4 @@ if __name__ == '__main__':
     # fitness()
     # greedy_vs_optimal_cvrp()
     result_box_plot()
-    # time_box_plot()
+    time_box_plot()
