@@ -159,8 +159,6 @@ fi
 """
     runner_path = results_path.joinpath('target-runner')
     runner_path.write_text(runner)
-    # path.chmod doesn't work
-    shell(f'chmod +x {str(runner_path.absolute())}', get=False)
 
     irace_params = {
         'max-experiments': MAX_EXPERIMENTS,
