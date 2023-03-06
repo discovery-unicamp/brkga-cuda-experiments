@@ -20,6 +20,10 @@ CvrpDecoder::CvrpDecoder(CvrpInstance* _instance)
                    instance->demands.size());
   box::gpu::copy2d(nullptr, dDistances, instance->distances.data(),
                    instance->distances.size());
+
+  // Set CUDA heap limit to 1GB to avoid memory issues with the sort of thrust
+  constexpr auto oneGigaByte = (std::size_t)1024 * 1024 * 1024;
+  box::gpu::setMaxHeapSize(oneGigaByte);
 }
 
 CvrpDecoder::~CvrpDecoder() {
