@@ -24,7 +24,7 @@ logging.basicConfig(
 )
 
 DEVICE = int(os.environ['DEVICE'])
-RESUME_FROM_BACKUP = True
+RESUME_FROM_BACKUP = False
 TEST_COUNT = 10
 MAX_GENERATIONS = 10000
 TIMEOUT_SECONDS = 2 * 60
@@ -103,24 +103,24 @@ INSTANCES = {
         # 'scp65',
     ],
     'tsp': [
-        # 'zi929',
-        # 'lu980',
-        # 'rw1621',
-        # 'mu1979',
-        # 'nu3496',
-        # 'ca4663',
-        # 'tz6117',
-        # 'eg7146',
-        # 'ym7663',
-        # 'pm8079',
-        # 'ei8246',
-        # 'ar9152',
-        # 'ja9847',
-        # 'gr9882',
-        # 'kz9976',
-        # 'fi10639',
-        # 'mo14185',
-        # 'ho14473',
+        'zi929',
+        'lu980',
+        'rw1621',
+        'mu1979',
+        'nu3496',
+        'ca4663',
+        'tz6117',
+        'eg7146',
+        'ym7663',
+        'pm8079',
+        'ei8246',
+        'ar9152',
+        'ja9847',
+        'gr9882',
+        'kz9976',
+        'fi10639',
+        'mo14185',
+        'ho14473',
         'it16862',
         'vm22775',
         'sw24978',
@@ -149,56 +149,56 @@ def main():
         #     decoders=['cpu', 'gpu'],
         #     test_count=TEST_COUNT,
         # ),
-        # __build_params(
-        #     tool='brkga-cuda-1.0',
-        #     problems=['tsp', 'cvrp_greedy', 'cvrp'],
-        #     decoders=['cpu', 'gpu', 'gpu-permutation'],
-        #     test_count=TEST_COUNT,
-        # ),
-        # __build_params(
-        #     tool='brkga-cuda-1.0',
-        #     problems=['scp'],
-        #     decoders=['cpu', 'gpu'],
-        #     test_count=TEST_COUNT,
-        # ),
+        __build_params(
+            tool='brkga-cuda-1.0',
+            problems=['scp'],
+            decoders=['cpu', 'gpu'],
+            test_count=TEST_COUNT,
+        ),
+        __build_params(
+            tool='brkga-cuda-1.0',
+            problems=['cvrp_greedy', 'cvrp', 'tsp'],
+            decoders=['cpu', 'gpu', 'gpu-permutation'],
+            test_count=TEST_COUNT,
+        ),
         # __build_params(
         #     tool='brkga-cuda-2.0',
         #     problems=['scp'],
         #     decoders=['cpu', 'all-cpu', 'gpu', 'all-gpu'],
         #     test_count=TEST_COUNT,
         # ),
-        __build_params(
-            tool='brkga-cuda-2.0',
-            problems=['cvrp_greedy', 'cvrp', 'tsp'],
-            decoders=[
-                'gpu-permutation', 'all-gpu-permutation',
-            ],
-            test_count=TEST_COUNT,
-        ),
-        __build_params(
-            tool='brkga-cuda-2.0',
-            problems=['cvrp_greedy', 'cvrp', 'tsp'],
-            decoders=[
-                'cpu-permutation', 'all-cpu-permutation',
-            ],
-            test_count=TEST_COUNT,
-        ),
-        __build_params(
-            tool='brkga-cuda-2.0',
-            problems=['cvrp_greedy', 'cvrp', 'tsp'],
-            decoders=[
-                'gpu', 'all-gpu',
-            ],
-            test_count=TEST_COUNT,
-        ),
-        __build_params(
-            tool='brkga-cuda-2.0',
-            problems=['cvrp_greedy', 'cvrp', 'tsp'],
-            decoders=[
-                'cpu', 'all-cpu',
-            ],
-            test_count=TEST_COUNT,
-        ),
+        # __build_params(
+        #     tool='brkga-cuda-2.0',
+        #     problems=['cvrp_greedy', 'cvrp', 'tsp'],
+        #     decoders=[
+        #         'gpu-permutation', 'all-gpu-permutation',
+        #     ],
+        #     test_count=TEST_COUNT,
+        # ),
+        # __build_params(
+        #     tool='brkga-cuda-2.0',
+        #     problems=['cvrp_greedy', 'cvrp', 'tsp'],
+        #     decoders=[
+        #         'cpu-permutation', 'all-cpu-permutation',
+        #     ],
+        #     test_count=TEST_COUNT,
+        # ),
+        # __build_params(
+        #     tool='brkga-cuda-2.0',
+        #     problems=['cvrp_greedy', 'cvrp', 'tsp'],
+        #     decoders=[
+        #         'gpu', 'all-gpu',
+        #     ],
+        #     test_count=TEST_COUNT,
+        # ),
+        # __build_params(
+        #     tool='brkga-cuda-2.0',
+        #     problems=['cvrp_greedy', 'cvrp', 'tsp'],
+        #     decoders=[
+        #         'cpu', 'all-cpu',
+        #     ],
+        #     test_count=TEST_COUNT,
+        # ),
         # __build_params(
         #     tool='brkga-mp-ipr',
         #     problems=['scp'],
