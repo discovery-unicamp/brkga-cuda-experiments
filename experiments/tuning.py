@@ -159,7 +159,6 @@ fi
 """
     runner_path = results_path.joinpath('target-runner')
     runner_path.write_text(runner)
-    runner_path.chmod(777)
 
     irace_params = {
         'max-experiments': MAX_EXPERIMENTS,
@@ -178,7 +177,6 @@ fi
         + " >" + str(output_path.absolute())
     )
     shell(f'cd {str(results_path.absolute())} && {irace_cmd}', get=False)
-    results_path.chmod(777)
 
 
 def tune_brkga_cuda(problem: str):
@@ -381,11 +379,11 @@ if __name__ == '__main__':
     # tune_gpu_brkga('scp', fix=True)
     # tune_gpu_brkga('cvrp_greedy', fix=True)
     # tune_gpu_brkga('cvrp', fix=True)
-    tune_brkga_api('scp')
-    tune_brkga_api('cvrp_greedy')
-    tune_brkga_api('cvrp')
-    tune_brkga_api('tsp')
-    # tune_brkga_cuda('scp')
-    # tune_brkga_cuda('cvrp_greedy')
-    # tune_brkga_cuda('cvrp')
-    # tune_brkga_cuda('tsp')
+    # tune_brkga_api('scp')
+    # tune_brkga_api('cvrp_greedy')
+    # tune_brkga_api('cvrp')
+    # tune_brkga_api('tsp')
+    tune_brkga_cuda('scp')
+    tune_brkga_cuda('cvrp_greedy')
+    tune_brkga_cuda('cvrp')
+    tune_brkga_cuda('tsp')
