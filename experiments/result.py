@@ -132,6 +132,10 @@ def read_results(path: Path) -> pd.DataFrame:
     results_df = pd.read_csv(path, sep='\t', dtype=types)
     logging.debug("Found %d entries", len(results_df))
 
+    results_df = results_df.rename(columns={
+        'decode': 'decoder',
+    })
+
     results_df.loc[:, 'convergence'] = (
         results_df['convergence']
         .str

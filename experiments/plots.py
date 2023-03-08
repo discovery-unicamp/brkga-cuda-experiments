@@ -1,5 +1,6 @@
 from bisect import bisect_right
 from pathlib import Path
+from random import random
 from typing import Iterable, List, Tuple, TypeVar
 import matplotlib.pyplot as plt
 
@@ -11,19 +12,32 @@ from result import PARAMS, read_results
 T = TypeVar('T')
 
 
-# FILES = [
-#     # 'BRKGA-MP-IPR+PR.tsv',
-#     # 'BRKGA-CUDA+PR+pruning.zip',
-#     # 'BRKGA-MP-IPR+PR.zip',
-#     # 'BRKGA-CUDA+pruning.zip',
-#     # 'BRKGA-CUDA.zip',
-#     # 'BRKGA-CUDA+CEA-LS.tsv',
-# ]
-# data = pd.concat((read_results(Path(f'results/{file}')) for file in FILES),
-#                  ignore_index=True)
-data = pd.read_csv('results/v5.tsv', sep='\t')
+data = read_results(Path('results/v5.tsv'))
+FILES = [
+    # 'BRKGA-MP-IPR+PR.tsv',
+    # 'BRKGA-CUDA+PR+pruning.zip',
+    # 'BRKGA-MP-IPR+PR.zip',
+    # 'BRKGA-CUDA+pruning.zip',
+    # 'BRKGA-CUDA.zip',
+    # 'BRKGA-CUDA+CEA-LS.tsv',
+    'results/GPU-BRKGA.zip',
+    'results/.backup-brkga-mp-ipr.tsv',
+    'results/.backup.tsv',
+]
+for file in map(Path, FILES):
+    df = read_results(file)
+    df = df.loc[df['seed'] <= 10]
+    for tool, problem in (df[['tool', 'problem']]
+                          .drop_duplicates()
+                          .itertuples(index=False, name=None)):
+        data = data.loc[(data['tool'] != tool) | (data['problem'] != problem)]
+    data = pd.concat((data, df), ignore_index=True)
 
-FIG_SIZE = (10.80, 7.20)
+data = data.loc[data['tool'] != 'gpu-brkga-fix']
+data = data.loc[data['tool'] != 'brkga-cuda-1.0']
+
+FIG_SIZE_PIXELS = 480
+FIG_SIZE = (4 / 3 * FIG_SIZE_PIXELS / 100, FIG_SIZE_PIXELS / 100)
 COMPARE_TO = 'brkga-api (cpu)'
 COLORS = ['red', 'green', 'blue', 'purple', 'orange']
 
@@ -39,6 +53,8 @@ PLOT_GENERATIONS = False
 PLOTS = {
     'brkga-api (cpu)':
         ('BRKGA-API (CPU)', 'black', '.', 0),
+    'brkga-mp-ipr (cpu)':
+        ('BRKGA-MP-IPR (CPU)', 'black', '.', 0.5),
     'gpu-brkga (cpu)':
         ('GPU-BRKGA (CPU)', 'blue', '.', 1),
     'gpu-brkga-fix (cpu)':
@@ -235,10 +251,10 @@ def result_box_plot():
         ]
 
         rows = list(set(rows).union(set(compare_results.index)))
-        plot = data.iloc[rows].pivot_table(
+        plot = data.loc[rows].pivot_table(
             values=[ans, elapsed],
             index=['instance', 'seed'],
-            columns=['tool', 'decode'],
+            columns=['tool', 'decoder'],
         )
 
         plot.columns = pd.MultiIndex.from_tuples(
@@ -273,7 +289,7 @@ def result_box_plot():
         fig = plt.figure(figsize=FIG_SIZE)
 
         algos = sorted(set(col for col, _ in plot.columns), key=LABEL_ORDER.get)
-        points = [plot[(algorithm, ans)] for algorithm in algos]
+        points = [plot[(algorithm, ans)].dropna() for algorithm in algos]
         bp = plt.boxplot(points, sym='k.', vert=True, patch_artist=True, whis=1.5)
         for algo, patch in zip(algos, bp['boxes']):
             if 'gpu-brkga ' in algo:
@@ -286,10 +302,10 @@ def result_box_plot():
         plt.xticks(range(1, len(labels) + 1), labels)
         plt.ylabel('Fitness ratio')
 
-        if problem == 'scp':
-            plt.ylim([0.65, 1.75])
-        else:
-            plt.ylim([0.89, 1.25])
+        # if problem == 'scp':
+        #     plt.ylim([0.65, 1.75])
+        # else:
+        #     plt.ylim([0.89, 1.25])
 
         plt.grid(zorder=0)
 
@@ -314,10 +330,10 @@ def time_box_plot():
         ]
 
         rows = list(set(rows).union(set(compare_results.index)))
-        plot = data.iloc[rows].pivot_table(
+        plot = data.loc[rows].pivot_table(
             values=[ans, elapsed],
             index=['instance', 'seed'],
-            columns=['tool', 'decode'],
+            columns=['tool', 'decoder'],
         )
 
         plot.columns = pd.MultiIndex.from_tuples(
@@ -352,7 +368,7 @@ def time_box_plot():
         fig = plt.figure(figsize=FIG_SIZE)
 
         algos = sorted(set(col for col, _ in plot.columns), key=LABEL_ORDER.get)
-        points = [plot[(algorithm, elapsed)] for algorithm in algos]
+        points = [plot[(algorithm, elapsed)].dropna() for algorithm in algos]
         bp = plt.boxplot(points, sym='k.', vert=True, patch_artist=True, whis=1.5)
         for patch in bp['boxes']:
             patch.set_facecolor('lightblue')
@@ -379,4 +395,4 @@ if __name__ == '__main__':
     # fitness()
     # greedy_vs_optimal_cvrp()
     result_box_plot()
-    # time_box_plot()
+    time_box_plot()

@@ -103,24 +103,24 @@ INSTANCES = {
         # 'scp65',
     ],
     'tsp': [
-        # 'zi929',
-        # 'lu980',
-        # 'rw1621',
-        # 'mu1979',
-        # 'nu3496',
-        # 'ca4663',
-        # 'tz6117',
-        # 'eg7146',
-        # 'ym7663',
-        # 'pm8079',
-        # 'ei8246',
-        # 'ar9152',
-        # 'ja9847',
-        # 'gr9882',
-        # 'kz9976',
-        # 'fi10639',
-        # 'mo14185',
-        # 'ho14473',
+        'zi929',
+        'lu980',
+        'rw1621',
+        'mu1979',
+        'nu3496',
+        'ca4663',
+        'tz6117',
+        'eg7146',
+        'ym7663',
+        'pm8079',
+        'ei8246',
+        'ar9152',
+        'ja9847',
+        'gr9882',
+        'kz9976',
+        'fi10639',
+        'mo14185',
+        'ho14473',
         'it16862',
         'vm22775',
         'sw24978',
@@ -138,12 +138,6 @@ def main():
             test_count=TEST_COUNT,
         ),
         # __build_params(
-        #     tool='brkga-mp-ipr',
-        #     problems=['tsp', 'cvrp_greedy', 'cvrp'],
-        #     decoders=['cpu'],
-        #     test_count=TEST_COUNT,
-        # ),
-        # __build_params(
         #     tool='gpu-brkga',
         #     problems=['scp', 'cvrp_greedy', 'cvrp'],
         #     decoders=['cpu', 'gpu'],
@@ -157,14 +151,14 @@ def main():
         # ),
         # __build_params(
         #     tool='brkga-cuda-1.0',
-        #     problems=['tsp', 'cvrp_greedy', 'cvrp'],
-        #     decoders=['cpu', 'gpu', 'gpu-permutation'],
+        #     problems=['scp'],
+        #     decoders=['cpu', 'gpu'],
         #     test_count=TEST_COUNT,
         # ),
         # __build_params(
         #     tool='brkga-cuda-1.0',
-        #     problems=['scp'],
-        #     decoders=['cpu', 'gpu'],
+        #     problems=['cvrp_greedy', 'cvrp', 'tsp'],
+        #     decoders=['cpu', 'gpu', 'gpu-permutation'],
         #     test_count=TEST_COUNT,
         # ),
         # __build_params(
@@ -175,17 +169,34 @@ def main():
         # ),
         # __build_params(
         #     tool='brkga-cuda-2.0',
-        #     problems=['tsp', 'cvrp', 'cvrp_greedy'],
+        #     problems=['cvrp_greedy', 'cvrp', 'tsp'],
         #     decoders=[
-        #         'cpu', 'all-cpu', 'cpu-permutation', 'all-cpu-permutation',
-        #         'gpu', 'all-gpu', 'gpu-permutation', 'all-gpu-permutation',
+        #         'gpu-permutation', 'all-gpu-permutation',
         #     ],
         #     test_count=TEST_COUNT,
         # ),
         # __build_params(
         #     tool='brkga-cuda-2.0',
-        #     problems=['scp'],
-        #     decoders=['cpu'],
+        #     problems=['cvrp_greedy', 'cvrp', 'tsp'],
+        #     decoders=[
+        #         'cpu-permutation', 'all-cpu-permutation',
+        #     ],
+        #     test_count=TEST_COUNT,
+        # ),
+        # __build_params(
+        #     tool='brkga-cuda-2.0',
+        #     problems=['cvrp_greedy', 'cvrp', 'tsp'],
+        #     decoders=[
+        #         'gpu', 'all-gpu',
+        #     ],
+        #     test_count=TEST_COUNT,
+        # ),
+        # __build_params(
+        #     tool='brkga-cuda-2.0',
+        #     problems=['cvrp_greedy', 'cvrp', 'tsp'],
+        #     decoders=[
+        #         'cpu', 'all-cpu',
+        #     ],
         #     test_count=TEST_COUNT,
         # ),
         # __build_params(
@@ -214,7 +225,7 @@ def __build_params(
             tuned_params = (
                 PARAMS_PATH
                 .joinpath(f'{tool}_{problem}_cpu.txt')
-                .read_text()
+                .read_text(encoding='utf-8')
                 .split('\n')
             )
             tuned_params = [line.split() for line in tuned_params if line]
