@@ -40,7 +40,7 @@ BACKUP_FILE = OUTPUT_PATH.joinpath('.backup.tsv')
 MAX_TIME_SECONDS = {
     'cvrp': 60 * 60,
     'cvrp_greedy': 60 * 60,
-    'scp': 10 * 60,
+    'scp': 60 * 60,
     'tsp': 60 * 60,
 }
 PROBLEM_NAME = {
@@ -131,12 +131,12 @@ INSTANCES = {
 
 def main():
     results = __experiment(itertools.chain(
-        # __build_params(
-        #     tool='brkga-api',
-        #     problems=['scp', 'tsp', 'cvrp_greedy', 'cvrp'],
-        #     decoders=['cpu'],
-        #     test_count=TEST_COUNT,
-        # ),
+        __build_params(
+            tool='brkga-api',
+            problems=['scp', 'cvrp_greedy', 'cvrp', 'tsp'],
+            decoders=['cpu'],
+            test_count=TEST_COUNT,
+        ),
         # __build_params(
         #     tool='brkga-mp-ipr',
         #     problems=['tsp', 'cvrp_greedy', 'cvrp'],
@@ -149,12 +149,12 @@ def main():
         #     decoders=['cpu', 'gpu'],
         #     test_count=TEST_COUNT,
         # ),
-        __build_params(
-            tool='gpu-brkga-fix',
-            problems=['scp', 'cvrp_greedy', 'cvrp'],
-            decoders=['cpu', 'gpu'],
-            test_count=TEST_COUNT,
-        ),
+        # __build_params(
+        #     tool='gpu-brkga-fix',
+        #     problems=['scp', 'cvrp_greedy', 'cvrp'],
+        #     decoders=['cpu', 'gpu'],
+        #     test_count=TEST_COUNT,
+        # ),
         # __build_params(
         #     tool='brkga-cuda-1.0',
         #     problems=['tsp', 'cvrp_greedy', 'cvrp'],
